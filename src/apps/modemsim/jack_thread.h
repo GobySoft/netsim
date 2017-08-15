@@ -10,7 +10,7 @@
 
 #include "goby/middleware/multi-thread-application.h"
 
-#include "groups.h"
+#include "messages/groups.h"
 #include "config.pb.h"
 
 using ThreadBase = goby::Thread<ModemSimConfig, goby::InterProcessForwarder<goby::InterThreadTransporter>>;
@@ -139,7 +139,7 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 	    ++sample;
 	}
 	
-	transporter().inner().publish_dynamic(rx_buffer, groups::audio_in);
+	transporter().inner().publish<groups::audio_in>(rx_buffer);
 	
 	return 0;
     }

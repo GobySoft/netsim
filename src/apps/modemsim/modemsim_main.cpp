@@ -4,7 +4,7 @@
 #include "goby/middleware/multi-thread-application.h"
 
 #include "config.pb.h"
-#include "groups.h"
+#include "messages/groups.h"
 #include "jack_thread.h"
 
 class ModemSim : public goby::MultiThreadApplication<ModemSimConfig>
