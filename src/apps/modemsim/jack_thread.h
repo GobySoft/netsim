@@ -18,17 +18,15 @@ void jack_shutdown (void *arg);
 int jack_xrun(void* arg);
 int jack_buffer_size_change(jack_nframes_t nframes, void *arg);
 
-
-
-
 class JackThread : public ThreadBase
 {
 public:
     typedef float sample_t;
-
+    
 JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
     : ThreadBase(config, t),
-	input_port_(config.number_of_modems(), nullptr)      
+	input_port_(config.number_of_modems(), nullptr),
+	fs_(config.sampling_freq())
     {
 	using goby::glog; using namespace goby::common::logger;
 	static_assert(sizeof(float) == 4, "Float must be 4 bytes");
@@ -50,7 +48,7 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 	if (!client_)
 	{
 	    glog.is(WARN) && glog << "jack_client_open() failed, status = " << status << std::endl;
-      
+	    
 	    if (status & JackServerFailed)
 		glog.is(DIE) && glog << "Unable to connect to JACK server" << std::endl;
 	    
@@ -81,15 +79,17 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 	const char** capture_port_names = jack_get_ports (client_, nullptr, nullptr,
 							  JackPortIsPhysical|JackPortIsOutput);
 	if (capture_port_names == nullptr)
-	    glog.is(DIE) && glog <<  "no physical capture ports" << std::endl;	    
+	    glog.is(DIE) && glog <<  "no physical capture ports" << std::endl;
 
 	if (jack_activate (client_))
-	    glog.is(DIE) && glog << "cannot activate client" << std::endl;	   
-
+	    glog.is(DIE) && glog << "cannot activate client" << std::endl;
 
 	int j = 0;
 	while(capture_port_names[j])
-	    glog.is(DEBUG2) && glog << "Capture port: " << capture_port_names[j++] << std::endl;
+	{
+	    glog.is(DEBUG2) && glog << "Capture port: " << capture_port_names[j] << std::endl;
+	    ++j;
+	}
 
 	
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
@@ -101,11 +101,11 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 	    while(capture_port_names[j])
 	    {
 		if(std::string(capture_port_names[j++]) == capture_port_name)
-		    found_name = true;	       
+		    found_name = true;
 	    }
 	    
 	    if(!found_name)
-		glog.is(DIE) && glog << "No capture port with name: " << capture_port_name << std::endl;	
+		glog.is(DIE) && glog << "No capture port with name: " << capture_port_name << std::endl;
 	    
 	    std::string input_port_name = std::string("input_") + std::to_string(i);
 	    input_port_[i] = jack_port_register (client_, input_port_name.c_str(),
@@ -117,7 +117,7 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 	    if (jack_connect (client_, capture_port_name.c_str(), jack_port_name (input_port_[i])))
 		glog.is(DIE) && glog << "cannot connect input port: " << input_port_name << " to capture port: " << capture_port_name << std::endl;
 	}
-	free (capture_port_names);	
+	free (capture_port_names);
     }
   
     ~JackThread()
@@ -136,15 +136,18 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 	for (int input_port_i = 0, n = cfg().number_of_modems(); input_port_i < n; ++input_port_i)
 	{	    
 	    std::shared_ptr<BufferType> rx_buffer(new BufferType(buffer_size_));
-	    
-	    sample_t* in = (sample_t*)jack_port_get_buffer (input_port_[input_port_i], nframes);
-	    sample_t* sample = in;
-	    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
+
+	    if(input_port_[input_port_i] != nullptr) // could be briefly empty while we initialize all the threads
 	    {
-		(*rx_buffer)[frame] = std::make_pair(process_frame_time + frame, *sample);
-		++sample;
+		sample_t* in = (sample_t*)jack_port_get_buffer (input_port_[input_port_i], nframes);
+		sample_t* sample = in;
+		for(jack_nframes_t frame = 0; frame < nframes; ++frame)
+		{
+		    (*rx_buffer)[frame] = std::make_pair(process_frame_time + frame, *sample);
+		    ++sample;
+		}
+		transporter().inner().publish_dynamic(rx_buffer, audio_in_groups_[input_port_i]);
 	    }
-	    transporter().inner().publish_dynamic(rx_buffer, audio_in_groups_[input_port_i]);
 	}
 	
 	return 0;
@@ -172,12 +175,13 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 
 private:
     std::vector<jack_port_t*> input_port_;
+    const jack_nframes_t fs_;
     
     std::vector<goby::DynamicGroup> audio_in_groups_;
+
     jack_client_t *client_;
 
     const std::string port_type_{std::to_string(sizeof(sample_t)*8) + " bit float mono audio"};
-    const jack_nframes_t fs_{96000};
 
     jack_nframes_t buffer_size_{0};
 };

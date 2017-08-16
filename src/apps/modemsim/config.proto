@@ -12,7 +12,7 @@ message DetectorConfig
 {
     optional float detection_threshold = 1 [default = 0.1];
     optional float buffer_seconds = 2 [default = 10];
-    optional float silence_after_packet_end = 3 [default = 0.2];
+    optional float packet_end_silent_seconds = 3 [default = 0.2];
 }
 
 message ModemSimConfig
@@ -21,6 +21,7 @@ message ModemSimConfig
     optional goby.protobuf.InterProcessPortalConfig interprocess_portal = 2;
 
     required int32 number_of_modems = 10;
+    optional int32 sampling_freq = 11 [default = 96000];
 
     optional JackConfig jack = 20;
     optional DetectorConfig detector = 30;
