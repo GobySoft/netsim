@@ -6,6 +6,7 @@
 #include "config.pb.h"
 #include "messages/groups.h"
 #include "jack_thread.h"
+#include "detector.h"
 
 class ModemSim : public goby::MultiThreadApplication<ModemSimConfig>
 {
@@ -13,8 +14,10 @@ public:
     ModemSim()
         {            
             launch_thread<JackThread>();
-            //launch_thread<BasicSubscriber>(0);
-            //launch_thread<BasicSubscriber>(1);
+
+	    for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+		launch_thread<DetectorThread>(i);
+            
         }
 };
 

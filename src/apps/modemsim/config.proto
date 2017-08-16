@@ -1,10 +1,28 @@
 import "goby/common/protobuf/app3.proto";
 import "goby/middleware/protobuf/interprocess_config.proto";
 
+message JackConfig
+{
+    optional string capture_port_prefix = 1 [default = "system:capture_"];
+    optional string playback_port_prefix = 2 [default = "system:playback_"];
+    optional int32 port_name_starting_index = 3 [default = 1];    
+}
+
+message DetectorConfig
+{
+    optional float detection_threshold = 1 [default = 0.1];
+    optional float buffer_seconds = 2 [default = 10];
+    optional float silence_after_packet_end = 3 [default = 0.2];
+}
+
 message ModemSimConfig
 {
     optional goby.protobuf.App3Config app = 1;
     optional goby.protobuf.InterProcessPortalConfig interprocess_portal = 2;
 
+    required int32 number_of_modems = 10;
+
+    optional JackConfig jack = 20;
+    optional DetectorConfig detector = 30;
 
 }
