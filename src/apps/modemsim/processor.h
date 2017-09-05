@@ -21,7 +21,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	{
 	    if(i != ThreadBase::index())
 	    {
-		auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(ThreadBase::index());
+		auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(i);
 		detector_audio_groups_.push_back(goby::DynamicGroup(detector_group_name));
 		
 		auto detector_audio_callback = [this, i](std::shared_ptr<const BufferType> buffer) { this->detector_audio(buffer, i); };
@@ -33,8 +33,9 @@ ProcessorThread(const ModemSimConfig& config, int index)
     void detector_audio(std::shared_ptr<const BufferType> buffer, int modem_index)
     {
 	using goby::glog; using namespace goby::common::logger;
-	
-	glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received buffer of size: " << buffer->size() << " from transmitter modem: " << modem_index << std::endl;
+
+	if(buffer->size() != 1024)
+	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received buffer of size: " << buffer->size() << " from transmitter modem: " << modem_index << std::endl;
 
     }
 
