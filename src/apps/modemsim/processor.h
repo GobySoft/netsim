@@ -6,15 +6,15 @@
 #include "config.pb.h"
 #include "jack_thread.h"
 
-using ThreadBase = goby::Thread<ModemSimConfig, goby::InterProcessForwarder<goby::InterThreadTransporter>>;
+using ThreadBase = goby::SimpleThread<ModemSimConfig>;
 
 class ProcessorThread : public ThreadBase
 {
 public:
     using BufferType = std::vector<std::pair<jack_nframes_t, JackThread::sample_t>>;      
 
-ProcessorThread(const ModemSimConfig& config, ThreadBase::Transporter* t, int index)
-    : ThreadBase(config, t, 0, index)
+ProcessorThread(const ModemSimConfig& config, int index)
+    : ThreadBase(config, 0, index)
     {
 	// subscribe to all the detectors except our own id, since we ignore our transmissions
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
@@ -25,7 +25,7 @@ ProcessorThread(const ModemSimConfig& config, ThreadBase::Transporter* t, int in
 		detector_audio_groups_.push_back(goby::DynamicGroup(detector_group_name));
 		
 		auto detector_audio_callback = [this, i](std::shared_ptr<const BufferType> buffer) { this->detector_audio(buffer, i); };
-		transporter().inner().subscribe_dynamic<BufferType>(detector_audio_callback, detector_audio_groups_.back());
+		interthread().subscribe_dynamic<BufferType>(detector_audio_callback, detector_audio_groups_.back());
 	    }
 	}		       
     }

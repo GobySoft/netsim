@@ -11,7 +11,7 @@
 #include "goby/middleware/multi-thread-application.h"
 #include "config.pb.h"
 
-using ThreadBase = goby::Thread<ModemSimConfig, goby::InterProcessForwarder<goby::InterThreadTransporter>>;
+using ThreadBase = goby::SimpleThread<ModemSimConfig>;
 
 int jack_process(jack_nframes_t nframes, void* arg);
 void jack_shutdown (void *arg);
@@ -23,8 +23,8 @@ class JackThread : public ThreadBase
 public:
     typedef float sample_t;
     
-JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
-    : ThreadBase(config, t),
+JackThread(const ModemSimConfig& config)
+    : ThreadBase(config),
 	input_port_(config.number_of_modems(), nullptr),
 	fs_(config.sampling_freq())
     {
@@ -146,7 +146,7 @@ JackThread(const ModemSimConfig& config, ThreadBase::Transporter* t)
 		    (*rx_buffer)[frame] = std::make_pair(process_frame_time + frame, *sample);
 		    ++sample;
 		}
-		transporter().inner().publish_dynamic(rx_buffer, audio_in_groups_[input_port_i]);
+		interthread().publish_dynamic(rx_buffer, audio_in_groups_[input_port_i]);
 	    }
 	}
 	

@@ -6,15 +6,15 @@
 #include "config.pb.h"
 #include "jack_thread.h"
 
-using ThreadBase = goby::Thread<ModemSimConfig, goby::InterProcessForwarder<goby::InterThreadTransporter>>;
+using ThreadBase = goby::SimpleThread<ModemSimConfig>;
 
 class DetectorThread : public ThreadBase
 {
 public:
     using BufferType = std::vector<std::pair<jack_nframes_t, JackThread::sample_t>>;      
 
-DetectorThread(const ModemSimConfig& config, ThreadBase::Transporter* t, int index)
-    : ThreadBase(config, t, 0, index),
+DetectorThread(const ModemSimConfig& config, int index)
+    : ThreadBase(config, 0, index),
 	audio_in_group_(std::string("audio_in_") + std::to_string(ThreadBase::index())),
 	detector_audio_group_(std::string("detector_audio_tx_") + std::to_string(ThreadBase::index()))
     {
@@ -22,7 +22,7 @@ DetectorThread(const ModemSimConfig& config, ThreadBase::Transporter* t, int ind
 
 	auto audio_in_callback = [this](std::shared_ptr<const BufferType> buffer) { this->audio_in(buffer); };
 
-	transporter().inner().subscribe_dynamic<BufferType>(audio_in_callback, audio_in_group_);
+	interthread().subscribe_dynamic<BufferType>(audio_in_callback, audio_in_group_);
 	
 	glog.is(VERBOSE) && glog << "Starting detector thread: " << ThreadBase::index() << std::endl;
        
@@ -44,7 +44,7 @@ DetectorThread(const ModemSimConfig& config, ThreadBase::Transporter* t, int ind
 		    // send subbuffer from start of packet to end of buffer
 		    in_packet_ = true;
 		    std::shared_ptr<const BufferType> subbuffer(new BufferType(it, end));
-		    transporter().inner().publish_dynamic(subbuffer, detector_audio_group_);
+		    interthread().publish_dynamic(subbuffer, detector_audio_group_);
 		    // assume a packet spans at least one buffer, so no need to check the rest of the buffer
 		    break;
 		}	       
@@ -66,14 +66,14 @@ DetectorThread(const ModemSimConfig& config, ThreadBase::Transporter* t, int ind
 		    in_packet_ = false;
 		    frames_since_silence = 0;
 		    std::shared_ptr<const BufferType> subbuffer(new BufferType(buffer->begin(), it));
-		    transporter().inner().publish_dynamic(subbuffer, detector_audio_group_);
+		    interthread().publish_dynamic(subbuffer, detector_audio_group_);
 		    // assume no new packet starts within the same buffer
 		    break;
 		}
 		else
 		{
 		    // send whole buffer
-		    transporter().inner().publish_dynamic(buffer, detector_audio_group_);
+		    interthread().publish_dynamic(buffer, detector_audio_group_);
 		}
 	    }	   
 	}       
