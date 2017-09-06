@@ -22,9 +22,10 @@ class JackThread : public ThreadBase
 {
 public:
     typedef float sample_t;
+    using BufferType = std::vector<std::pair<jack_nframes_t, sample_t>>;
     
 JackThread(const ModemSimConfig& config)
-    : ThreadBase(config),
+    : ThreadBase(config, ThreadBase::loop_max_frequency()),
 	input_port_(config.number_of_modems(), nullptr),
 	fs_(config.sampling_freq())
     {
@@ -129,8 +130,6 @@ JackThread(const ModemSimConfig& config)
     // special realtime thread once for each audio cycle.
     int jack_process (jack_nframes_t nframes)
     {
-	using BufferType = std::vector<std::pair<jack_nframes_t, sample_t>>;      
-
 	auto process_frame_time = jack_last_frame_time(client_);
 
 	for (int input_port_i = 0, n = cfg().number_of_modems(); input_port_i < n; ++input_port_i)
@@ -146,7 +145,12 @@ JackThread(const ModemSimConfig& config)
 		    (*rx_buffer)[frame] = std::make_pair(process_frame_time + frame, *sample);
 		    ++sample;
 		}
-		interthread().publish_dynamic(rx_buffer, audio_in_groups_[input_port_i]);
+
+		{
+		    std::lock_guard<decltype(audio_in_mutex_)> lock(audio_in_mutex_);
+		    audio_in_buffer_.push_back(std::make_pair(input_port_i, rx_buffer));
+		}
+		audio_in_cv_.notify_all();
 	    }
 	}
 	
@@ -172,6 +176,35 @@ JackThread(const ModemSimConfig& config)
 	return 0;
     }
 
+    void loop() override
+    {
+	using goby::glog; using namespace goby::common::logger;
+      
+	std::pair<int, std::shared_ptr<BufferType>> temp_buffer;
+	// grab a element to publish while locked
+	{
+	    std::unique_lock<std::mutex> lock(audio_in_mutex_);
+	    if(audio_in_buffer_.empty()) // if empty, wait until it's not
+		audio_in_cv_.wait(lock, [this]{return !audio_in_buffer_.empty();});
+	
+	    if(audio_in_buffer_.size() >= cfg().jack().max_buffer_size())
+	    {
+		glog.is(WARN) && glog << "Jack buffer exceeds maximum: " << audio_in_buffer_.size() << std::endl;
+		audio_in_buffer_.clear();	   
+	    }
+	    temp_buffer = audio_in_buffer_.front();
+	}
+
+	// actually publish it while unlocked
+	interthread().publish_dynamic(temp_buffer.second, audio_in_groups_[temp_buffer.first]);
+
+	// lock again and pop the front of the buffer
+	{
+	    std::unique_lock<std::mutex> lock(audio_in_mutex_);
+	    audio_in_buffer_.pop_front();
+	}       
+    }
+
 
 private:
     std::vector<jack_port_t*> input_port_;
@@ -184,6 +217,10 @@ private:
     const std::string port_type_{std::to_string(sizeof(sample_t)*8) + " bit float mono audio"};
 
     jack_nframes_t buffer_size_{0};
+
+    std::mutex audio_in_mutex_;
+    std::condition_variable audio_in_cv_;
+    std::deque<std::pair<int, std::shared_ptr<BufferType>>> audio_in_buffer_;
 };
 
 

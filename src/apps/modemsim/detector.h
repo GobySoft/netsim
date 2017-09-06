@@ -11,7 +11,7 @@ using ThreadBase = goby::SimpleThread<ModemSimConfig>;
 class DetectorThread : public ThreadBase
 {
 public:
-    using BufferType = std::vector<std::pair<jack_nframes_t, JackThread::sample_t>>;      
+    using BufferType = JackThread::BufferType;
 
 DetectorThread(const ModemSimConfig& config, int index)
     : ThreadBase(config, 0, index),
