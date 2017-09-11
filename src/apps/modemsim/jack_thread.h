@@ -26,7 +26,8 @@ public:
     
 JackThread(const ModemSimConfig& config)
     : ThreadBase(config, ThreadBase::loop_max_frequency()),
-	input_port_(config.number_of_modems(), nullptr),
+	input_port_(config.number_of_modems(), nullptr),	
+	output_port_(config.number_of_modems(), nullptr),
 	fs_(config.sampling_freq())
     {
 	using goby::glog; using namespace goby::common::logger;
@@ -35,6 +36,9 @@ JackThread(const ModemSimConfig& config)
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	{
 	    audio_in_groups_.push_back(goby::DynamicGroup(std::string("audio_in_") + std::to_string(i)));
+	    audio_out_groups_.push_back(goby::DynamicGroup(std::string("audio_out_") + std::to_string(i)));
+	    auto audio_out_callback = [this, i](std::shared_ptr<const AudioBuffer> buffer) {this->audio_out(buffer, i); };
+	    interthread().subscribe_dynamic<AudioBuffer>(audio_out_callback, audio_out_groups_[i]);
 	}
 	
 	const char *client_name = "modemsim";
@@ -77,13 +81,14 @@ JackThread(const ModemSimConfig& config)
 	// orientation of the driver backend ports: playback ports are
 	// "input" to the backend, and capture ports are "output" from
 	// it.
+	if (jack_activate (client_))
+	    glog.is(DIE) && glog << "cannot activate client" << std::endl;
+
+
 	const char** capture_port_names = jack_get_ports (client_, nullptr, nullptr,
 							  JackPortIsPhysical|JackPortIsOutput);
 	if (capture_port_names == nullptr)
 	    glog.is(DIE) && glog <<  "no physical capture ports" << std::endl;
-
-	if (jack_activate (client_))
-	    glog.is(DIE) && glog << "cannot activate client" << std::endl;
 
 	int j = 0;
 	while(capture_port_names[j])
@@ -119,6 +124,47 @@ JackThread(const ModemSimConfig& config)
 		glog.is(DIE) && glog << "cannot connect input port: " << input_port_name << " to capture port: " << capture_port_name << std::endl;
 	}
 	free (capture_port_names);
+
+
+	const char** playback_port_names = jack_get_ports (client_, nullptr, nullptr,
+							  JackPortIsPhysical|JackPortIsInput);
+	if (playback_port_names == nullptr)
+	    glog.is(DIE) && glog <<  "no physical playback ports" << std::endl;
+
+	j = 0;
+	while(playback_port_names[j])
+	{
+	    glog.is(DEBUG2) && glog << "Playback port: " << playback_port_names[j] << std::endl;
+	    ++j;
+	}
+
+	
+	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+	{
+	    std::string playback_port_name = cfg().jack().playback_port_prefix() + std::to_string(i+cfg().jack().port_name_starting_index());
+	    
+	    int j = 0;
+	    bool found_name = false;
+	    while(playback_port_names[j])
+	    {
+		if(std::string(playback_port_names[j++]) == playback_port_name)
+		    found_name = true;
+	    }
+	    
+	    if(!found_name)
+		glog.is(DIE) && glog << "No playback port with name: " << playback_port_name << std::endl;
+	    
+	    std::string output_port_name = std::string("output_") + std::to_string(i);
+	    output_port_[i] = jack_port_register (client_, output_port_name.c_str(),
+						 port_type_.c_str(),
+						 JackPortIsOutput, 0);
+	    if (!output_port_[i])
+		glog.is(DIE) && glog << "no more JACK ports available" << std::endl;
+	    
+	    if (jack_connect (client_, jack_port_name (output_port_[i]), playback_port_name.c_str()))
+		glog.is(DIE) && glog << "cannot connect output port: " << output_port_name << " to playback port: " << playback_port_name << std::endl;
+	}
+	free (playback_port_names);
     }
   
     ~JackThread()
@@ -178,6 +224,12 @@ JackThread(const ModemSimConfig& config)
 	return 0;
     }
 
+    void audio_out(std::shared_ptr<const AudioBuffer> buffer, int modem_index)
+    {
+	
+	
+    }
+    
     void loop() override
     {
 	using goby::glog; using namespace goby::common::logger;
@@ -211,9 +263,11 @@ JackThread(const ModemSimConfig& config)
 
 private:
     std::vector<jack_port_t*> input_port_;
+    std::vector<jack_port_t*> output_port_;
     const jack_nframes_t fs_;
     
     std::vector<goby::DynamicGroup> audio_in_groups_;
+    std::vector<goby::DynamicGroup> audio_out_groups_;
 
     jack_client_t *client_;
 
