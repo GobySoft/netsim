@@ -8,7 +8,9 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "common.h"
 #include "goby/middleware/multi-thread-application.h"
+#include "goby/common/time.h"
 #include "config.pb.h"
 
 using ThreadBase = goby::SimpleThread<ModemSimConfig>;
@@ -21,8 +23,6 @@ int jack_buffer_size_change(jack_nframes_t nframes, void *arg);
 class JackThread : public ThreadBase
 {
 public:
-    typedef float sample_t;
-    using BufferType = std::vector<std::pair<jack_nframes_t, sample_t>>;
     
 JackThread(const ModemSimConfig& config)
     : ThreadBase(config, ThreadBase::loop_max_frequency()),
@@ -130,22 +130,24 @@ JackThread(const ModemSimConfig& config)
     // special realtime thread once for each audio cycle.
     int jack_process (jack_nframes_t nframes)
     {
+	double buffer_start_time = goby::common::goby_time<double>();
 	auto process_frame_time = jack_last_frame_time(client_);
 
 	for (int input_port_i = 0, n = cfg().number_of_modems(); input_port_i < n; ++input_port_i)
 	{	    
-	    std::shared_ptr<BufferType> rx_buffer(new BufferType(buffer_size_));
-
+	    std::shared_ptr<AudioBuffer> rx_buffer(new AudioBuffer(buffer_size_));
+	    rx_buffer->buffer_start_time = buffer_start_time;
+	    
 	    if(input_port_[input_port_i] != nullptr) // could be briefly empty while we initialize all the threads
 	    {
 		sample_t* in = (sample_t*)jack_port_get_buffer (input_port_[input_port_i], nframes);
 		sample_t* sample = in;
 		for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 		{
-		    (*rx_buffer)[frame] = std::make_pair(process_frame_time + frame, *sample);
+		    (*rx_buffer).samples[frame] = std::make_pair(process_frame_time + frame, *sample);
 		    ++sample;
 		}
-
+		
 		{
 		    std::lock_guard<decltype(audio_in_mutex_)> lock(audio_in_mutex_);
 		    audio_in_buffer_.push_back(std::make_pair(input_port_i, rx_buffer));
@@ -180,7 +182,7 @@ JackThread(const ModemSimConfig& config)
     {
 	using goby::glog; using namespace goby::common::logger;
       
-	std::pair<int, std::shared_ptr<BufferType>> temp_buffer;
+	std::pair<int, std::shared_ptr<AudioBuffer>> temp_buffer;
 	// grab a element to publish while locked
 	{
 	    std::unique_lock<std::mutex> lock(audio_in_mutex_);
@@ -190,8 +192,9 @@ JackThread(const ModemSimConfig& config)
 	    if(audio_in_buffer_.size() >= cfg().jack().max_buffer_size())
 	    {
 		glog.is(WARN) && glog << "Jack buffer exceeds maximum: " << audio_in_buffer_.size() << std::endl;
-		audio_in_buffer_.clear();	   
-	    }
+		audio_in_buffer_.clear();
+		return;
+	    }	   
 	    temp_buffer = audio_in_buffer_.front();
 	}
 
@@ -220,7 +223,7 @@ private:
 
     std::mutex audio_in_mutex_;
     std::condition_variable audio_in_cv_;
-    std::deque<std::pair<int, std::shared_ptr<BufferType>>> audio_in_buffer_;
+    std::deque<std::pair<int, std::shared_ptr<AudioBuffer>>> audio_in_buffer_;
 };
 
 
