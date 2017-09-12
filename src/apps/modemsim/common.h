@@ -10,7 +10,7 @@ typedef float sample_t;
 
 struct AudioBuffer
 {
-    AudioBuffer(size_t size) : samples(size) {}    
+AudioBuffer(size_t size) : samples(size, std::make_pair(0,0)) {}    
 
     template<typename It>
       AudioBuffer(It begin, It end) : samples(begin, end) {}

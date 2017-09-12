@@ -43,11 +43,11 @@ ProcessorThread(const ModemSimConfig& config, int index)
 
 
 	// process audio
-
+	
 	// test - write back with a 1 second delay to "our" modem
 	std::shared_ptr<AudioBuffer> newbuffer(new AudioBuffer(*buffer));
-	newbuffer->buffer_start_time += 1;
-	interthread().publish_dynamic(buffer, audio_out_groups_[ThreadBase::index()]);
+	newbuffer->buffer_start_time += 0;
+	interthread().publish_dynamic(newbuffer, audio_out_groups_[ThreadBase::index()]);
     }
 
 private:

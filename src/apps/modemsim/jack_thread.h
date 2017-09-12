@@ -201,7 +201,57 @@ JackThread(const ModemSimConfig& config)
 		audio_in_cv_.notify_all();
 	    }
 	}
-	
+
+	{
+	    std::unique_lock<std::mutex> lock(audio_out_mutex_);
+	    for (int output_port_i = 0, n = cfg().number_of_modems(); output_port_i < n; ++output_port_i)
+	    {	    
+
+		if(output_port_[output_port_i] != nullptr &&
+		   !audio_out_buffer_[output_port_i].empty()) 
+		{
+		    // does the front buffer start within this frame?
+		    auto front_buffer = audio_out_buffer_[output_port_i].front();
+		    jack_nframes_t frame_start = 0; // when we begin playback in this frame
+		    if(front_buffer->marker == AudioBuffer::Marker::START)
+		    {		    
+			audio_out_index_[output_port_i] = 0;
+
+			if(front_buffer->buffer_start_time > buffer_start_time) // playback is in the future, otherwise start asap (0)			   
+			    frame_start = (front_buffer->buffer_start_time - buffer_start_time)*fs_;
+			else
+			    frame_start = 0;
+			
+			if(frame_start > nframes) // this buffer doesn't start yet
+			    continue;
+		    }	       
+
+		    sample_t* out = (sample_t*)jack_port_get_buffer (output_port_[output_port_i], nframes);		
+		    sample_t* sample = out;
+		    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
+		    {
+			if(frame < frame_start)
+			{
+			    *(sample++) = 0;
+			}
+			else
+			{			
+			    if(audio_out_index_[output_port_i] >= front_buffer->samples.size())
+			    {
+				audio_out_index_[output_port_i] = 0;
+				audio_out_buffer_[output_port_i].pop_front();
+				if(audio_out_buffer_[output_port_i].empty())
+				    front_buffer = empty_buffer_;
+				else
+				    front_buffer = audio_out_buffer_[output_port_i].front();			    
+			    }
+
+			    *(sample++) = front_buffer->samples[audio_out_index_[output_port_i]++].second;
+			}
+		    }
+		}
+	    }
+	}
 	return 0;
     }
 
@@ -220,6 +270,7 @@ JackThread(const ModemSimConfig& config)
     {
 	using goby::glog; using namespace goby::common::logger;
 	buffer_size_ = nframes;
+	empty_buffer_.reset(new AudioBuffer(buffer_size_));
 	glog.is(DEBUG1) && glog << "New buffer size: " << nframes << std::endl;
 	return 0;
     }
@@ -227,7 +278,11 @@ JackThread(const ModemSimConfig& config)
     void audio_out(std::shared_ptr<const AudioBuffer> buffer, int modem_index)
     {
 	
+	std::unique_lock<std::mutex> lock(audio_out_mutex_);
+	if(buffer->marker == AudioBuffer::Marker::START)
+	    audio_out_buffer_[modem_index].clear();
 	
+	audio_out_buffer_[modem_index].push_back(buffer);
     }
     
     void loop() override
@@ -278,6 +333,14 @@ private:
     std::mutex audio_in_mutex_;
     std::condition_variable audio_in_cv_;
     std::deque<std::pair<int, std::shared_ptr<AudioBuffer>>> audio_in_buffer_;
+
+    std::mutex audio_out_mutex_;
+    std::map<int, std::deque<std::shared_ptr<const AudioBuffer>>> audio_out_buffer_;
+
+    // maps modem index to the current sample within the latest AudioBuffer
+    std::map<int, decltype(AudioBuffer::samples)::size_type> audio_out_index_;
+
+    std::shared_ptr<const AudioBuffer> empty_buffer_{0};
 };
 
 
