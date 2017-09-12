@@ -6,6 +6,8 @@
 #include "config.pb.h"
 #include "jack_thread.h"
 
+#include "lamss/lib_henrik_util/CConvolve.h"
+
 using ThreadBase = goby::SimpleThread<ModemSimConfig>;
 
 class ProcessorThread : public ThreadBase
@@ -37,16 +39,20 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	using goby::glog; using namespace goby::common::logger;
 
 	if(buffer->marker == AudioBuffer::Marker::START)
+	{
 	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received START buffer (time: " << std::setprecision(15) << buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer_start_time) << ") of size: " << buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
+	}
 	else if(buffer->marker == AudioBuffer::Marker::END)
+	{
 	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received END buffer (time: " << std::setprecision(15) << buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer_start_time) << ") of size: " << buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
+	}
 
 
-	// process audio
+        // process audio
 	
 	// test - write back with a 1 second delay to "our" modem
 	std::shared_ptr<AudioBuffer> newbuffer(new AudioBuffer(*buffer));
-	newbuffer->buffer_start_time += 0;
+	newbuffer->buffer_start_time += 0.5;
 	interthread().publish_dynamic(newbuffer, audio_out_groups_[ThreadBase::index()]);
     }
 

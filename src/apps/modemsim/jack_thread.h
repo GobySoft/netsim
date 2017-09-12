@@ -235,15 +235,16 @@ JackThread(const ModemSimConfig& config)
 			    *(sample++) = 0;
 			}
 			else
-			{			
-			    if(audio_out_index_[output_port_i] >= front_buffer->samples.size())
+			{
+			    // while covers the case if the next front_buffer->size() == 0
+			    while(audio_out_index_[output_port_i] >= front_buffer->samples.size())
 			    {
 				audio_out_index_[output_port_i] = 0;
 				audio_out_buffer_[output_port_i].pop_front();
 				if(audio_out_buffer_[output_port_i].empty())
-				    front_buffer = empty_buffer_;
+				    front_buffer = empty_buffer_; 
 				else
-				    front_buffer = audio_out_buffer_[output_port_i].front();			    
+				    front_buffer = audio_out_buffer_[output_port_i].front();
 			    }
 
 			    *(sample++) = front_buffer->samples[audio_out_index_[output_port_i]++].second;

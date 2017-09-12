@@ -31,6 +31,14 @@ message("Using Goby in ${GOBY_INCLUDE_DIR}")
 include_directories("${GOBY_INCLUDE_DIR}")
 protobuf_include_dirs("${GOBY_INCLUDE_DIR}")
 
+find_package(IvP REQUIRED)
+include_directories(${IVP_INCLUDE_DIRS})
+
+find_package(LAMSS REQUIRED)
+include_directories(${LAMSS_INCLUDE_DIRS})
+include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
+protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
+
 # create variables for various directories
 get_filename_component(project_SRC_DIR src ABSOLUTE)
 get_filename_component(project_BUILD_DIR ${CMAKE_BINARY_DIR} ABSOLUTE)
