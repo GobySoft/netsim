@@ -176,6 +176,7 @@ JackThread(const ModemSimConfig& config)
     // special realtime thread once for each audio cycle.
     int jack_process (jack_nframes_t nframes)
     {
+	using goby::glog; using namespace goby::common::logger;
 	double buffer_start_time = goby::common::goby_time<double>();
 	auto process_frame_time = jack_last_frame_time(client_);
 
@@ -242,9 +243,16 @@ JackThread(const ModemSimConfig& config)
 				audio_out_index_[output_port_i] = 0;
 				audio_out_buffer_[output_port_i].pop_front();
 				if(audio_out_buffer_[output_port_i].empty())
-				    front_buffer = empty_buffer_; 
+				{
+				    // hopefully we only run out when we're at the end of the packet
+				    if(front_buffer->marker != AudioBuffer::Marker::END)
+					glog.is(WARN) && glog << "Missing playback buffer for modem: " << output_port_i << std::endl;
+				    front_buffer = empty_buffer_;
+				}
 				else
+				{
 				    front_buffer = audio_out_buffer_[output_port_i].front();
+				}
 			    }
 
 			    *(sample++) = front_buffer->samples[audio_out_index_[output_port_i]++].second;
