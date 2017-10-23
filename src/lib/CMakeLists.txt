@@ -1,0 +1,1 @@
+add_subdirectory(moos_translator_plugin)

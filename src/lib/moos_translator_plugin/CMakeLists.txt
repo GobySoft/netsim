@@ -1,0 +1,2 @@
+add_library(modemsim_moos_plugin SHARED moos_plugin.cpp)
+target_link_libraries(modemsim_moos_plugin goby_moos goby_middleware)
