@@ -43,6 +43,7 @@ DetectorThread(const ModemSimConfig& config, int index)
 	       
 	glog.is(DEBUG2) && glog << "Detector Thread (" << ThreadBase::index() << "): Received buffer of size: " << buffer->samples.size() << std::endl;
 
+	static std::atomic<int> global_packet_id{0};
 
 	if(!in_packet_)
 	{
@@ -53,16 +54,26 @@ DetectorThread(const ModemSimConfig& config, int index)
 		{
 		    // send subbuffer from start of packet to end of buffer
 		    in_packet_ = true;
+		    in_packet_id = global_packet_id++;
 		    auto& first_buffer = prebuffer_.front();
 		    std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(first_buffer->samples.begin()+(it-buffer->samples.begin()), first_buffer->samples.end()));
-		    subbuffer->marker = AudioBuffer::Marker::START;
 		    subbuffer->buffer_start_time = buffer->buffer_start_time + static_cast<double>(it - buffer->samples.begin())/static_cast<double>(cfg().sampling_freq());
-		    interthread().publish_dynamic(subbuffer, detector_audio_group_);
+
+		    std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
+		    tagged_subbuffer->buffer = subbuffer;
+		    
+		    tagged_subbuffer->marker = TaggedAudioBuffer::Marker::START;
+		    tagged_subbuffer->packet_id = in_packet_id;
+		    
+		    interthread().publish_dynamic(tagged_subbuffer, detector_audio_group_);
 		    prebuffer_.pop_front();
 
 		    while(!prebuffer_.empty())
 		    {
-			interthread().publish_dynamic(prebuffer_.front(), detector_audio_group_);
+			std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+			tagged_buffer->buffer = prebuffer_.front();
+			tagged_buffer->packet_id = in_packet_id;
+			interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
 			prebuffer_.pop_front();
 		    }
 		    // assume a packet spans at least one buffer, so no need to check the rest of the buffer
@@ -88,11 +99,15 @@ DetectorThread(const ModemSimConfig& config, int index)
 		    in_packet_ = false;
 		    frames_since_silence = 0;
 		    std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(buffer->samples.begin(), it));
-		    subbuffer->marker = AudioBuffer::Marker::END;
 		    subbuffer->buffer_start_time = buffer->buffer_start_time;
-		    interthread().publish_dynamic(subbuffer, detector_audio_group_);
-		    glog.is(DEBUG1) && glog << "Detector Thread (" << ThreadBase::index() << "): Detected END at time: " << std::setprecision(15) << subbuffer->buffer_start_time+static_cast<double>(it-buffer->samples.begin())/static_cast<double>(cfg().sampling_freq()) << std::endl;
 
+		    std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
+		    tagged_subbuffer->buffer = subbuffer;		    
+		    tagged_subbuffer->marker = TaggedAudioBuffer::Marker::END;
+		    tagged_subbuffer->packet_id = in_packet_id;
+		    
+		    interthread().publish_dynamic(tagged_subbuffer, detector_audio_group_);
+		    glog.is(DEBUG1) && glog << "Detector Thread (" << ThreadBase::index() << "): Detected END at time: " << std::setprecision(15) << subbuffer->buffer_start_time+static_cast<double>(it-buffer->samples.begin())/static_cast<double>(cfg().sampling_freq()) << std::endl;		   
 		    // assume no new packet starts within the same buffer
 		    break;
 		}
@@ -100,8 +115,12 @@ DetectorThread(const ModemSimConfig& config, int index)
 	    if(in_packet_)
 	    {
 		// send whole buffer
-		interthread().publish_dynamic(buffer, detector_audio_group_);	    
-	    }	   
+		std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+		tagged_buffer->buffer = buffer;	    
+		tagged_buffer->marker = TaggedAudioBuffer::Marker::MIDDLE;	       
+		tagged_buffer->packet_id = in_packet_id;
+		interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
+	    }
 	}       
     }
 
@@ -110,6 +129,7 @@ private:
     goby::DynamicGroup detector_audio_group_;
 
     bool in_packet_{false};
+    int in_packet_id{-1};
     jack_nframes_t frames_since_silence{0};
 
     boost::circular_buffer<std::shared_ptr<const AudioBuffer>> prebuffer_{0};

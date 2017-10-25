@@ -15,12 +15,17 @@ AudioBuffer(size_t size) : samples(size, 0) {}
     template<typename It>
       AudioBuffer(It begin, It end) : samples(begin, end) {}
 
+    double buffer_start_time{0};
 
     std::vector<sample_t> samples;
-    double buffer_start_time{0};
+};
+
+struct TaggedAudioBuffer
+{
+    std::shared_ptr<const AudioBuffer> buffer;
     
     enum class Marker
-    { NONE, START, END };
+    { NONE, START, END, MIDDLE };
     Marker marker{Marker::NONE};
     int packet_id;
 };

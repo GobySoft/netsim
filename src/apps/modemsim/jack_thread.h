@@ -38,8 +38,8 @@ JackThread(const ModemSimConfig& config)
 	{
 	    audio_in_groups_.push_back(goby::DynamicGroup(std::string("audio_in_") + std::to_string(i)));
 	    audio_out_groups_.push_back(goby::DynamicGroup(std::string("audio_out_") + std::to_string(i)));
-	    auto audio_out_callback = [this, i](std::shared_ptr<const AudioBuffer> buffer) {this->audio_out(buffer, i); };
-	    interthread().subscribe_dynamic<AudioBuffer>(audio_out_callback, audio_out_groups_[i]);
+	    auto audio_out_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) {this->audio_out(buffer, i); };
+	    interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[i]);
 	}
 	
 	const char *client_name = "modemsim";
@@ -215,12 +215,12 @@ JackThread(const ModemSimConfig& config)
 		    // does the front buffer start within this frame?
 		    auto tx_buffer = audio_out_buffer_[output_port_i].front();
 		    jack_nframes_t frame_start = 0; // when we begin playback in this frame
-		    if(tx_buffer->marker == AudioBuffer::Marker::START)
+		    if(tx_buffer->marker == TaggedAudioBuffer::Marker::START)
 		    {		    
 			audio_out_index_[output_port_i] = 0;
 
-			if(tx_buffer->buffer_start_time > buffer_start_time) // playback is in the future, otherwise start asap (0)			   
-			    frame_start = (tx_buffer->buffer_start_time - buffer_start_time)*fs_;
+			if(tx_buffer->buffer->buffer_start_time > buffer_start_time) // playback is in the future, otherwise start asap (0)			   
+			    frame_start = (tx_buffer->buffer->buffer_start_time - buffer_start_time)*fs_;
 			else
 			    frame_start = 0;
 			
@@ -245,14 +245,14 @@ JackThread(const ModemSimConfig& config)
 			else
 			{
 			    // while covers the case if the next tx_buffer->size() == 0
-			    while(audio_out_index >= tx_buffer->samples.size())
+			    while(audio_out_index >= tx_buffer->buffer->samples.size())
 			    {
 				audio_out_index = 0;
 				audio_out_buffer_[output_port_i].pop_front();
 				if(audio_out_buffer_[output_port_i].empty())
 				{
 				    // hopefully we only run out when we're at the end of the packet
-				    if(tx_buffer->marker != AudioBuffer::Marker::END)
+				    if(tx_buffer->marker != TaggedAudioBuffer::Marker::END)
 					glog.is(WARN) && glog << "Missing playback buffer for modem: " << output_port_i << std::endl;
 				    tx_buffer = empty_buffer_;
 				}
@@ -262,7 +262,7 @@ JackThread(const ModemSimConfig& config)
 				}
 			    }
 
-			    *(sample++) = tx_buffer->samples[audio_out_index++];
+			    *(sample++) = tx_buffer->buffer->samples[audio_out_index++];
 			}
 		    }
 		}
@@ -286,18 +286,19 @@ JackThread(const ModemSimConfig& config)
     {
 	using goby::glog; using namespace goby::common::logger;
 	buffer_size_ = nframes;
-	empty_buffer_.reset(new AudioBuffer(buffer_size_));
+	empty_buffer_.reset(new TaggedAudioBuffer);
+	empty_buffer_->buffer = std::shared_ptr<AudioBuffer>(new AudioBuffer(buffer_size_));
 	glog.is(DEBUG1) && glog << "New buffer size: " << nframes << std::endl;
 	interthread().publish<groups::buffer_size_change>(buffer_size_);
 
 	return 0;
     }
 
-    void audio_out(std::shared_ptr<const AudioBuffer> buffer, int modem_index)
+    void audio_out(std::shared_ptr<const TaggedAudioBuffer> buffer, int modem_index)
     {
 	
 	std::unique_lock<std::mutex> lock(audio_out_mutex_);
-	if(buffer->marker == AudioBuffer::Marker::START)
+	if(buffer->marker == TaggedAudioBuffer::Marker::START)
 	    audio_out_buffer_[modem_index].clear();
 	
 	audio_out_buffer_[modem_index].push_back(buffer);
@@ -353,12 +354,12 @@ private:
     std::deque<std::pair<int, std::shared_ptr<AudioBuffer>>> audio_in_buffer_;
 
     std::mutex audio_out_mutex_;
-    std::map<int, std::deque<std::shared_ptr<const AudioBuffer>>> audio_out_buffer_;
+    std::map<int, std::deque<std::shared_ptr<const TaggedAudioBuffer>>> audio_out_buffer_;
 
     // maps modem index to the current sample within the latest AudioBuffer
     std::map<int, decltype(AudioBuffer::samples)::size_type> audio_out_index_;
 
-    std::shared_ptr<const AudioBuffer> empty_buffer_{0};
+    std::shared_ptr<TaggedAudioBuffer> empty_buffer_{0};
 };
 
 
