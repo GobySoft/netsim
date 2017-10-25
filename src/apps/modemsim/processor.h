@@ -16,7 +16,11 @@ public:
 ProcessorThread(const ModemSimConfig& config, int index)
     : ThreadBase(config, 0, index)
     {
-	// subscribe to all the detectors except our own id, since we ignore our transmissions
+	// generate 10 seconds of noise
+	CConvolve<sample_t> temp;
+	temp.create_noise(10.0*cfg().sampling_freq(), noise_);  
+
+        // subscribe to all the detectors except our own id, since we ignore our transmissions
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	{
 	    auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(i);
@@ -41,6 +45,19 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	if(buffer->marker == AudioBuffer::Marker::START)
 	{
 	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received START buffer (time: " << std::setprecision(15) << buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer_start_time) << ") of size: " << buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
+
+	    convolve_.reset(new CConvolve<sample_t>);
+
+	    double timestamp;
+	    
+	    /* convolve_->initialize(blocksize,transmission[i].timestamp, */
+	    /* 			  cfg().sampling_freq(), */
+	    /* 			  noise_level, */
+	    /* 			  cfg().source_calibration_db(), */
+	    /* 			  cfg().receiver_calibration_db(), */
+	    /* 			  impulse_response, */
+	    /* 			  array_gain, */
+	    /* 			  timestamp,signal); */
 	}
 	else if(buffer->marker == AudioBuffer::Marker::END)
 	{
@@ -52,7 +69,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	
 	// test - write back with a 1 second delay to "our" modem
 	std::shared_ptr<AudioBuffer> newbuffer(new AudioBuffer(*buffer));
-	newbuffer->buffer_start_time += 0;
+	newbuffer->buffer_start_time += 0.0;
 	interthread().publish_dynamic(newbuffer, audio_out_groups_[ThreadBase::index()]);
     }
 
@@ -62,6 +79,9 @@ private:
 
     bool in_packet_{false};
     jack_nframes_t frames_since_silence{0};
+
+    std::vector<sample_t> noise_;
+    std::unique_ptr<CConvolve<sample_t>> convolve_;
 };
 
 #endif

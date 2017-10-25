@@ -12,6 +12,7 @@
 #include "goby/middleware/multi-thread-application.h"
 #include "goby/common/time.h"
 #include "config.pb.h"
+#include "messages/groups.h"
 
 using ThreadBase = goby::SimpleThread<ModemSimConfig>;
 
@@ -191,7 +192,7 @@ JackThread(const ModemSimConfig& config)
 		sample_t* sample = in;
 		for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 		{
-		    (*rx_buffer).samples[frame] = std::make_pair(process_frame_time + frame, *sample);
+		    (*rx_buffer).samples[frame] = *sample;
 		    ++sample;
 		}
 		
@@ -212,50 +213,56 @@ JackThread(const ModemSimConfig& config)
 		   !audio_out_buffer_[output_port_i].empty()) 
 		{
 		    // does the front buffer start within this frame?
-		    auto front_buffer = audio_out_buffer_[output_port_i].front();
+		    auto tx_buffer = audio_out_buffer_[output_port_i].front();
 		    jack_nframes_t frame_start = 0; // when we begin playback in this frame
-		    if(front_buffer->marker == AudioBuffer::Marker::START)
+		    if(tx_buffer->marker == AudioBuffer::Marker::START)
 		    {		    
 			audio_out_index_[output_port_i] = 0;
 
-			if(front_buffer->buffer_start_time > buffer_start_time) // playback is in the future, otherwise start asap (0)			   
-			    frame_start = (front_buffer->buffer_start_time - buffer_start_time)*fs_;
+			if(tx_buffer->buffer_start_time > buffer_start_time) // playback is in the future, otherwise start asap (0)			   
+			    frame_start = (tx_buffer->buffer_start_time - buffer_start_time)*fs_;
 			else
 			    frame_start = 0;
 			
 			if(frame_start > nframes) // this buffer doesn't start yet
 			    continue;
+			if(audio_out_buffer_[output_port_i].size() < cfg().jack().min_playback_buffer_size())
+			{
+			    glog.is(DEBUG1) && glog << "Waiting for " << cfg().jack().min_playback_buffer_size() - audio_out_buffer_[output_port_i].size() << " more frames before beginning playback for modem: " << output_port_i << std::endl;
+			    continue;
+			}
 		    }	       
 
 		    sample_t* out = (sample_t*)jack_port_get_buffer (output_port_[output_port_i], nframes);		
 		    sample_t* sample = out;
 		    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 		    {
+			auto& audio_out_index = audio_out_index_[output_port_i];
 			if(frame < frame_start)
 			{
 			    *(sample++) = 0;
 			}
 			else
 			{
-			    // while covers the case if the next front_buffer->size() == 0
-			    while(audio_out_index_[output_port_i] >= front_buffer->samples.size())
+			    // while covers the case if the next tx_buffer->size() == 0
+			    while(audio_out_index >= tx_buffer->samples.size())
 			    {
-				audio_out_index_[output_port_i] = 0;
+				audio_out_index = 0;
 				audio_out_buffer_[output_port_i].pop_front();
 				if(audio_out_buffer_[output_port_i].empty())
 				{
 				    // hopefully we only run out when we're at the end of the packet
-				    if(front_buffer->marker != AudioBuffer::Marker::END)
+				    if(tx_buffer->marker != AudioBuffer::Marker::END)
 					glog.is(WARN) && glog << "Missing playback buffer for modem: " << output_port_i << std::endl;
-				    front_buffer = empty_buffer_;
+				    tx_buffer = empty_buffer_;
 				}
 				else
 				{
-				    front_buffer = audio_out_buffer_[output_port_i].front();
+				    tx_buffer = audio_out_buffer_[output_port_i].front();
 				}
 			    }
 
-			    *(sample++) = front_buffer->samples[audio_out_index_[output_port_i]++].second;
+			    *(sample++) = tx_buffer->samples[audio_out_index++];
 			}
 		    }
 		}
@@ -281,6 +288,8 @@ JackThread(const ModemSimConfig& config)
 	buffer_size_ = nframes;
 	empty_buffer_.reset(new AudioBuffer(buffer_size_));
 	glog.is(DEBUG1) && glog << "New buffer size: " << nframes << std::endl;
+	interthread().publish<groups::buffer_size_change>(buffer_size_);
+
 	return 0;
     }
 
