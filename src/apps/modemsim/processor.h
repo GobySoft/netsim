@@ -26,7 +26,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	    auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(i);
 	    detector_audio_groups_.push_back(goby::DynamicGroup(detector_group_name));
 	    
-	    auto audio_out_group_name = std::string("audio_out_") + std::to_string(i);
+	    auto audio_out_group_name = std::string("audio_out_from_") + std::to_string(i) + std::string("_to_") + std::to_string(ThreadBase::index());	   
 	    audio_out_groups_.push_back(goby::DynamicGroup(audio_out_group_name));
 
 	    // don't subscribe to our own audio
@@ -73,11 +73,13 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	new_audio_buffer->buffer_start_time += 0.5;
 	newbuffer->buffer = new_audio_buffer;
 	
-	interthread().publish_dynamic(newbuffer, audio_out_groups_[ThreadBase::index()]);
+	interthread().publish_dynamic(newbuffer, audio_out_groups_[modem_index]);
     }
 
 private:
+    // indexed on tx modem id
     std::vector<goby::DynamicGroup> detector_audio_groups_;
+    // indexed on tx modem id
     std::vector<goby::DynamicGroup> audio_out_groups_;
 
     bool in_packet_{false};

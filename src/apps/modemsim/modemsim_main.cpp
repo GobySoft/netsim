@@ -12,13 +12,18 @@ class ModemSim : public goby::MultiThreadApplication<ModemSimConfig>
 public:
     ModemSim()
         {
-            launch_thread<JackThread>();
 
 	    for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
-		launch_thread<DetectorThread>(i);
-	    for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
-		launch_thread<ProcessorThread>(i);            
-
+	    {
+		// each thread handles all traffic originating from a given modem
+		// and to all dest modems
+		launch_thread<JackThread>(i);
+		// each thread handles the traffic from a given modem
+		launch_thread<DetectorThread>(i);		
+		// each thread processes the traffic to a given output modem
+		launch_thread<ProcessorThread>(i);
+	    }
+	    
 	    if(cfg().logger().run_logger())
 		launch_thread<LoggerThread>(); 
 	}

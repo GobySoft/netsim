@@ -25,31 +25,31 @@ class JackThread : public ThreadBase
 {
 public:
     
-JackThread(const ModemSimConfig& config)
-    : ThreadBase(config, ThreadBase::loop_max_frequency()),
-	input_port_(config.number_of_modems(), nullptr),	
+JackThread(const ModemSimConfig& config, int index)
+    : ThreadBase(config, ThreadBase::loop_max_frequency(), index),
+	input_port_(nullptr),
 	output_port_(config.number_of_modems(), nullptr),
-	fs_(config.sampling_freq())
+	fs_(config.sampling_freq()),
+	audio_in_group_(std::string("audio_in_") + std::to_string(ThreadBase::index()))
     {
 	using goby::glog; using namespace goby::common::logger;
 	static_assert(sizeof(float) == 4, "Float must be 4 bytes");
 
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	{
-	    audio_in_groups_.push_back(goby::DynamicGroup(std::string("audio_in_") + std::to_string(i)));
-	    audio_out_groups_.push_back(goby::DynamicGroup(std::string("audio_out_") + std::to_string(i)));
+	    audio_out_groups_.push_back(goby::DynamicGroup(std::string("audio_out_from_") + std::to_string(ThreadBase::index()) + "_to_" + std::to_string(i)));
 	    auto audio_out_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) {this->audio_out(buffer, i); };
 	    interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[i]);
 	}
-	
-	const char *client_name = "modemsim";
+
+	std::string client_name = "modemsim_thread_" + std::to_string(ThreadBase::index());
 	const char *server_name = nullptr;
 	jack_options_t options = JackNullOption;
 	jack_status_t status;
 	
 	/* open a client connection to the JACK server */
 
-	client_ = jack_client_open (client_name, options, &status, server_name);
+	client_ = jack_client_open (client_name.c_str(), options, &status, server_name);
 
 	if (!client_)
 	{
@@ -99,31 +99,29 @@ JackThread(const ModemSimConfig& config)
 	}
 
 	
-	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+	std::string capture_port_name = cfg().jack().capture_port_prefix() + std::to_string(ThreadBase::index()+cfg().jack().port_name_starting_index());
+	    
+	j = 0;
+	bool found_name = false;
+	while(capture_port_names[j])
 	{
-	    std::string capture_port_name = cfg().jack().capture_port_prefix() + std::to_string(i+cfg().jack().port_name_starting_index());
-	    
-	    int j = 0;
-	    bool found_name = false;
-	    while(capture_port_names[j])
-	    {
-		if(std::string(capture_port_names[j++]) == capture_port_name)
-		    found_name = true;
-	    }
-	    
-	    if(!found_name)
-		glog.is(DIE) && glog << "No capture port with name: " << capture_port_name << std::endl;
-	    
-	    std::string input_port_name = std::string("input_") + std::to_string(i);
-	    input_port_[i] = jack_port_register (client_, input_port_name.c_str(),
-						 port_type_.c_str(),
-						 JackPortIsInput, 0);
-	    if (!input_port_[i])
-		glog.is(DIE) && glog << "no more JACK ports available" << std::endl;
-	    
-	    if (jack_connect (client_, capture_port_name.c_str(), jack_port_name (input_port_[i])))
-		glog.is(DIE) && glog << "cannot connect input port: " << input_port_name << " to capture port: " << capture_port_name << std::endl;
+	    if(std::string(capture_port_names[j++]) == capture_port_name)
+		found_name = true;
 	}
+	    
+	if(!found_name)
+	    glog.is(DIE) && glog << "No capture port with name: " << capture_port_name << std::endl;
+	    
+	std::string input_port_name = std::string("input_") + std::to_string(ThreadBase::index());
+	input_port_ = jack_port_register (client_, input_port_name.c_str(),
+					  port_type_.c_str(),
+					  JackPortIsInput, 0);
+	if (!input_port_)
+	    glog.is(DIE) && glog << "no more JACK ports available" << std::endl;
+	    
+	if (jack_connect (client_, capture_port_name.c_str(), jack_port_name (input_port_)))
+	    glog.is(DIE) && glog << "cannot connect input port: " << input_port_name << " to capture port: " << capture_port_name << std::endl;
+
 	free (capture_port_names);
 
 
@@ -181,28 +179,25 @@ JackThread(const ModemSimConfig& config)
 	double buffer_start_time = goby::common::goby_time<double>();
 	auto process_frame_time = jack_last_frame_time(client_);
 
-	for (int input_port_i = 0, n = cfg().number_of_modems(); input_port_i < n; ++input_port_i)
-	{	    
-	    std::shared_ptr<AudioBuffer> rx_buffer(new AudioBuffer(buffer_size_));
-	    rx_buffer->buffer_start_time = buffer_start_time;
+	std::shared_ptr<AudioBuffer> rx_buffer(new AudioBuffer(buffer_size_));
+	rx_buffer->buffer_start_time = buffer_start_time;
 	    
-	    if(input_port_[input_port_i] != nullptr) // could be briefly empty while we initialize all the threads
+	if(input_port_ != nullptr) // could be briefly empty while we initialize all the threads
+	{
+	    sample_t* in = (sample_t*)jack_port_get_buffer (input_port_, nframes);
+	    sample_t* sample = in;
+	    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 	    {
-		sample_t* in = (sample_t*)jack_port_get_buffer (input_port_[input_port_i], nframes);
-		sample_t* sample = in;
-		for(jack_nframes_t frame = 0; frame < nframes; ++frame)
-		{
-		    (*rx_buffer).samples[frame] = *sample;
-		    ++sample;
-		}
-		
-		{
-		    std::lock_guard<decltype(audio_in_mutex_)> lock(audio_in_mutex_);
-		    audio_in_buffer_.push_back(std::make_pair(input_port_i, rx_buffer));
-		}
-		audio_in_cv_.notify_all();
+		(*rx_buffer).samples[frame] = *sample;
+		++sample;
 	    }
-	}
+	    
+	    {
+		std::lock_guard<decltype(audio_in_mutex_)> lock(audio_in_mutex_);
+		audio_in_buffer_.push_back(rx_buffer);
+	    }
+	    audio_in_cv_.notify_all();
+	}   
 
 	{
 	    std::unique_lock<std::mutex> lock(audio_out_mutex_);
@@ -308,7 +303,7 @@ JackThread(const ModemSimConfig& config)
     {
 	using goby::glog; using namespace goby::common::logger;
       
-	std::pair<int, std::shared_ptr<AudioBuffer>> temp_buffer;
+	std::shared_ptr<AudioBuffer> temp_buffer;
 	// grab a element to publish while locked
 	{
 	    std::unique_lock<std::mutex> lock(audio_in_mutex_);
@@ -325,7 +320,7 @@ JackThread(const ModemSimConfig& config)
 	}
 
 	// actually publish it while unlocked
-	interthread().publish_dynamic(temp_buffer.second, audio_in_groups_[temp_buffer.first]);
+	interthread().publish_dynamic(temp_buffer, audio_in_group_);
 
 	// lock again and pop the front of the buffer
 	{
@@ -336,11 +331,11 @@ JackThread(const ModemSimConfig& config)
 
 
 private:
-    std::vector<jack_port_t*> input_port_;
+    jack_port_t* input_port_;
     std::vector<jack_port_t*> output_port_;
     const jack_nframes_t fs_;
     
-    std::vector<goby::DynamicGroup> audio_in_groups_;
+    goby::DynamicGroup audio_in_group_;
     std::vector<goby::DynamicGroup> audio_out_groups_;
 
     jack_client_t *client_;
@@ -351,7 +346,7 @@ private:
 
     std::mutex audio_in_mutex_;
     std::condition_variable audio_in_cv_;
-    std::deque<std::pair<int, std::shared_ptr<AudioBuffer>>> audio_in_buffer_;
+    std::deque<std::shared_ptr<AudioBuffer>> audio_in_buffer_;
 
     std::mutex audio_out_mutex_;
     std::map<int, std::deque<std::shared_ptr<const TaggedAudioBuffer>>> audio_out_buffer_;

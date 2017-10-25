@@ -25,28 +25,32 @@ LoggerThread(const ModemSimConfig& config)
 	    auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(i);
 	    detector_audio_groups_.push_back(goby::DynamicGroup(detector_group_name));
 	    
-	    auto detector_audio_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) { this->log_audio(buffer, i, Direction::IN); };
+	    auto detector_audio_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) { this->log_audio(buffer, i, -1, Direction::IN); };
 	    interthread().subscribe_dynamic<TaggedAudioBuffer>(detector_audio_callback, detector_audio_groups_[i]);
 	}
 
 	// subscribe to all the processor output
-       	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+       	for(int from_i = 0, n = cfg().number_of_modems(); from_i < n; ++from_i)
 	{
-	    auto audio_out_group_name = std::string("audio_out_") + std::to_string(i);
-	    audio_out_groups_.push_back(goby::DynamicGroup(audio_out_group_name));
-	    
-	    auto audio_out_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) { this->log_audio(buffer, i, Direction::OUT); };
-	    interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[i]);
+	    for(int to_i = 0, m = cfg().number_of_modems(); to_i < m; ++to_i)
+	    {
+		auto audio_out_group_name = std::string("audio_out_from_") + std::to_string(from_i) + std::string("_to_") + std::to_string(to_i);
+		audio_out_groups_.push_back(goby::DynamicGroup(audio_out_group_name));
+		
+		auto audio_out_callback = [this, from_i, to_i](std::shared_ptr<const TaggedAudioBuffer> buffer) { this->log_audio(buffer, from_i, to_i, Direction::OUT); };
+		interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[from_i*cfg().number_of_modems()+to_i]);
+	    }
 	}
-
     }
 
 private:
 
-    void log_audio(std::shared_ptr<const TaggedAudioBuffer> buffer, int modem_index, Direction dir)
+    void log_audio(std::shared_ptr<const TaggedAudioBuffer> buffer, int from_modem_index, int to_modem_index, Direction dir)
     {
 	using goby::glog; using namespace goby::common::logger;
 
+	int modem_index = (dir == Direction::IN) ? from_modem_index : to_modem_index;	    
+       
 	if(buffer->marker == TaggedAudioBuffer::Marker::START)
 	{
 	    std::stringstream file_name;
