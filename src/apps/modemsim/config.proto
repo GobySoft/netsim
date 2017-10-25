@@ -23,6 +23,13 @@ message LoggerConfig
     optional string log_directory = 2 [default = "."];
 }
 
+message ProcessorConfig
+{
+   optional double source_calibration_db = 1 [default = 180]; // Source calibration dB(muPa/V)
+   optional double receiver_calibration_db = 2 [default = 60]; // receiver calibration dB(V/muPa)
+   optional double noise_level = 3 [default = 40]; // dB(muPa/sqrt(Hz))
+}
+
 message ModemSimConfig
 {
     optional goby.protobuf.App3Config app = 1;
@@ -35,4 +42,6 @@ message ModemSimConfig
     optional DetectorConfig detector = 30;
 
     optional LoggerConfig logger = 40;
+
+    optional ProcessorConfig processor = 50;
 }

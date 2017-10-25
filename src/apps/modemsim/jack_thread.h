@@ -274,7 +274,7 @@ JackThread(const ModemSimConfig& config, int index)
     int jack_xrun()
     {
 	using goby::glog; using namespace goby::common::logger;
-	glog.is(WARN) && glog << "Jack buffer xrun (underflow or overflow)" << std::endl;
+	glog.is(WARN) && glog << "Jack Thread " << ThreadBase::index() << ": Jack buffer xrun (underflow or overflow)" << std::endl;
 	return 0;
     }
     int jack_buffer_size_change(jack_nframes_t nframes)

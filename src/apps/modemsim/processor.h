@@ -17,7 +17,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
     : ThreadBase(config, 0, index)
     {
 	// generate 10 seconds of noise
-	CConvolve<sample_t> temp;
+	CConvolve temp;
 	temp.create_noise(10.0*cfg().sampling_freq(), noise_);  
 
         // subscribe to all the detectors except our own id, since we ignore our transmissions
@@ -41,39 +41,79 @@ ProcessorThread(const ModemSimConfig& config, int index)
     void detector_audio(std::shared_ptr<const TaggedAudioBuffer> buffer, int modem_index)
     {
 	using goby::glog; using namespace goby::common::logger;
-
+	
+	std::shared_ptr<TaggedAudioBuffer> new_tagged_buffer(new TaggedAudioBuffer(*buffer));
+	std::vector<double> double_buffer(buffer->buffer->samples.begin(), buffer->buffer->samples.end());
 	if(buffer->marker == TaggedAudioBuffer::Marker::START)
 	{
 	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received START buffer (id: " << buffer->packet_id << ", time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
-
-	    convolve_.reset(new CConvolve<sample_t>);
+	    
+	    convolve_.reset(new CConvolve);
 
 	    double timestamp;
+
+	    ImpulseResponse impulse_response;
+	    impulse_response.set_source("src");
+	    impulse_response.set_source("dst");
+	    {
+		auto* raytrace = impulse_response.add_raytrace();
+		raytrace->set_delay(.5);
+		raytrace->set_amplitude(1);
+	    }
+	    {
+		auto* raytrace = impulse_response.add_raytrace();
+		raytrace->set_delay(3);
+		raytrace->set_amplitude(0.5);
+	    }
 	    
-	    /* convolve_->initialize(blocksize,transmission[i].timestamp, */
-	    /* 			  cfg().sampling_freq(), */
-	    /* 			  noise_level, */
-	    /* 			  cfg().source_calibration_db(), */
-	    /* 			  cfg().receiver_calibration_db(), */
-	    /* 			  impulse_response, */
-	    /* 			  array_gain, */
-	    /* 			  timestamp,signal); */
+	    ArrayGain array_gain;
+
+	    int dummy_blocksize = 0;
+	    convolve_->initialize(dummy_blocksize,
+	    			  buffer->buffer->buffer_start_time,
+	    			  cfg().sampling_freq(),
+	    			  cfg().processor().noise_level(),
+	    			  cfg().processor().source_calibration_db(),
+	    			  cfg().processor().receiver_calibration_db(),
+	    			  impulse_response,
+	    			  array_gain,
+	    			  timestamp,
+				  full_signal_);
+	    convolve_->signal_block(double_buffer, noise_, full_signal_);
+	    
+	    std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(full_signal_.begin(), full_signal_.end()));
+	    new_audio_buffer->buffer_start_time = timestamp;
+	    new_tagged_buffer->buffer = new_audio_buffer;    
+	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "), writing buffer of size: " << new_tagged_buffer->buffer->samples.size() << std::endl;
+	}
+	else if(buffer->marker == TaggedAudioBuffer::Marker::MIDDLE)
+	{
+	    auto previous_end = full_signal_.size();
+	    convolve_->signal_block(double_buffer, noise_, full_signal_);
+	    std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(full_signal_.begin() + previous_end, full_signal_.end()));
+	    new_tagged_buffer->buffer = new_audio_buffer;    
 	}
 	else if(buffer->marker == TaggedAudioBuffer::Marker::END)
 	{
 	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received END buffer (id: " << buffer->packet_id << ", (time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
-	}
+	    auto previous_end = full_signal_.size();
+	    convolve_->finalize(noise_, full_signal_);
+	    std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(full_signal_.begin() + previous_end, full_signal_.end()));
+	    new_tagged_buffer->buffer = new_audio_buffer;
+	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "), writing buffer of size: " << new_tagged_buffer->buffer->samples.size() << std::endl;
 
+	}
 
         // process audio
 	
 	// test - write back with a 1 second delay to "our" modem
-	std::shared_ptr<TaggedAudioBuffer> newbuffer(new TaggedAudioBuffer(*buffer));
-	std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(*(buffer->buffer)));
-	new_audio_buffer->buffer_start_time += 0.5;
-	newbuffer->buffer = new_audio_buffer;
+	//std::shared_ptr<TaggedAudioBuffer> newbuffer(new TaggedAudioBuffer(*buffer));
+	//std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(*(buffer->buffer)));
+	//new_audio_buffer->buffer_start_time += 0.5;
+	//newbuffer->buffer = new_audio_buffer;
+
 	
-	interthread().publish_dynamic(newbuffer, audio_out_groups_[modem_index]);
+	interthread().publish_dynamic(new_tagged_buffer, audio_out_groups_[modem_index]);
     }
 
 private:
@@ -85,8 +125,9 @@ private:
     bool in_packet_{false};
     jack_nframes_t frames_since_silence{0};
 
-    std::vector<sample_t> noise_;
-    std::unique_ptr<CConvolve<sample_t>> convolve_;
+    std::vector<double> noise_;
+    std::unique_ptr<CConvolve> convolve_;
+    std::vector<double> full_signal_;
 };
 
 #endif

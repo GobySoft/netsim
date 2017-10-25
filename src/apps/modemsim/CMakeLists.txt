@@ -6,5 +6,5 @@ add_executable(modemsim
   jack_thread.cpp
   ${PROTO_SRCS} ${PROTO_HDRS})
 
-target_link_libraries(modemsim goby_middleware jack ${LAMSS_HENRIK_UTIL_LIBRARY})
+target_link_libraries(modemsim goby_middleware jack ${LAMSS_HENRIK_UTIL_LIBRARY} ${LAMSS_PROTOBUF_LIBRARY})
 

@@ -57,7 +57,7 @@ DetectorThread(const ModemSimConfig& config, int index)
 		    in_packet_id = global_packet_id++;
 		    auto& first_buffer = prebuffer_.front();
 		    std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(first_buffer->samples.begin()+(it-buffer->samples.begin()), first_buffer->samples.end()));
-		    subbuffer->buffer_start_time = buffer->buffer_start_time + static_cast<double>(it - buffer->samples.begin())/static_cast<double>(cfg().sampling_freq());
+		    subbuffer->buffer_start_time = first_buffer->buffer_start_time + static_cast<double>(it-buffer->samples.begin())/static_cast<double>(cfg().sampling_freq());
 
 		    std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
 		    tagged_subbuffer->buffer = subbuffer;
@@ -132,7 +132,7 @@ private:
     int in_packet_id{-1};
     jack_nframes_t frames_since_silence{0};
 
-    boost::circular_buffer<std::shared_ptr<const AudioBuffer>> prebuffer_{0};
+    boost::circular_buffer<std::shared_ptr<const AudioBuffer>> prebuffer_{1};
 };
 
 #endif
