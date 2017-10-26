@@ -210,8 +210,8 @@ JackThread(const ModemSimConfig& config, int index)
 		    // does the front buffer start within this frame?
 		    auto tx_buffer = audio_out_buffer_[output_port_i].front();
 		    jack_nframes_t frame_start = 0; // when we begin playback in this frame
-		    if(tx_buffer->marker == TaggedAudioBuffer::Marker::START)
-		    {		    
+		    if(new_packet_[output_port_i])
+		    {
 			audio_out_index_[output_port_i] = 0;
 
 			if(tx_buffer->buffer->buffer_start_time > buffer_start_time) // playback is in the future, otherwise start asap (0)			   
@@ -221,18 +221,23 @@ JackThread(const ModemSimConfig& config, int index)
 			
 			if(frame_start > nframes) // this buffer doesn't start yet
 			    continue;
+			
 			if(audio_out_buffer_[output_port_i].size() < cfg().jack().min_playback_buffer_size())
 			{
 			    glog.is(DEBUG1) && glog << "Waiting for " << cfg().jack().min_playback_buffer_size() - audio_out_buffer_[output_port_i].size() << " more frames before beginning playback for modem: " << output_port_i << std::endl;
 			    continue;
 			}
-		    }	       
 
+			glog.is(DEBUG1) && glog << "Jack START playback for port: " << output_port_i << ": size: " << tx_buffer->buffer->samples.size() << ", frame_start: " << frame_start << std::endl;
+			new_packet_[output_port_i] = false;
+		    }	       
+		    
 		    sample_t* out = (sample_t*)jack_port_get_buffer (output_port_[output_port_i], nframes);		
 		    sample_t* sample = out;
 		    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 		    {
 			auto& audio_out_index = audio_out_index_[output_port_i];
+
 			if(frame < frame_start)
 			{
 			    *(sample++) = 0;
@@ -294,8 +299,10 @@ JackThread(const ModemSimConfig& config, int index)
 	
 	std::unique_lock<std::mutex> lock(audio_out_mutex_);
 	if(buffer->marker == TaggedAudioBuffer::Marker::START)
+	{
 	    audio_out_buffer_[modem_index].clear();
-	
+	    new_packet_[modem_index] = true;
+	}
 	audio_out_buffer_[modem_index].push_back(buffer);
     }
     
@@ -353,7 +360,9 @@ private:
 
     // maps modem index to the current sample within the latest AudioBuffer
     std::map<int, decltype(AudioBuffer::samples)::size_type> audio_out_index_;
-
+    // maps modem index to boolean indicating new packet start
+    std::map<int, bool> new_packet_;
+    
     std::shared_ptr<TaggedAudioBuffer> empty_buffer_{0};
 };
 
