@@ -68,8 +68,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	    
 	    ArrayGain array_gain;
 
-	    int dummy_blocksize = 0;
-	    convolve_->initialize(dummy_blocksize,
+	    convolve_->initialize(1024,
 	    			  buffer->buffer->buffer_start_time,
 	    			  cfg().sampling_freq(),
 	    			  cfg().processor().noise_level(),
@@ -97,11 +96,17 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	{
 	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received END buffer (id: " << buffer->packet_id << ", (time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
 	    auto previous_end = full_signal_.size();
+	    convolve_->signal_block(double_buffer, noise_, full_signal_);
 	    convolve_->finalize(noise_, full_signal_);
 	    std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(full_signal_.begin() + previous_end, full_signal_.end()));
 	    new_tagged_buffer->buffer = new_audio_buffer;
 	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "), writing buffer of size: " << new_tagged_buffer->buffer->samples.size() << std::endl;
 
+	    //std::stringstream file;
+	    //file << "/tmp/convolve_full_buffer_" << buffer->packet_id;	  
+	    //std::ofstream ofs(file.str().c_str(), std::ios::out | std::ios::binary);
+	    //ofs.write(reinterpret_cast<const char*>(&buffer->buffer->buffer_start_time), sizeof(double));
+	    //ofs.write(reinterpret_cast<const char*>(&full_signal_[0]), full_signal_.size()*sizeof(double));
 	}
 
         // process audio
