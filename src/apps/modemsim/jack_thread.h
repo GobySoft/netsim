@@ -289,7 +289,10 @@ JackThread(const ModemSimConfig& config, int index)
 	empty_buffer_.reset(new TaggedAudioBuffer);
 	empty_buffer_->buffer = std::shared_ptr<AudioBuffer>(new AudioBuffer(buffer_size_));
 	glog.is(DEBUG1) && glog << "New buffer size: " << nframes << std::endl;
-	interthread().publish<groups::buffer_size_change>(buffer_size_);
+
+	// only one Jack thread needs to publish this change
+	if(ThreadBase::index() == 0)
+	    interthread().publish<groups::buffer_size_change>(buffer_size_);
 
 	return 0;
     }

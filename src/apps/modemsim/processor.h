@@ -16,7 +16,11 @@ public:
 ProcessorThread(const ModemSimConfig& config, int index)
     : ThreadBase(config, 0, index)
     {
-	// generate 10 seconds of noise
+	interthread().subscribe<groups::buffer_size_change, jack_nframes_t>(
+	    [this](const jack_nframes_t& buffer_size)
+	    { blocksize_ = buffer_size; });
+
+        // generate 10 seconds of noise
 	CConvolve temp;
 	temp.create_noise(10.0*cfg().sampling_freq(), noise_);  
 
@@ -35,7 +39,8 @@ ProcessorThread(const ModemSimConfig& config, int index)
 		auto detector_audio_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) { this->detector_audio(buffer, i); };
 		interthread().subscribe_dynamic<TaggedAudioBuffer>(detector_audio_callback, detector_audio_groups_[i]);
 	    }
-	}		       
+	}
+	++ready;
     }
 
     void detector_audio(std::shared_ptr<const TaggedAudioBuffer> buffer, int modem_index)
@@ -68,7 +73,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	    
 	    ArrayGain array_gain;
 
-	    convolve_->initialize(1024,
+	    convolve_->initialize(blocksize_,
 	    			  buffer->buffer->buffer_start_time,
 	    			  cfg().sampling_freq(),
 	    			  cfg().processor().noise_level(),
@@ -120,7 +125,8 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	
 	interthread().publish_dynamic(new_tagged_buffer, audio_out_groups_[modem_index]);
     }
-
+    
+    static std::atomic<int> ready;
 private:
     // indexed on tx modem id
     std::vector<goby::DynamicGroup> detector_audio_groups_;
@@ -133,6 +139,11 @@ private:
     std::vector<double> noise_;
     std::unique_ptr<CConvolve> convolve_;
     std::vector<double> full_signal_;
+    int blocksize_{0};
+
 };
+
+std::atomic<int> ProcessorThread::ready{0};
+
 
 #endif

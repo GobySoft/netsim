@@ -34,7 +34,7 @@ DetectorThread(const ModemSimConfig& config, int index)
 	
 		
 	glog.is(VERBOSE) && glog << "Starting detector thread: " << ThreadBase::index() << std::endl;
-       
+	++ready;
     }
 
     void audio_in(std::shared_ptr<const AudioBuffer> buffer)
@@ -123,6 +123,7 @@ DetectorThread(const ModemSimConfig& config, int index)
 	}       
     }
 
+    static std::atomic<int> ready;
 private:  
     goby::DynamicGroup audio_in_group_;
     goby::DynamicGroup detector_audio_group_;
@@ -133,5 +134,7 @@ private:
 
     boost::circular_buffer<std::shared_ptr<const AudioBuffer>> prebuffer_{1};
 };
+
+std::atomic<int> DetectorThread::ready{0};
 
 #endif
