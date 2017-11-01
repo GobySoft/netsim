@@ -1,3 +1,4 @@
+#include "goby/common/time.h"
 #include "lamss/lib_henrik_util/CConvolve.h"
 
 void write_file(std::string file_name, double timestamp, const std::vector<double>& signal);
@@ -14,16 +15,16 @@ int main(int argc, char* argv[])
 
     std::vector<double> noise;
     std::vector<double> full_signal;
-    const int frame_size = 10000;
+    const int frame_size = 1024;
     const int sampling_freq = 96000;
     const double source_calibration_db = 180;
-    const double receiver_calibration_db = 60;
+    const double receiver_calibration_db = 0;
     const double noise_level = 40;
     
     // generate 10 seconds of noise
     CConvolve temp;
     temp.create_noise(10.0*sampling_freq, noise);
-    write_file("/tmp/noise.bin", 0, noise);
+    //write_file("/tmp/noise.bin", 0, noise);
     
     
     CConvolve convolve;   
@@ -37,11 +38,11 @@ int main(int argc, char* argv[])
 	raytrace->set_delay(.5);
 	raytrace->set_amplitude(1);
     }
-    {
-	auto* raytrace = impulse_response.add_raytrace();
-	raytrace->set_delay(3);
-	raytrace->set_amplitude(0.5);
-    }
+//    {
+//	auto* raytrace = impulse_response.add_raytrace();
+//	raytrace->set_delay(3);
+//	raytrace->set_amplitude(0.5);
+//  }
 	    
     ArrayGain array_gain;
     
@@ -49,15 +50,23 @@ int main(int argc, char* argv[])
     std::vector<float> full_replica;
     {
 	std::ifstream ifs(replica_file, std::ios::in | std::ios::binary);
+	if(!ifs.is_open())
+	{
+	    std::cerr << "Failed to open: " << replica_file << std::endl;
+	    exit(1);
+	}
 	auto begin = ifs.tellg();
 	ifs.seekg (0, ifs.end);
 	auto end = ifs.tellg();
 	ifs.seekg(0, ifs.beg);
 	auto file_size = end-begin;
+	std::cout << "Replica file size: " << file_size << std::endl;
 	ifs.read(reinterpret_cast<char*>(&ping_time), sizeof(double));
 	full_replica.resize((file_size-sizeof(double))/sizeof(float));
 	ifs.read(reinterpret_cast<char*>(&full_replica[0]), full_replica.size()*sizeof(float));
     }
+
+    double start = goby::common::goby_time<double>();
 
     convolve.initialize(frame_size,
 			  ping_time,
@@ -96,6 +105,8 @@ int main(int argc, char* argv[])
 	file << "/tmp/convolvetest_frame_" << std::setw(5) << std::setfill('0') << i;
 	write_file(file.str(), ping_time, full_signal);
     }
+    double end = goby::common::goby_time<double>();
+    std::cout << "Took: " << end-start << " seconds" << std::endl;
     
 }
 

@@ -1,6 +1,6 @@
 pkg load signal
 close all;
-files=glob('/tmp/convolvetest_frame_*');
+files=glob('/tmp/convolvetest_frame_*196');
 %files{1} = '/tmp/noise.bin';
 
 
