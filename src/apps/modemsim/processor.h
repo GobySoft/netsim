@@ -65,7 +65,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	    impulse_response.set_source("dst");
 	    {
 		auto* raytrace = impulse_response.add_raytrace();
-		raytrace->set_delay(5);
+		raytrace->set_delay(.5);
 		raytrace->set_amplitude(1);
 	    }
 //	    {
