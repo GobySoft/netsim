@@ -28,6 +28,11 @@ message ProcessorConfig
    optional double source_calibration_db = 1 [default = 180]; // Source calibration dB(muPa/V)
    optional double receiver_calibration_db = 2 [default = 60]; // receiver calibration dB(V/muPa)
    optional double noise_level = 3 [default = 40]; // dB(muPa/sqrt(Hz))
+
+   optional double surface_rms_roughness = 4  [default = 0]; // Surface RMS roughness (m)
+   optional double surface_roughness_loss = 5 [default = 0]; // coherence loss in dB per bounce
+   optional double bottom_roughness_loss = 6 [default = 0]; // coherence loss in dB per bounce
+   optional double acomms_frequency = 7 [default = 25000];
 }
 
 message ModemSimConfig
@@ -37,7 +42,7 @@ message ModemSimConfig
 
     required int32 number_of_modems = 10;
     optional int32 sampling_freq = 11 [default = 96000];
-
+    
     optional JackConfig jack = 20;
     optional DetectorConfig detector = 30;
 

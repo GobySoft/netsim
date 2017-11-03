@@ -20,6 +20,10 @@ int main(int argc, char* argv[])
     const double source_calibration_db = 180;
     const double receiver_calibration_db = 0;
     const double noise_level = 40;
+    const double acomms_freq = 25000;
+    const double surface_rms_roughness = 0;
+    const double surface_roughness_loss = 0;
+    
     
     // generate 10 seconds of noise
     CConvolve temp;
@@ -69,15 +73,18 @@ int main(int argc, char* argv[])
     double start = goby::common::goby_time<double>();
 
     convolve.initialize(frame_size,
-			  ping_time,
-			  sampling_freq,
-			  noise_level,
-			  source_calibration_db,
-			  receiver_calibration_db,
-			  impulse_response,
-			  array_gain,
-			  timestamp,
-			  full_signal);
+                        ping_time,
+                        sampling_freq,
+                        noise_level,
+                        acomms_freq,
+                        surface_rms_roughness,
+                        surface_roughness_loss,
+                        source_calibration_db,
+                        receiver_calibration_db,
+                        impulse_response,
+                        array_gain,
+                        timestamp,
+                        full_signal);
     
 
     int number_frames = full_replica.size()/frame_size;
