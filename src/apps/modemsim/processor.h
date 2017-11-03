@@ -68,24 +68,27 @@ ProcessorThread(const ModemSimConfig& config, int index)
 		raytrace->set_delay(.5);
 		raytrace->set_amplitude(1);
 	    }
-//	    {
-//		auto* raytrace = impulse_response.add_raytrace();
-//		raytrace->set_delay(3);
-//		raytrace->set_amplitude(0.5);
-//	    }
+            //	    {
+            //		auto* raytrace = impulse_response.add_raytrace();
+            //		raytrace->set_delay(3);
+            //		raytrace->set_amplitude(0.5);
+            //	    }
 	    
 	    ArrayGain array_gain;
 
 	    convolve->initialize(blocksize_,
-	    			  buffer->buffer->buffer_start_time,
-	    			  cfg().sampling_freq(),
-	    			  cfg().processor().noise_level(),
-	    			  cfg().processor().source_calibration_db(),
-	    			  cfg().processor().receiver_calibration_db(),
-	    			  impulse_response,
-	    			  array_gain,
-	    			  timestamp,
-				  full_signal);
+                                 buffer->buffer->buffer_start_time,
+                                 cfg().sampling_freq(),
+                                 cfg().processor().noise_level(),
+                                 cfg().processor().acomms_frequency(),
+                                 cfg().processor().surface_rms_roughness(),
+                                 cfg().processor().surface_roughness_loss(),
+                                 cfg().processor().source_calibration_db(),
+                                 cfg().processor().receiver_calibration_db(),
+                                 impulse_response,
+                                 array_gain,
+                                 timestamp,
+                                 full_signal);
 	    convolve->signal_block(double_buffer, noise, full_signal);
 	    
 	    std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(full_signal.begin(), full_signal.end()));
