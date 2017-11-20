@@ -1,1 +1,2 @@
 add_subdirectory(cconvolve_test)
+add_subdirectory(impulse_rpc_test)

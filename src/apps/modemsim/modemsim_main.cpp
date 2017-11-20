@@ -7,12 +7,17 @@
 #include "processor.h"
 #include "logger.h"
 
+using namespace goby::common::logger;
+using goby::glog;
+
 class ModemSim : public goby::MultiThreadApplication<ModemSimConfig>
 {
 public:
     ModemSim()
         {
-
+            if(cfg().node_name_size() != cfg().number_of_modems())
+                glog.is(DIE) && glog << "The node_name field must be specified number_of_modem times" << std::endl;
+            
 	    for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	    {
 		// each thread processes the traffic to a given output modem
