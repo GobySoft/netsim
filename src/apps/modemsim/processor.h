@@ -53,6 +53,24 @@ ProcessorThread(const ModemSimConfig& config, int index)
     {
         using goby::glog; using namespace goby::common::logger;
 
+        /* ImpulseResponse impulse_response; */
+        
+        /* impulse_response.set_source(actual_impulse_response.source()); */
+        /* impulse_response.set_receiver(actual_impulse_response.receiver()); */
+        /* impulse_response.set_request_id(actual_impulse_response.request_id()); */
+        /* impulse_response.set_request_time(actual_impulse_response.request_time()); */
+        
+        /* { */
+        /*     auto* raytrace = impulse_response.add_raytrace(); */
+        /*     raytrace->set_delay(.5); */
+        /*     raytrace->set_amplitude(1); */
+        /* } */
+        /* { */
+        /*     auto* raytrace = impulse_response.add_raytrace(); */
+        /*     raytrace->set_delay(3); */
+        /*     raytrace->set_amplitude(0.5); */
+        /* } */
+        
         bool found_index = false;
         int modem_index = 0;
         for(int n = cfg().node_name_size(); modem_index < n; ++modem_index)
@@ -64,19 +82,20 @@ ProcessorThread(const ModemSimConfig& config, int index)
             }
         }
 
+        
         if(!found_index)
         {
-            glog.is(WARN) && glog << "Received impulse response from unknown source: " << impulse_response.source() << std::endl;
+            glog.is(WARN) && glog << "Processor Thread (" << ThreadBase::index() << ") Received impulse response from unknown source: " << impulse_response.source() << std::endl;
             return;
         }
         else if(audio_buffer_[impulse_response.request_id()].empty())
         {
-            glog.is(WARN) && glog << "Empty audio buffer for this request_id" << std::endl;
+            glog.is(WARN) && glog << "Processor Thread (" << ThreadBase::index() << ") Empty audio buffer for this request_id" << std::endl;
             return;
         }
         
+        glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): time: " << std::setprecision(15) << goby::common::goby_time<double>() << "Received ImpulseResponse: " << impulse_response.DebugString() << std::endl;
         
-        glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received ImpulseResponse: " << impulse_response.ShortDebugString() << ", time: " << std::setprecision(15) << goby::common::goby_time<double>() << " from transmitter modem: " << modem_index << std::endl;
         
         convolve_[impulse_response.request_id()].reset(new CConvolve);
         double timestamp;

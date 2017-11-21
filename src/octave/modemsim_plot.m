@@ -1,7 +1,7 @@
 pkg load signal
 close all;
 dir='/home/toby/Desktop/modemsim_logs'
-run_start='20171101T202621'
+run_start='20171121T165533'
 packet_id=0
 
 in_files=glob([dir '/modemsim_' run_start '_in_' sprintf('%03d', packet_id) '*.bin']);
