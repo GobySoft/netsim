@@ -1,21 +1,21 @@
 #!/bin/bash
 
-if [ -z "${GOBY3_EXAMPLES_CMAKE_FLAGS}" ]; then
-    GOBY3_EXAMPLES_CMAKE_FLAGS=
+if [ -z "${MODEMSIM_CMAKE_FLAGS}" ]; then
+    MODEMSIM_CMAKE_FLAGS=
 fi
 
-if [ -z "${GOBY3_EXAMPLES_MAKE_FLAGS}" ]; then
-    GOBY3_EXAMPLES_MAKE_FLAGS=
+if [ -z "${MODEMSIM_MAKE_FLAGS}" ]; then
+    MODEMSIM_MAKE_FLAGS=
 fi
 
 set -e -u
 mkdir -p build
 
 echo "Configuring..."
-echo "cmake .. ${GOBY3_EXAMPLES_CMAKE_FLAGS}"
+echo "cmake .. ${MODEMSIM_CMAKE_FLAGS}"
 pushd build >& /dev/null
-cmake .. ${GOBY3_EXAMPLES_CMAKE_FLAGS}
+cmake .. ${MODEMSIM_CMAKE_FLAGS}
 echo "Building..."
-echo "make ${GOBY3_EXAMPLES_MAKE_FLAGS} $@"
-make ${GOBY3_EXAMPLES_MAKE_FLAGS} $@
+echo "make ${MODEMSIM_MAKE_FLAGS} $@"
+make ${MODEMSIM_MAKE_FLAGS} $@
 popd >& /dev/null
