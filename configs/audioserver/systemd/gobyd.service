@@ -2,7 +2,7 @@
 Description=Goby3 Interprocess Daemon
 
 [Service]
-ExecStart=/home/toby/goby3/bin/gobyd --app 'glog_config { tty_verbosity: VERBOSE }' --interprocess 'platform: "modemsim"'
+ExecStart=/opt/goby3/bin/gobyd --app 'glog_config { tty_verbosity: VERBOSE }' --interprocess 'platform: "modemsim"'
 
 [Install]
 WantedBy=multi-user.target

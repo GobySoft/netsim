@@ -1,0 +1,11 @@
+[Unit]
+Description=Modemsim audio processor
+After=gobyd.service
+BindsTo=gobyd.service
+
+[Service]
+ExecStart=/opt/modemsim/build/bin/modemsim /opt/modemsim/missions/modemsim-test.pb.cfg
+
+[Install]
+WantedBy=gobyd.service
+
