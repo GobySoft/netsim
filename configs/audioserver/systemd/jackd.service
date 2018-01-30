@@ -1,0 +1,9 @@
+[Unit]
+Description=Modemsim Jack Audio server
+After=sound.target
+
+[Service]
+ExecStart=/bin/bash -c "export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -dalsa -dhw:2 -r96000 -p1024 -n3 -H -M"
+
+[Install]
+WantedBy=multi-user.target
