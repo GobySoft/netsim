@@ -1,0 +1,4 @@
+sudo cp modemsim_socat@.service /etc/systemd/system/
+sudo systemctl enable modemsim_socat\@{0-7}.service
+
+install jackd2 libjack-jack2-dev

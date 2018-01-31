@@ -1,0 +1,10 @@
+[Unit]
+Description=Modemsim Jack Audio server
+After=sound.target
+
+[Service]
+ExecStartPre=/opt/modemsim/scripts/fix_fast_track_levels.sh
+ExecStart=/bin/bash -c "export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -dalsa -dhw:2 -r96000 -p1024 -n3 -H -M"
+
+[Install]
+WantedBy=multi-user.target

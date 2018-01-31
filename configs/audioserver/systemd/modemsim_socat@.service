@@ -1,0 +1,11 @@
+[Unit]
+Description=Socat for modemsim: %i
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/socat tcp-l:6200%i,reuseaddr file:/dev/ttyUSB%i,b19200,rawer
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
