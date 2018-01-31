@@ -45,11 +45,11 @@ ProcessorThread(const ModemSimConfig& config, int index)
             [this](const ImpulseResponse& r)
             { if(r.receiver() == cfg().node_name(ThreadBase::index())) impulse_response(r); }
             );
-        
+       
 	++ready;
     }
 
-    void impulse_response(const ImpulseResponse& impulse_response)
+    void impulse_response(ImpulseResponse impulse_response)
     {
         using goby::glog; using namespace goby::common::logger;
 
@@ -102,6 +102,12 @@ ProcessorThread(const ModemSimConfig& config, int index)
             
         ArrayGain array_gain;
 
+	if(cfg().processor().first_arrival_only())
+	{
+	    while(impulse_response.raytrace().size() > 1)
+	      impulse_response.mutable_raytrace()->RemoveLast();
+	}
+	
         auto& full_signal = full_signal_[impulse_response.request_id()];
         auto& convolve = convolve_.at(impulse_response.request_id());
         convolve->initialize(blocksize_,

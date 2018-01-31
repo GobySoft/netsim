@@ -8,7 +8,13 @@ find_library(LAMSS_HENRIK_UTIL_LIBRARY NAMES henrik_util
   DOC "The LAMSS Henrik Util library"
   PATHS ${CMAKE_SOURCE_DIR}/../lamss/lib
 )
- 
+
+find_library(LAMSS_NETSIM_LIBRARY NAMES netsim
+  DOC "The LAMSS NetSim library"
+  PATHS ${CMAKE_SOURCE_DIR}/../lamss/lib
+)
+
+
 find_library(LAMSS_BELLHOP_TOOLS_LIBRARY NAMES bellhop_tools
   DOC "The LAMSS Bellhop tools library"
   PATHS ${CMAKE_SOURCE_DIR}/../lamss/lib
@@ -27,7 +33,8 @@ find_library(LAMSS_ANRP_UTIL_LIBRARY NAMES anrp_util
 find_path(LAMSS_INCLUDE_DIR lamss/version.h
   PATHS ${CMAKE_SOURCE_DIR}/../lamss/include)
 
-mark_as_advanced(LAMSS_INCLUDE_DIR 
+mark_as_advanced(LAMSS_INCLUDE_DIR
+  LAMSS_NETSIM_LIBRARY
   LAMSS_HENRIK_UTIL_LIBRARY
   LAMSS_ANRP_UTIL_LIBRARY
   LAMSS_NEWMAT_LIBRARY 
@@ -38,6 +45,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LAMSS DEFAULT_MSG
   LAMSS_INCLUDE_DIR
   LAMSS_PROTOBUF_LIBRARY
+  LAMSS_NETSIM_LIBRARY
   LAMSS_HENRIK_UTIL_LIBRARY
   LAMSS_ANRP_UTIL_LIBRARY
   LAMSS_NEWMAT_LIBRARY 
@@ -48,6 +56,7 @@ if(LAMSS_FOUND)
   set(LAMSS_INCLUDE_DIRS ${LAMSS_INCLUDE_DIR})
   set(LAMSS_LIBRARIES
     ${LAMSS_PROTOBUF_LIBRARY}
+    ${LAMSS_NETSIM_LIBRARY}
     ${LAMSS_HENRIK_UTIL_LIBRARY}
     ${LAMSS_ANRP_UTIL_LIBRARY}
     ${LAMSS_NEWMAT_LIBRARY}

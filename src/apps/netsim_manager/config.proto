@@ -1,0 +1,31 @@
+import "goby/common/protobuf/app3.proto";
+import "goby/middleware/protobuf/interprocess_config.proto";
+
+message NetSimManagerConfig
+{
+    optional goby.protobuf.App3Config app = 1;
+    optional goby.protobuf.InterProcessPortalConfig interprocess = 2;
+
+    message SimEnvironmentPair
+    {
+	required int32 modem_tcp_port = 1;
+	required string endpoint_ip_address = 2;
+	required int32 environment_id = 3;
+    }
+
+    repeated SimEnvironmentPair sim_env_pair = 3;
+
+    message EnvironmentBounds
+    {
+	required int32 environment_id = 1;
+	required double lat_min = 2;
+	required double lon_min = 3;
+	required double lat_max = 4;
+	required double lon_max = 5;
+	optional double depth_min = 6 [default = 0];
+	required double depth_max = 7;
+    }
+    
+    repeated EnvironmentBounds env_bounds = 4;
+    
+}
