@@ -17,7 +17,9 @@ private:
     void loop() override;
     void process_configuration();
     void process_request(const NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep);
-    
+
+    void handle_impulse_request(const ImpulseRequest& req);
+
 private:
     // maps modem_tcp_port to configuration
     std::map<int, NetSimManagerConfig::SimEnvironmentPair> env_cfg_;
@@ -43,6 +45,10 @@ NetSimManager::NetSimManager() :
     server_.read_callback<NetSimManagerRequest>(
 	[this](const NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep)
 	{ process_request(r, ep); });
+
+    interprocess().subscribe<groups::impulse_request, ImpulseRequest>(
+	[this](const ImpulseRequest& req)
+	{ handle_impulse_request(req); });
 }
 
 void NetSimManager::loop()
@@ -98,9 +104,44 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
 	    break;
 	}		    
 
-	// check bounds
-	// CONTINUE FROM HERE
+	const auto& bound = env_bounds_.at(env_cfg.environment_id());
+
+	if(nav.lat() < bound.lat_min() || nav.lat() > bound.lat_max() ||
+	   nav.lon() < bound.lon_min() || nav.lon() > bound.lon_max() ||
+	   nav.depth() < bound.depth_min() || nav.depth() > bound.depth_max())
+	{
+	    status = NetSimManagerResponse::UPDATE_FAILED_OUT_OF_DEFINED_REGION;
+	    break;
+	}
 	
+	EnvironmentNavUpdate env_nav_update;
+	env_nav_update.set_environment_id(env_cfg.environment_id());
+	*env_nav_update.mutable_nav() = nav;
+
+	interprocess().publish<groups::env_nav_update>(env_nav_update);
     }
-   
+
+    resp.set_status(status);
+    
+    server_.write(resp, ep);
+}
+
+void NetSimManager::handle_impulse_request(const ImpulseRequest& req)
+{
+    glog.is(DEBUG1) && glog << "Received ImpulseRequest: " << req.ShortDebugString() << std::endl;
+
+    int source = goby::util::as<int>(req.source());
+
+    auto env_cfg_it = env_cfg_.find(source);
+    if(env_cfg_it == env_cfg_.end())
+    {
+	glog.is(WARN) && glog << "Unknown source modem_tcp_port: " << source << " (string: " << req.source() << ")" << std::endl;
+	return;
+    }
+    const auto& env_cfg = env_cfg_it->second;
+
+    EnvironmentImpulseRequest env_req;
+    env_req.set_environment_id(env_cfg.environment_id());
+    *env_req.mutable_req() = req;
+    interprocess().publish<groups::env_impulse_req>(env_req);
 }

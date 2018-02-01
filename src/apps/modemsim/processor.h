@@ -93,6 +93,11 @@ ProcessorThread(const ModemSimConfig& config, int index)
             glog.is(WARN) && glog << "Processor Thread (" << ThreadBase::index() << ") Empty audio buffer for this request_id" << std::endl;
             return;
         }
+	else if(impulse_response.raytrace().size() == 0)
+	{
+	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << ") Ignoring empty raytrace from: " << impulse_response.source() << " to " << impulse_response.receiver() << std::endl;
+	    return;	    
+	}
         
         glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): time: " << std::setprecision(15) << goby::common::goby_time<double>() << "Received ImpulseResponse: " << impulse_response.DebugString() << std::endl;
         
@@ -102,10 +107,14 @@ ProcessorThread(const ModemSimConfig& config, int index)
             
         ArrayGain array_gain;
 
-	if(cfg().processor().first_arrival_only())
+	if(cfg().processor().test_mode())
 	{
-	    while(impulse_response.raytrace().size() > 1)
-	      impulse_response.mutable_raytrace()->RemoveLast();
+	    impulse_response.clear_raytrace();
+	    {
+	        auto* raytrace = impulse_response.add_raytrace();
+	        raytrace->set_delay(.5);
+	        raytrace->set_amplitude(1);
+	    }
 	}
 	
         auto& full_signal = full_signal_[impulse_response.request_id()];
@@ -199,6 +208,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
             {
                 full_signal_.erase(buffer->packet_id);
                 convolve_.erase(buffer->packet_id);
+		audio_buffer_.erase(buffer->packet_id);
             }
 
             // process audio

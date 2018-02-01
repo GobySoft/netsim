@@ -34,7 +34,7 @@ message ProcessorConfig
     optional double bottom_roughness_loss = 6 [default = 0]; // coherence loss in dB per bounce
     optional double acomms_frequency = 7 [default = 25000];
 
-    optional bool first_arrival_only = 8 [default = false];    
+    optional bool test_mode = 8 [default = false];    
 }
 
 message ModemSimConfig
