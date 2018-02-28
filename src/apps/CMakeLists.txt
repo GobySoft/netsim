@@ -1,1 +1,2 @@
 add_subdirectory(modemsim)
+add_subdirectory(netsim_manager)

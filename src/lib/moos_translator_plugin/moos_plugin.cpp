@@ -13,29 +13,51 @@ public:
     using Base = goby::moos::Translator;
     
     ModemSimTranslation(const GobyMOOSGatewayConfig& cfg) :
-        Base(cfg)
+        Base(cfg),
+	environment_id_(cfg.moos_port() % 10) // based on MOOS port 0-9
         {
-            Base::goby_comms().subscribe<groups::impulse_request, ImpulseRequest>(
-                [this](const ImpulseRequest& i) { this->goby_to_moos(i); }
+	    glog.is(DEBUG1) && glog << "Environment id: " << environment_id_ << std::endl;
+
+            Base::goby_comms().subscribe<groups::env_impulse_req, EnvironmentImpulseRequest>(
+                [this](const EnvironmentImpulseRequest& i) { this->goby_to_moos(i); }
                 );
 
+            Base::goby_comms().subscribe<groups::env_nav_update, EnvironmentNavUpdate>(
+                [this](const EnvironmentNavUpdate& n) { this->goby_to_moos(n); }
+                );
+
+	    
             Base::add_moos_trigger(imp_resp_var_);
+	    
 
+	    {
+		goby::moos::protobuf::TranslatorEntry imp_resp_entry;
+		imp_resp_entry.set_protobuf_name(ImpulseResponse::descriptor()->full_name());
+		auto& create = *imp_resp_entry.add_create();
+		create.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
+		create.set_moos_var(imp_resp_var_);
+		translator_.add_entry(imp_resp_entry);
+	    }
 
-            goby::moos::protobuf::TranslatorEntry imp_resp_entry;
-            imp_resp_entry.set_protobuf_name("ImpulseResponse");
-            auto& create = *imp_resp_entry.add_create();
-            create.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
-            create.set_moos_var(imp_resp_var_);
-            translator_.add_entry(imp_resp_entry);
-            
-            goby::moos::protobuf::TranslatorEntry imp_req_entry;
-            imp_req_entry.set_protobuf_name("ImpulseRequest");
-            auto& publish = *imp_req_entry.add_publish();
-            publish.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
-            publish.set_moos_var(imp_req_var_);
-            translator_.add_entry(imp_req_entry);
-        }
+	    {
+		goby::moos::protobuf::TranslatorEntry imp_req_entry;
+		imp_req_entry.set_protobuf_name(ImpulseRequest::descriptor()->full_name());
+		auto& publish = *imp_req_entry.add_publish();
+		publish.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
+		publish.set_moos_var(imp_req_var_);
+		translator_.add_entry(imp_req_entry);
+	    }
+
+	    {
+		goby::moos::protobuf::TranslatorEntry nav_update_entry;
+		nav_update_entry.set_protobuf_name(NavUpdate::descriptor()->full_name());
+		auto& publish = *nav_update_entry.add_publish();
+		publish.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
+		publish.set_moos_var(nav_update_var_);
+		translator_.add_entry(nav_update_entry);
+	    }
+
+	}
 
 private:
     
@@ -50,17 +72,34 @@ private:
             }
         }
 
-    void goby_to_moos(const ImpulseRequest& pos)
+    void goby_to_moos(const EnvironmentImpulseRequest& req)
         {
-            std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(pos);
-            for(auto& moos_msg_pair : moos_msgs)
-                Base::moos_comms().Post(moos_msg_pair.second);
+	    if(req.environment_id() == environment_id_)
+	    {	       
+		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(req.req());
+		for(auto& moos_msg_pair : moos_msgs)
+		    Base::moos_comms().Post(moos_msg_pair.second);
+	    }
         }
 
+    void goby_to_moos(const EnvironmentNavUpdate& update)
+        {
+	    if(update.environment_id() == environment_id_)
+	    {
+		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(update.nav());
+		for(auto& moos_msg_pair : moos_msgs)
+		    Base::moos_comms().Post(moos_msg_pair.second);
+	    }
+        }
+    
 private:
     goby::moos::MOOSTranslator translator_;
     const std::string imp_resp_var_{"IMPULSE_RESPONSE"};
     const std::string imp_req_var_{"IMPULSE_REQUEST"};
+    const std::string nav_update_var_{"NETSIM_NAV_UPDATE"};
+
+    int environment_id_;
+
 };
 
 extern "C"

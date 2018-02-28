@@ -1,0 +1,11 @@
+[Unit]
+Description=NetSim Goby to/from MOOS gateway (Atlantic Environment)
+After=gobyd.service
+BindsTo=gobyd.service
+
+[Service]
+ExecStart=/opt/goby3/build/bin/goby_moos_gateway /opt/modemsim/missions/goby_moos_gateway-atlantic.pb.cfg 
+
+[Install]
+WantedBy=gobyd.service
+
