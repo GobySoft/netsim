@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     const char* replica_file = argv[1];
 
     std::vector<double> noise;
-    std::vector<double> full_signal;
+    std::vector<std::vector<double>> full_signal;
     const int frame_size = 1024;
     const int sampling_freq = 96000;
     const double source_calibration_db = 180;
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     impulse_response.set_source("dst");
     {
 	auto* raytrace = impulse_response.add_raytrace();
-	raytrace->set_delay(.5);
+	raytrace->add_element()->set_delay(.5);
 	raytrace->set_amplitude(1);
     }
 //    {
@@ -109,8 +109,12 @@ int main(int argc, char* argv[])
 	    convolve.finalize(noise, full_signal);
 	}
         std::stringstream file;
-	file << "/tmp/convolvetest_frame_" << std::setw(5) << std::setfill('0') << i;
-	write_file(file.str(), ping_time, full_signal);
+
+	for(int element = 0, end = full_signal.size(); element < end; ++element)
+	{
+	    file << "/tmp/convolvetest_elem_" << element << "_frame_" << std::setw(5) << std::setfill('0') << i;
+	    write_file(file.str(), ping_time, full_signal.at(element));
+	}
     }
     double end = goby::common::goby_time<double>();
     std::cout << "Took: " << end-start << " seconds" << std::endl;

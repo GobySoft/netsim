@@ -99,7 +99,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	    return;	    
 	}
         
-        glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): time: " << std::setprecision(15) << goby::common::goby_time<double>() << "Received ImpulseResponse: " << impulse_response.DebugString() << std::endl;
+        glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): time: " << std::setprecision(15) << goby::common::goby_time<double>() << ", Received ImpulseResponse: " << impulse_response.DebugString() << std::endl;
         
         
         convolve_[impulse_response.request_id()].reset(new CConvolve);
@@ -112,7 +112,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
 	    impulse_response.clear_raytrace();
 	    {
 	        auto* raytrace = impulse_response.add_raytrace();
-	        raytrace->set_delay(.5);
+	        raytrace->add_element()->set_delay(.5);
 	        raytrace->set_amplitude(1);
 	    }
 	}
@@ -181,8 +181,12 @@ ProcessorThread(const ModemSimConfig& config, int index)
             auto& convolve = convolve_.at(buffer->packet_id);
             auto& full_signal = full_signal_.at(buffer->packet_id);
             const auto& noise = noise_;
-            auto previous_end = full_signal.size();
-            convolve->signal_block(double_buffer, noise, full_signal);
+            auto previous_end = full_signal.at(0).size();
+
+	    auto convolve_start_time = goby::common::goby_time<double>();
+	    convolve->signal_block(double_buffer, noise, full_signal);
+	    auto convolve_end_time = goby::common::goby_time<double>();
+	    glog.is(DEBUG1) && glog << "Signal block took: " << convolve_end_time - convolve_start_time << " seconds." << std::endl;
 
             if(buffer->marker == TaggedAudioBuffer::Marker::END)
             {
@@ -197,7 +201,7 @@ ProcessorThread(const ModemSimConfig& config, int index)
                 //ofs.write(reinterpret_cast<const char*>(&full_signal_[0]), full_signal_.size()*sizeof(double));
             }            
             
-            std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(full_signal.begin() + previous_end, full_signal.end()));
+            std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(full_signal.at(0).begin() + previous_end, full_signal.at(0).end()));
 
             if(buffer->marker == TaggedAudioBuffer::Marker::START)
                 new_audio_buffer->buffer_start_time = receive_start_time;
@@ -239,7 +243,7 @@ private:
     std::map<int, std::unique_ptr<CConvolve>> convolve_;
 
     // map of packet id to signal
-    std::map<int, std::vector<double>> full_signal_;
+    std::map<int, std::vector<std::vector<double>>> full_signal_;
 
 
     // map of packet id to buffer (which waiting for ImpulseResponse)
