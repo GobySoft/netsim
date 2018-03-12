@@ -182,7 +182,11 @@ ProcessorThread(const ModemSimConfig& config, int index)
             auto& full_signal = full_signal_.at(buffer->packet_id);
             const auto& noise = noise_;
             auto previous_end = full_signal.size();
-            convolve->signal_block(double_buffer, noise, full_signal);
+
+//	    auto convolve_start_time = goby::common::goby_time<double>();
+	    convolve->signal_block(double_buffer, noise, full_signal);
+//	    auto convolve_end_time = goby::common::goby_time<double>();
+//	    glog.is(DEBUG1) && glog << "Signal block took: " << convolve_end_time - convolve_start_time << " seconds." << std::endl;
 
             if(buffer->marker == TaggedAudioBuffer::Marker::END)
             {
