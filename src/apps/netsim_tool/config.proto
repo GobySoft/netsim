@@ -1,0 +1,31 @@
+import "goby/common/protobuf/app3.proto";
+import "goby/middleware/protobuf/interprocess_config.proto";
+
+import "goby/acomms/protobuf/driver_base.proto";
+import "goby/acomms/protobuf/modem_message.proto";
+
+message NetSimToolConfig
+{
+    optional goby.protobuf.App3Config app = 1;
+    optional goby.protobuf.InterProcessPortalConfig interprocess = 2;
+
+    required goby.acomms.protobuf.DriverConfig tx_driver_cfg = 4;
+    required goby.acomms.protobuf.DriverConfig rx_driver_cfg = 5;
+
+    optional string netsim_manager_ip_addr = 6 [default="172.19.21.10"];
+    optional int32 netsim_manager_tcp_port = 7 [default=61999];
+    
+    required goby.acomms.protobuf.ModemTransmission transmission = 10;
+
+    required int32 r_min = 20;
+    required int32 z_min = 21;
+    required int32 r_max = 22;
+    required int32 z_max = 23;
+
+    required int32 dr = 24;
+    required int32 dz = 25;
+    required int32 source_z = 26;
+    
+    required double lat_origin = 30;
+    required double lon_origin = 31;
+}

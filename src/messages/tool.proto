@@ -1,0 +1,13 @@
+import "goby/acomms/protobuf/mm_driver.proto";
+
+
+package netsim.protobuf;
+
+message ToolReceiveStats
+{
+    optional micromodem.protobuf.ReceiveStatistics stats = 1;
+    required int32 source_r = 10;
+    required int32 source_z = 11;
+    required int32 receiver_r = 20;
+    required int32 receiver_z = 21;
+}
