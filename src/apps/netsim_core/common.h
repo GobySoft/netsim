@@ -16,7 +16,8 @@ AudioBuffer(size_t size) : samples(size, 0) {}
       AudioBuffer(It begin, It end) : samples(begin, end) {}
 
     double buffer_start_time{0};
-
+    jack_nframes_t jack_frame_time{0};
+    
     std::vector<sample_t> samples;
 };
 
@@ -27,7 +28,7 @@ struct TaggedAudioBuffer
     enum class Marker
     { NONE, START, END, MIDDLE };
     Marker marker{Marker::NONE};
-    int packet_id;
+    int packet_id { -1 };
 };
 
 

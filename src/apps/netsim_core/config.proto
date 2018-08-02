@@ -55,4 +55,6 @@ message NetSimCoreConfig
     optional LoggerConfig logger = 40;
 
     optional ProcessorConfig processor = 50;
+
+    optional bool continuous = 60 [default = false];
 }

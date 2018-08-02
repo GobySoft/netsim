@@ -1,9 +1,9 @@
 pkg load signal
 close all;
 dir='/opt/logs/audio'
-run_start='20180802T205724'
-packet_id_start=1
-packet_id_end=20
+run_start='20180802T223356'
+packet_id_start=3
+packet_id_end=6
 
 for packet_id = packet_id_start:packet_id_end
   in_files=glob([dir '/netsim_' run_start '_in_' sprintf('%03d', packet_id) '*.bin']);

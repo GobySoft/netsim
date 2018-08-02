@@ -68,10 +68,10 @@ private:
 	}
 
 	auto& file_ptr = files_[dir][buffer->packet_id][modem_index];
-	if(!file_ptr)
-	    glog.is(WARN) && glog << "No TaggedAudioBuffer::Marker::START so cannot log to file. Modem " << modem_index << ", dir: " << dir_to_str(dir)  << std::endl;	   
-	else
+	if(file_ptr)
 	    file_ptr->write(reinterpret_cast<const char*>(&buffer->buffer->samples[0]), buffer->buffer->samples.size()*sizeof(sample_t));
+//	else
+//	    glog.is(WARN) && glog << "No TaggedAudioBuffer::Marker::START so cannot log to file. Modem " << modem_index << ", dir: " << dir_to_str(dir)  << std::endl;	   
 
 	// cleanly close out file
 	if(buffer->marker == TaggedAudioBuffer::Marker::END)
