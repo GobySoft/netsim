@@ -118,7 +118,10 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
 	env_nav_update.set_environment_id(env_cfg.environment_id());
 	*env_nav_update.mutable_nav() = nav;
 
-	interprocess().publish<groups::env_nav_update>(env_nav_update);
+	if(env_nav_update.IsInitialized())
+	    interprocess().publish<groups::env_nav_update>(env_nav_update);
+	else
+	    glog.is(WARN) && glog << "Uninitialized EnvironmentNavUpdate: " << env_nav_update.DebugString() << std::endl;
     }
 
     resp.set_status(status);
