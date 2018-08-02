@@ -1,6 +1,8 @@
 [Unit]
 Description=NetSim MOOS community (Atlantic Environment)
 Before=netsim_moos_gateway-atlantic.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 User=toby

@@ -1,9 +1,11 @@
 sudo cp netsim_socat@.service /etc/systemd/system/
-sudo systemctl enable netsim_socat\@{0-7}.service
+sudo systemctl enable netsim_socat@{0..7}.service
 
 install jackd2 libjack-jack2-dev
 
-for i in "gobyd jackd netsim_core netsim_manager netsim_moos-arctic netsim_moos-atlantic netsim_moos_gateway-arctic netsim_moos_gateway-atlantic";
+for i in gobyd jackd netsim_core netsim_manager netsim_moos-arctic netsim_moos-atlantic netsim_moos_gateway-arctic netsim_moos_gateway-atlantic;
 do
-	sudo systemctl enable `pwd`/${i}.service
+	sudo systemctl disable $i;
+	sudo systemctl enable `pwd`/${i}.service;
 done
+
