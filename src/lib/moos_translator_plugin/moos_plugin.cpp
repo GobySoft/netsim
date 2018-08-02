@@ -7,12 +7,12 @@
 using goby::glog;
 using namespace goby::common::logger;
 
-class ModemSimTranslation : public goby::moos::Translator
+class NetSimCoreTranslation : public goby::moos::Translator
 {
 public:
     using Base = goby::moos::Translator;
     
-    ModemSimTranslation(const GobyMOOSGatewayConfig& cfg) :
+    NetSimCoreTranslation(const GobyMOOSGatewayConfig& cfg) :
         Base(cfg),
 	environment_id_(cfg.moos_port() % 10) // based on MOOS port 0-9
         {
@@ -105,9 +105,9 @@ private:
 extern "C"
 {
     void goby3_moos_gateway_load(goby::MultiThreadApplication<GobyMOOSGatewayConfig>* handler)
-    { handler->launch_thread<ModemSimTranslation>(); }
+    { handler->launch_thread<NetSimCoreTranslation>(); }
     
     void goby3_moos_gateway_unload(goby::MultiThreadApplication<GobyMOOSGatewayConfig>* handler)
-    { handler->join_thread<ModemSimTranslation>(); }
+    { handler->join_thread<NetSimCoreTranslation>(); }
 }
 

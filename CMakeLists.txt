@@ -14,6 +14,9 @@ else()
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+
 find_package(ProtobufLocal REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 

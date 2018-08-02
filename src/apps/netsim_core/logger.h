@@ -7,7 +7,7 @@
 #include "goby/middleware/multi-thread-application.h"
 #include "config.pb.h"
 
-using ThreadBase = goby::SimpleThread<ModemSimConfig>;
+using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
 
 class LoggerThread : public ThreadBase
 {
@@ -15,7 +15,7 @@ private:
     enum class Direction { IN, OUT};
 
 public:
-LoggerThread(const ModemSimConfig& config)
+LoggerThread(const NetSimCoreConfig& config)
     : ThreadBase(config, 0)
     {
 	

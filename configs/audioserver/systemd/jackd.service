@@ -3,7 +3,7 @@ Description=Modemsim Jack Audio server
 After=sound.target
 
 [Service]
-ExecStartPre=/opt/modemsim/scripts/fix_fast_track_levels.sh
+ExecStartPre=/opt/netsim/scripts/fix_fast_track_levels.sh
 ExecStart=/bin/bash -c "Ultra=$$(/usr/bin/aplay -l | /bin/grep F8R | cut -d ':' -f 1 | cut -d ' ' -f 2); export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -dalsa -dhw:$$Ultra -r96000 -p4096 -n3 -H -M"
 
 [Install]

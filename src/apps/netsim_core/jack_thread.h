@@ -14,7 +14,7 @@
 #include "config.pb.h"
 #include "messages/groups.h"
 
-using ThreadBase = goby::SimpleThread<ModemSimConfig>;
+using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
 
 int jack_process(jack_nframes_t nframes, void* arg);
 void jack_shutdown (void *arg);
@@ -25,7 +25,7 @@ class JackThread : public ThreadBase
 {
 public:
     
-JackThread(const ModemSimConfig& config, int index)
+JackThread(const NetSimCoreConfig& config, int index)
     : ThreadBase(config, ThreadBase::loop_max_frequency(), index),
 	input_port_(nullptr),
 	output_port_(config.number_of_modems(), nullptr),
@@ -42,7 +42,7 @@ JackThread(const ModemSimConfig& config, int index)
 	    interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[i]);
 	}
 
-	std::string client_name = "modemsim_thread_" + std::to_string(ThreadBase::index());
+	std::string client_name = "netsim_core_thread_" + std::to_string(ThreadBase::index());
 	const char *server_name = nullptr;
 	jack_options_t options = JackNullOption;
 	jack_status_t status;

@@ -4,7 +4,7 @@ After=gobyd.service
 BindsTo=gobyd.service
 
 [Service]
-ExecStart=/opt/modemsim/build/bin/netsim_manager /opt/modemsim/missions/netsim_manager.pb.cfg
+ExecStart=/opt/netsim/build/bin/netsim_manager /opt/netsim/missions/netsim_manager.pb.cfg
 
 [Install]
 WantedBy=gobyd.service
