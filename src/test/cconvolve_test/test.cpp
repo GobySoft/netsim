@@ -42,11 +42,11 @@ int main(int argc, char* argv[])
 	raytrace->add_element()->set_delay(.5);
 	raytrace->set_amplitude(1);
     }
-//    {
-//	auto* raytrace = impulse_response.add_raytrace();
-//	raytrace->set_delay(3);
-//	raytrace->set_amplitude(0.5);
-//  }
+    {
+	auto* raytrace = impulse_response.add_raytrace();
+	raytrace->add_element()->set_delay(4);
+	raytrace->set_amplitude(0.5);
+  }
 	    
     ArrayGain array_gain;
     

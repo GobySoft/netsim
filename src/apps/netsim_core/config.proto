@@ -37,7 +37,7 @@ message ProcessorConfig
     optional bool test_mode = 8 [default = false];    
 }
 
-message ModemSimConfig
+message NetSimCoreConfig
 {
     optional goby.protobuf.App3Config app = 1;
     optional goby.protobuf.InterProcessPortalConfig interprocess = 2;

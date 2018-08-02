@@ -4,7 +4,7 @@ After=gobyd.service
 BindsTo=gobyd.service
 
 [Service]
-ExecStart=/opt/goby3/build/bin/goby_moos_gateway /opt/modemsim/missions/goby_moos_gateway-atlantic.pb.cfg 
+ExecStart=/opt/goby3/build/bin/goby_moos_gateway /opt/netsim/missions/goby_moos_gateway-atlantic.pb.cfg 
 
 [Install]
 WantedBy=gobyd.service

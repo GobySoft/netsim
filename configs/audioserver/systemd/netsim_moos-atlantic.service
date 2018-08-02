@@ -1,11 +1,13 @@
 [Unit]
 Description=NetSim MOOS community (Atlantic Environment)
 Before=netsim_moos_gateway-atlantic.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 User=toby
 Group=toby
-Environment="PATH=/opt/lamss/bin:/opt/lamss-shared/bin:/opt/goby3/bin:/opt/modemsim/build/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PATH=/opt/lamss/bin:/opt/lamss-shared/bin:/opt/goby3/bin:/opt/netsim/build/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 WorkingDirectory=/opt/missions-lamss/topside/net_sim
 ExecStartPre=/bin/bash -c "cd /opt/missions-lamss && ./cruise_config.sh atlantic"
 ExecStart=/opt/missions-lamss/topside/net_sim/simulation_launch.sh screen quiet

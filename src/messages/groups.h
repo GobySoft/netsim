@@ -5,7 +5,7 @@
 
 namespace groups
 {
-    // published by modemsim
+    // published by netsim
     constexpr goby::Group impulse_request{"impulse_request"};
     constexpr goby::Group buffer_size_change{"buffer_size_change"};
 

@@ -8,12 +8,12 @@
 
 #include "lamss/lib_henrik_util/CConvolve.h"
 
-using ThreadBase = goby::SimpleThread<ModemSimConfig>;
+using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
 
 class ProcessorThread : public ThreadBase
 {
 public:
-ProcessorThread(const ModemSimConfig& config, int index)
+ProcessorThread(const NetSimCoreConfig& config, int index)
     : ThreadBase(config, 0, index)
     {
 	interthread().subscribe<groups::buffer_size_change, jack_nframes_t>(

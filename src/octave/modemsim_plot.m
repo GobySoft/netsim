@@ -1,13 +1,13 @@
 pkg load signal
 close all;
-dir='/home/toby/Desktop/modemsim_logs'
-run_start='20180207T163955'
-packet_id_start=999
-packet_id_end=1037
+dir='/opt/logs/audio'
+run_start='20180802T205724'
+packet_id_start=1
+packet_id_end=20
 
 for packet_id = packet_id_start:packet_id_end
-  in_files=glob([dir '/modemsim_' run_start '_in_' sprintf('%03d', packet_id) '*.bin']);
-  out_files=glob([dir '/modemsim_' run_start '_out_' sprintf('%03d', packet_id) '*.bin']);
+  in_files=glob([dir '/netsim_' run_start '_in_' sprintf('%03d', packet_id) '*.bin']);
+  out_files=glob([dir '/netsim_' run_start '_out_' sprintf('%03d', packet_id) '*.bin']);
   num_files=length(in_files)+length(out_files);
 
   fs = 96000;

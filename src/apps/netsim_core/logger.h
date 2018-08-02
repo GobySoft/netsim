@@ -7,7 +7,7 @@
 #include "goby/middleware/multi-thread-application.h"
 #include "config.pb.h"
 
-using ThreadBase = goby::SimpleThread<ModemSimConfig>;
+using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
 
 class LoggerThread : public ThreadBase
 {
@@ -15,7 +15,7 @@ private:
     enum class Direction { IN, OUT};
 
 public:
-LoggerThread(const ModemSimConfig& config)
+LoggerThread(const NetSimCoreConfig& config)
     : ThreadBase(config, 0)
     {
 	
@@ -54,7 +54,7 @@ private:
 	if(buffer->marker == TaggedAudioBuffer::Marker::START)
 	{
 	    std::stringstream file_name;
-	    file_name << cfg().logger().log_directory() << "/modemsim_" << start_time << "_"
+	    file_name << cfg().logger().log_directory() << "/netsim_" << start_time << "_"
 		      << ((dir == Direction::IN) ? "in_" : "out_")
 		      << std::setw(3) << std::setfill('0') << buffer->packet_id
 		      << "_modem" << std::to_string(modem_index) << ".bin";

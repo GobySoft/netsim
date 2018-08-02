@@ -10,10 +10,10 @@
 using namespace goby::common::logger;
 using goby::glog;
 
-class ModemSim : public goby::MultiThreadApplication<ModemSimConfig>
+class NetSimCore : public goby::MultiThreadApplication<NetSimCoreConfig>
 {
 public:
-    ModemSim()
+    NetSimCore()
         {
             if(cfg().node_name_size() != cfg().number_of_modems())
                 glog.is(DIE) && glog << "The node_name field must be specified number_of_modem times" << std::endl;
@@ -51,4 +51,4 @@ public:
 
 
 int main(int argc, char* argv[])
-{ return goby::run<ModemSim>(argc, argv); }
+{ return goby::run<NetSimCore>(argc, argv); }

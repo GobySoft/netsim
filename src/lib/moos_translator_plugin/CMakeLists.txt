@@ -1,2 +1,2 @@
-add_library(modemsim_moos_plugin SHARED moos_plugin.cpp)
-target_link_libraries(modemsim_moos_plugin goby_moos goby_middleware ${LAMSS_PROTOBUF_LIBRARY} boost_regex)
+add_library(netsim_moos_plugin SHARED moos_plugin.cpp)
+target_link_libraries(netsim_moos_plugin goby_moos goby_middleware ${LAMSS_PROTOBUF_LIBRARY} boost_regex)

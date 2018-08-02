@@ -14,7 +14,7 @@ function launch()
 launch fixlevels "./fix_fast_track_levels.sh" 0
 launch gobyd "gobyd" 1
 launch jackd "jackd -dalsa -dhw:2 -r96000 -p1024 -n3 -H -M" 0
-launch goby_moos_gateway "goby_moos_gateway --plugin_library /home/toby/opensource/modemsim/build/lib/libmodemsim_moos_plugin.so --moos_port 9400 -vvv" 0
+launch goby_moos_gateway "goby_moos_gateway --plugin_library /home/toby/opensource/netsim/build/lib/libnetsim_moos_plugin.so --moos_port 9400 -vvv" 0
 
 
 trap "kill $PID;" EXIT

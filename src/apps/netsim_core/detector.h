@@ -8,13 +8,13 @@
 #include "config.pb.h"
 #include "jack_thread.h"
 
-using ThreadBase = goby::SimpleThread<ModemSimConfig>;
+using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
 
 class DetectorThread : public ThreadBase
 {
 public:
 
-DetectorThread(const ModemSimConfig& config, int index)
+DetectorThread(const NetSimCoreConfig& config, int index)
     : ThreadBase(config, 0, index),
 	audio_in_group_(std::string("audio_in_") + std::to_string(ThreadBase::index())),
 	detector_audio_group_(std::string("detector_audio_tx_") + std::to_string(ThreadBase::index()))

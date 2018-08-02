@@ -1,0 +1,11 @@
+[Unit]
+Description=netsim_core audio processor
+After=gobyd.service
+BindsTo=gobyd.service
+
+[Service]
+ExecStart=/opt/netsim/build/bin/netsim_core /opt/netsim/missions/netsim-core.pb.cfg
+
+[Install]
+WantedBy=gobyd.service
+

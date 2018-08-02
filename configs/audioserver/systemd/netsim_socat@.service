@@ -1,5 +1,5 @@
 [Unit]
-Description=Socat for modemsim: %i
+Description=Socat for netsim: %i
 After=network.target
 
 [Service]

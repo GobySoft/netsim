@@ -1,2 +1,2 @@
 add_library(netsim_hdf5_plugin SHARED plugin.cpp)
-target_link_libraries(netsim_hdf5_plugin modemsim_messages goby_middleware)
+target_link_libraries(netsim_hdf5_plugin netsim_messages goby_middleware)
