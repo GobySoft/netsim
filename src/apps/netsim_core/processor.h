@@ -118,11 +118,22 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 	if(cfg().processor().test_mode())
 	{
 	    impulse_response.clear_raytrace();
-	    {
-	        auto* raytrace = impulse_response.add_raytrace();
-	        raytrace->add_element()->set_delay(.5);
-	        raytrace->set_amplitude(1);
-	    }
+
+	    ImpulseResponse fake_imp_resp;
+	    std::string imp_rep_str = "source: \"62000\" receiver: \"62001\""
+		"raytrace { amplitude: 0.00525906309 doppler: 1.0010278467409948 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12136817704779784 } } "
+		"raytrace { amplitude: 5.20280082e-06 doppler: 1.0010281305607063 elevation: -2.7171731 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12134185156064167 } } "
+		"noise_level: 39.210526315789473 receiver_sound_speed: 1434.17 surface_sound_speed: 1433.64 bottom_sound_speed: 0 request_id: 2669 request_time: 1533310017.000212 ";
+	    
+	    google::protobuf::TextFormat::ParseFromString(imp_rep_str, &fake_imp_resp);
+
+	    //{
+//	        auto* raytrace = impulse_response.add_raytrace();
+//	        raytrace->add_element()->set_delay(.5);
+//	        raytrace->set_amplitude(1);
+//	    }
+
+	    *impulse_response.mutable_raytrace() = fake_imp_resp.raytrace();
 	}
 	
 	impulse_responses_[modem_index] = impulse_response;	

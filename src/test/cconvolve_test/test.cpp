@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     const int frame_size = 1024;
     const int sampling_freq = 96000;
     const double source_calibration_db = 180;
-    const double receiver_calibration_db = 0;
+    const double receiver_calibration_db = 60;
     const double noise_level = 40;
     const double acomms_freq = 25000;
     const double surface_rms_roughness = 0;
@@ -35,19 +35,28 @@ int main(int argc, char* argv[])
     double timestamp;
 
     ImpulseResponse impulse_response;
-    impulse_response.set_source("src");
-    impulse_response.set_source("dst");
-    {
-	auto* raytrace = impulse_response.add_raytrace();
-	raytrace->add_element()->set_delay(.5);
-	raytrace->set_amplitude(1);
-    }
-    {
-	auto* raytrace = impulse_response.add_raytrace();
-	raytrace->add_element()->set_delay(4);
-	raytrace->set_amplitude(0.5);
-  }
+  //   impulse_response.set_source("src");
+  //   impulse_response.set_source("dst");
+  //   {
+  // 	auto* raytrace = impulse_response.add_raytrace();
+  // 	raytrace->add_element()->set_delay(.5);
+  // 	raytrace->set_amplitude(1);
+  //   }
+  //   {
+  // 	auto* raytrace = impulse_response.add_raytrace();
+  // 	raytrace->add_element()->set_delay(4);
+  // 	raytrace->set_amplitude(0.5);
+  // }
+    std::string imp_rep_str = "source: \"62000\" receiver: \"62001\""
+	"raytrace { amplitude: -0.0051012421 doppler: 1.0009956301482308 elevation: 14.6926994 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.1265081630067604 } } "
+	"raytrace { amplitude: -3.59404521e-06 doppler: 1.000996831725558 elevation: 14.426631000000002 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.12647255724324247 } } "
+	"raytrace { amplitude: 0.00525906309 doppler: 1.0010278467409948 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12136817704779784 } } "
+	"raytrace { amplitude: 5.20280082e-06 doppler: 1.0010281305607063 elevation: -2.7171731 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12134185156064167 } } "
+	"noise_level: 39.210526315789473 receiver_sound_speed: 1434.17 surface_sound_speed: 1433.64 bottom_sound_speed: 0 request_id: 2669 request_time: 1533310017.000212 ";
+
+    google::protobuf::TextFormat::ParseFromString(imp_rep_str, &impulse_response);
 	    
+
     ArrayGain array_gain;
     
     double ping_time;
