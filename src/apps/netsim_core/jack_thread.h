@@ -209,11 +209,11 @@ JackThread(const NetSimCoreConfig& config, int index)
 		   !audio_out_buffer_[output_port_i].empty()) 
 		{
 		    auto tx_buffer = audio_out_buffer_[output_port_i].front();
-		    auto expected_jack_frame_time = jack_last_frame_time(client_) + buffer_size_;
+		    auto expected_jack_frame_time = jack_last_frame_time(client_);
 		    auto actual_jack_frame_time = tx_buffer->buffer->jack_frame_time;
 		    if(actual_jack_frame_time != expected_jack_frame_time)
 		    {
-			glog.is(WARN) && glog << "Wrong frame received for port " << output_port_i << ". Expected frame time: " << expected_jack_frame_time << ", received: " << actual_jack_frame_time << ", offset: " << expected_jack_frame_time- actual_jack_frame_time << std::endl;
+			glog.is(WARN) && glog << "Wrong frame received for port " << output_port_i << ". Expected frame time: " << expected_jack_frame_time << ", received: " << actual_jack_frame_time << ", offset: " << static_cast<int>(expected_jack_frame_time)-static_cast<int>(actual_jack_frame_time) << std::endl;
 		    }
 
 		    sample_t* sample = (sample_t*)jack_port_get_buffer (output_port_[output_port_i],

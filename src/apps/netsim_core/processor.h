@@ -14,7 +14,7 @@ class ProcessorThread : public ThreadBase
 {
 public:
 ProcessorThread(const NetSimCoreConfig& config, int index)
-    : ThreadBase(config, 0.1*boost::units::si::hertz, index)
+    : ThreadBase(config, 1.0*boost::units::si::hertz, index)
     {
 	interthread().subscribe<groups::buffer_size_change, jack_nframes_t>(
 	    [this](const jack_nframes_t& buffer_size)
@@ -111,35 +111,23 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
         }       
 	else if(impulse_response.raytrace().size() == 0)
 	{
-	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << ") Ignoring empty raytrace from: " << impulse_response.source() << " to " << impulse_response.receiver() << std::endl;
+//	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << ") Ignoring empty raytrace from: " << impulse_response.source() << " to " << impulse_response.receiver() << std::endl;
 	    return;
 	}
 
-	if(!convolve_[modem_index])
+	if(cfg().processor().test_mode())
 	{
-	    ArrayGain array_gain;
-	    double timestamp;
-	    std::vector<std::vector<double> > signal_block;
-
-	    convolve_[modem_index].reset(new CConvolve);
-	    convolve_[modem_index]->initialize(blocksize_,
-				 impulse_response.request_time(),
-				 cfg().sampling_freq(),
-				 cfg().processor().noise_level(),
-				 cfg().processor().acomms_frequency(),
-				 cfg().processor().surface_rms_roughness(),
-				 cfg().processor().surface_roughness_loss(),
-				 cfg().processor().source_calibration_db(),
-				 cfg().processor().receiver_calibration_db(),
-				 impulse_response,
-				 array_gain,
-				 timestamp,
-				 signal_block);
+	    impulse_response.clear_raytrace();
+	    {
+	        auto* raytrace = impulse_response.add_raytrace();
+	        raytrace->add_element()->set_delay(.5);
+	        raytrace->set_amplitude(1);
+	    }
 	}
-	else
-	{
+	
+	impulse_responses_[modem_index] = impulse_response;	
+	if(convolve_[modem_index])
 	    convolve_[modem_index]->update_ray_table(impulse_response);
-	}
     }
 	
     void impulse_response_discrete(ImpulseResponse impulse_response)
@@ -180,7 +168,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
         }
 	else if(impulse_response.raytrace().size() == 0)
 	{
-	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << ") Ignoring empty raytrace from: " << impulse_response.source() << " to " << impulse_response.receiver() << std::endl;
+//	    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << ") Ignoring empty raytrace from: " << impulse_response.source() << " to " << impulse_response.receiver() << std::endl;
 	    return;	    
 	}
         
@@ -238,36 +226,69 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 
 	if(cfg().continuous())
 	{
+	    double buffer_size = blocksize_;
+	    double sampling_freq = cfg().sampling_freq();
 	    
-	    if(convolve_[modem_index])
+	    if(!convolve_[modem_index] || buffer->marker == TaggedAudioBuffer::Marker::START)
 	    {
-		auto& convolve = convolve_[modem_index];
-
+		ArrayGain array_gain;
+		double dummy_timestamp;
+		std::vector<std::vector<double> > dummy_signal_block;
 		
-		double buffer_size = blocksize_;
-		double sampling_freq = cfg().sampling_freq();
-		convolve->set_signal_timestamp(buffer->buffer->buffer_start_time +
-					       buffer_size / sampling_freq);
-		
+		convolve_[modem_index].reset(new CConvolve);
+		convolve_[modem_index]->initialize(blocksize_,
+						   buffer->buffer->buffer_start_time,
+						   cfg().sampling_freq(),
+						   cfg().processor().noise_level(),
+						   cfg().processor().acomms_frequency(),
+						   cfg().processor().surface_rms_roughness(),
+						   cfg().processor().surface_roughness_loss(),
+						   cfg().processor().source_calibration_db(),
+						   cfg().processor().receiver_calibration_db(),
+						   impulse_responses_[modem_index],
+						   array_gain,
+						   dummy_timestamp,
+						   dummy_signal_block);
 
+		convolve_[modem_index]->set_signal_timestamp(buffer->buffer->buffer_start_time +
+							     (buffer_size / sampling_freq)*cfg().jack().expected_number_buffer_delay());		   
+	    }
+	    
+	    auto& convolve = convolve_[modem_index];		
+
+	    std::shared_ptr<TaggedAudioBuffer> new_tagged_buffer(new TaggedAudioBuffer(*buffer));
+
+	    // if test mode, just echo back data
+	    // otherwise, actually run convolution
+//	    if(!cfg().processor().test_mode())
+//	    {
+		    
 		double signal_timestamp;
-
+		    
 		std::vector<double> replica_buffer(buffer->buffer->samples.begin(),
 						   buffer->buffer->samples.end());
-		
+		    
 		std::vector<std::vector<double> > signal_block(1);
 		convolve->next_signal_block(signal_timestamp, noise_, replica_buffer,
 					    signal_block);
 		
-		std::shared_ptr<TaggedAudioBuffer> new_tagged_buffer(new TaggedAudioBuffer(*buffer));
 		std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(signal_block.at(0).begin(), signal_block.at(0).end()));
+//		new_audio_buffer->jack_frame_time = buffer->buffer->jack_frame_time + (signal_timestamp-buffer->buffer->buffer_start_time)*sampling_freq;
+		new_audio_buffer->jack_frame_time = buffer->buffer->jack_frame_time + cfg().jack().expected_number_buffer_delay()*buffer_size;
 		new_audio_buffer->buffer_start_time = signal_timestamp;
 
 		new_tagged_buffer->buffer = new_audio_buffer;
-		new_audio_buffer->jack_frame_time = buffer->buffer->jack_frame_time + buffer_size;
+//	    }
+//	    else
+//	    {
+//		std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(buffer->buffer->samples.begin(), buffer->buffer->samples.end()));
+//		new_audio_buffer->jack_frame_time = buffer->buffer->jack_frame_time + cfg().jack().expected_number_buffer_delay()*buffer_size;
 
-		interthread().publish_dynamic(new_tagged_buffer, audio_out_groups_[modem_index]);
-	    }
+//		new_tagged_buffer->buffer = new_audio_buffer;
+//		
+//	    }
+		
+	    interthread().publish_dynamic(new_tagged_buffer, audio_out_groups_[modem_index]);
 	}
 	else
 	{	
@@ -356,7 +377,6 @@ private:
     // indexed on tx modem id
     std::vector<goby::DynamicGroup> audio_out_groups_;
 
-    bool in_packet_{false};
     jack_nframes_t frames_since_silence{0};
 
     std::vector<double> noise_;
@@ -364,15 +384,17 @@ private:
     // map of tx modem id to convolve (continuous mode)
     std::map<int, std::unique_ptr<CConvolve>> convolve_;
 
-    // map of packet id to signal
+    // map of packet id to signal (discrete mode)
     std::map<int, std::vector<std::vector<double>>> full_signal_;
 
 
-    // map of packet id to buffer (which waiting for ImpulseResponse)
+    // map of packet id to buffer (while waiting for ImpulseResponse) (discrete mode)
     std::map<int, std::deque<std::shared_ptr<const TaggedAudioBuffer>>> audio_buffer_;
 
     int blocksize_{0};
-
+    
+    // map of tx modem id to latest impulse response
+    std::map<int, ImpulseResponse> impulse_responses_;   
 };
 
 std::atomic<int> ProcessorThread::ready{0};
