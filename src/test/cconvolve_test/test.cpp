@@ -1,5 +1,5 @@
-#include "goby/common/time.h"
 #include "lamss/lib_henrik_util/CConvolve.h"
+#include <chrono>
 
 void write_file(std::string file_name, double timestamp, const std::vector<double>& signal);
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 	ifs.read(reinterpret_cast<char*>(&full_replica[0]), full_replica.size()*sizeof(float));
     }
 
-    double start = goby::common::goby_time<double>();
+    auto start = std::chrono::system_clock::now();
 
     convolve.initialize(frame_size,
                         ping_time,
@@ -125,8 +125,8 @@ int main(int argc, char* argv[])
 	    write_file(file.str(), ping_time, full_signal.at(element));
 	}
     }
-    double end = goby::common::goby_time<double>();
-    std::cout << "Took: " << end-start << " seconds" << std::endl;
+    auto end = std::chrono::system_clock::now();
+    std::cout << "Took: " << std::chrono::duration<double>(end-start).count() << " sec" << std::endl;
     
 }
 
