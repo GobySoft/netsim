@@ -132,7 +132,8 @@ int main(int argc, char* argv[])
 
 void write_file(std::string file_name, double timestamp, const std::vector<double>& signal)
 {
+    std::vector<float> float_signal(signal.begin(), signal.end());
     std::ofstream ofs(file_name.c_str(), std::ios::out | std::ios::binary);
     ofs.write(reinterpret_cast<const char*>(&timestamp), sizeof(double));
-    ofs.write(reinterpret_cast<const char*>(&signal[0]), signal.size()*sizeof(double));
+    ofs.write(reinterpret_cast<const char*>(&float_signal[0]), float_signal.size()*sizeof(float));
 }

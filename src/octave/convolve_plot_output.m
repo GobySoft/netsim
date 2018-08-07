@@ -9,7 +9,7 @@ for file_i = 1:length(files)
   file = files{file_i};
   fid = fopen(file);
   packet_time = fread(fid,1,'double');
-  data = fread(fid,Inf,'double');  
+  data = fread(fid,Inf,'float');  
   time = (1.0:size(data))/fs;
   fclose(fid);
    
