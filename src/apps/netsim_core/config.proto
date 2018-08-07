@@ -39,6 +39,9 @@ message ProcessorConfig
     optional double acomms_frequency = 7 [default = 25000];
 
     optional bool test_mode = 8 [default = false];    
+
+    optional float impulse_response_update_hertz = 10 [default = 0.1];
+    
 }
 
 message NetSimCoreConfig

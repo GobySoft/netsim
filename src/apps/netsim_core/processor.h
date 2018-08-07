@@ -14,7 +14,7 @@ class ProcessorThread : public ThreadBase
 {
 public:
 ProcessorThread(const NetSimCoreConfig& config, int index)
-    : ThreadBase(config, .1*boost::units::si::hertz, index)
+    : ThreadBase(config, config.processor().impulse_response_update_hertz()*boost::units::si::hertz, index)
     {
 	interthread().subscribe<groups::buffer_size_change, jack_nframes_t>(
 	    [this](const jack_nframes_t& buffer_size)
