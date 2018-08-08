@@ -1,6 +1,7 @@
-pkg load signal
+%pkg load signal
+clear all;
 close all;
-files=glob('/tmp/convolvetest_elem_0_frame_*365');
+files={'netsim_20180803T144437_in_005_modem1.bin' '/tmp/convolvetest_elem_0_frame_00381'};
 %files{1} = '/tmp/noise.bin';
 
 
