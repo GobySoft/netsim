@@ -47,11 +47,23 @@ int main(int argc, char* argv[])
   // 	raytrace->add_element()->set_delay(4);
   // 	raytrace->set_amplitude(0.5);
   // }
+    /*
     std::string imp_rep_str = "source: \"62000\" receiver: \"62001\""
 	"raytrace { amplitude: -0.0051012421 doppler: 1.0009956301482308 elevation: 14.6926994 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.1265081630067604 } } "
 	"raytrace { amplitude: -3.59404521e-06 doppler: 1.000996831725558 elevation: 14.426631000000002 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.12647255724324247 } } "
 	"raytrace { amplitude: 0.00525906309 doppler: 1.0010278467409948 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12136817704779784 } } "
 	"raytrace { amplitude: 5.20280082e-06 doppler: 1.0010281305607063 elevation: -2.7171731 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12134185156064167 } } "
+	"noise_level: 39.210526315789473 receiver_sound_speed: 1434.17 surface_sound_speed: 1433.64 bottom_sound_speed: 0 request_id: 2669 request_time: 1533310017.000212 ";
+    */
+    std::string imp_rep_str = "source: \"62000\" receiver: \"62001\""
+      //"raytrace { amplitude: -0.0051012421 doppler: 1.0009956301482308 elevation: 14.6926994 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.5265081630067604 } } "
+      "raytrace { amplitude: -0.0051012421 doppler: 1.001 elevation: 14.6926994 surface_bounces: 1 bottom_bounces: 0 element { delay: 1.5265081630067604 } } "
+//	"raytrace { amplitude: -3.59404521e-06 doppler: 1.000996831725558 elevation: 14.426631000000002 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.12647255724324247 } } "
+      //"raytrace { amplitude: 0.00525906309 doppler: 1.0010278467409948 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12136817704779784 } } "
+      "raytrace { amplitude: 0.00525906309 doppler: 1.001 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 0 element { delay: 1.12136817704779784 } } "
+      //	"raytrace { amplitude: 5.20280082e-06 doppler: 1.0010281305607063 elevation: -2.7171731 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12134185156064167 } } "
+      //"raytrace { amplitude: 0.00525906309 doppler: 1.0010278467409948 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 1 element { delay: 2.12136817704779784 } } "
+      "raytrace { amplitude: 0.00525906309 doppler: 1.001 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 1 element { delay: 3.12136817704779784 } } "
 	"noise_level: 39.210526315789473 receiver_sound_speed: 1434.17 surface_sound_speed: 1433.64 bottom_sound_speed: 0 request_id: 2669 request_time: 1533310017.000212 ";
 
     google::protobuf::TextFormat::ParseFromString(imp_rep_str, &impulse_response);

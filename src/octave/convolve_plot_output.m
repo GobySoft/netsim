@@ -1,7 +1,8 @@
 %pkg load signal
 clear all;
 close all;
-files={'netsim_20180803T144437_in_005_modem1.bin' '/tmp/convolvetest_elem_0_frame_00381'};
+%files={'netsim_20180803T144437_in_005_modem1.bin' '/tmp/convolvetest_elem_0_frame_000381'};
+files={'CW_4000_1s.dat' '/tmp/convolvetest_elem_0_frame_00390'};
 %files{1} = '/tmp/noise.bin';
 
 
