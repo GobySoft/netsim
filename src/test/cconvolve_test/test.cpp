@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
     */
     std::string imp_rep_str = "source: \"62000\" receiver: \"62001\""
       //"raytrace { amplitude: -0.0051012421 doppler: 1.0009956301482308 elevation: 14.6926994 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.5265081630067604 } } "
-      "raytrace { amplitude: -0.0051012421 doppler: 1.001 elevation: 14.6926994 surface_bounces: 1 bottom_bounces: 0 element { delay: 1.5265081630067604 } } "
+      "raytrace { amplitude: 0.0051012421 doppler: 1.001 elevation: 14.6926994 surface_bounces: 1 bottom_bounces: 0 element { delay: 1.5265081630067604 } } "
 //	"raytrace { amplitude: -3.59404521e-06 doppler: 1.000996831725558 elevation: 14.426631000000002 surface_bounces: 1 bottom_bounces: 0 element { delay: 0.12647255724324247 } } "
       //"raytrace { amplitude: 0.00525906309 doppler: 1.0010278467409948 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 0 element { delay: 0.12136817704779784 } } "
       "raytrace { amplitude: 0.00525906309 doppler: 1.001 elevation: -3.032197 surface_bounces: 0 bottom_bounces: 0 element { delay: 1.12136817704779784 } } "
