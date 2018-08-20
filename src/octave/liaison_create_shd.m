@@ -1,6 +1,7 @@
 %figure ("visible", "off")
 
-filename='/home/toby/gs/research/ucomms2018/arctic/ICEX16_100m_env.shd'
+filename=argv(){1}
+%filename='/home/toby/gs/research/ucomms2018/arctic/ICEX16_100m_env.shd'
 
 % From M. Porter's Acoustics Toolbox
 [ PlotTitle, ~, freq, ~, Pos, pressure ] = read_shd( filename );
@@ -29,9 +30,9 @@ tlmin = tlmax - 50;                 % min for colorbar
 %
 tlt_max=tlmax;
 tlt_min=tlmin;
-tlt_scaled=1-(tlt-tlt_min)./(tlt_max-tlt_min);
+tlt_scaled=255*(1-(tlt-tlt_min)./(tlt_max-tlt_min));
 tlt_scaled(tlt_scaled<0)=0;
-imwrite(tlt_scaled, '/tmp/output2.png');
+imwrite(uint8(tlt_scaled), 'output2.png');
 
-cbar=repmat(linspace(1, 0, size(zt))', 1, 50);
-imwrite(cbar, '/tmp/cbar.png');
+cbar=repmat(linspace(255, 0, length(zt))', 1, 50);
+imwrite(uint8(cbar), 'cbar.png');

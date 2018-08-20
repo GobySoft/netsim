@@ -1,9 +1,11 @@
 pkg load signal
 close all;
-dir='/home/toby/Desktop/netsim_logs/audio'
-run_start='20180814T183836'
-packet_id=5
-packet_id_end=5
+dir=argv(){1};
+run_start=argv(){2};
+packet_id=str2num(argv(){3});
+%dir='/home/toby/Desktop/netsim_logs/audio'
+%run_start='20180814T183836'
+%packet_id=5
 
 in_files=glob([dir '/netsim_' run_start '_in_' sprintf('%03d', packet_id) '*.bin']);
 out_files=glob([dir '/netsim_' run_start '_out_' sprintf('%03d', packet_id) '*.bin']);
@@ -12,7 +14,7 @@ num_files=length(in_files)+length(out_files);
 fs = 96000;
 
 out_packet_time=NaN(size(out_files));
-max_time = 8;
+max_time = 15;
 for fi = 1:num_files
   if fi == 1    
     file = strsplit(in_files{1}, '/'){end};
@@ -48,7 +50,7 @@ if fi == 1
   figure(1, "visible", "off")
   subplot(num_files, 1, fi);
   
-  downsample_factor=10;
+  downsample_factor=20;
   % downsample to reduce visual data to render
   plot(downsample(time{fi},downsample_factor), downsample(data{fi}, downsample_factor));
   xlim([0 max_time]);
