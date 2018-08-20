@@ -18,11 +18,11 @@ public:
         {
 	    glog.is(DEBUG1) && glog << "Environment id: " << environment_id_ << std::endl;
 
-            Base::goby_comms().subscribe<groups::env_impulse_req, EnvironmentImpulseRequest>(
+            Base::goby_comms().interprocess().subscribe<groups::env_impulse_req, EnvironmentImpulseRequest>(
                 [this](const EnvironmentImpulseRequest& i) { this->goby_to_moos(i); }
                 );
 
-            Base::goby_comms().subscribe<groups::env_nav_update, EnvironmentNavUpdate>(
+            Base::goby_comms().interprocess().subscribe<groups::env_nav_update, EnvironmentNavUpdate>(
                 [this](const EnvironmentNavUpdate& n) { this->goby_to_moos(n); }
                 );
 
@@ -68,7 +68,7 @@ private:
                 // publish IMPULSE_RESPONSE
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
                 auto imp_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "ImpulseResponse");
-                Base::goby_comms().publish<groups::impulse_response>(std::dynamic_pointer_cast<ImpulseResponse>(imp_resp_pb));
+                Base::goby_comms().interprocess().publish<groups::impulse_response>(std::dynamic_pointer_cast<ImpulseResponse>(imp_resp_pb));
             }
         }
 

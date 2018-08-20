@@ -7,6 +7,6 @@ for i in `seq 61999 62007`; do
     sudo ufw allow proto tcp from $1 to 172.19.21.10 port $i
 done
 
-sudo systemctl restart modemsim_socat@{0..7}
+sudo systemctl restart netsim_socat@{0..7}
 
 sudo ufw status

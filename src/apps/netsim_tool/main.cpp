@@ -116,7 +116,7 @@ public:
             NetSimManagerRequest req;
             req.set_id(request_id_++);
             auto& nav = *req.add_nav();
-            nav.set_modem_tcp_port(62000);
+            nav.set_modem_tcp_port(cfg().tx_driver_cfg().tcp_port());
             nav.set_time(goby::common::goby_time<double>());
 
             nav.set_lat(cfg().lat_origin());
@@ -206,7 +206,7 @@ private:
             NetSimManagerRequest req;
             req.set_id(request_id_++);
             auto& nav = *req.add_nav();
-            nav.set_modem_tcp_port(62001);
+            nav.set_modem_tcp_port(cfg().rx_driver_cfg().tcp_port());
             nav.set_time(goby::common::goby_time<double>());
 
             auto latlon = geodesy_.convert(goby::util::UTMGeodesy::XYPoint({ r_*boost::units::si::meters, 0*boost::units::si::meters}));
