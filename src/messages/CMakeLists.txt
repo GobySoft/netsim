@@ -1,5 +1,6 @@
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${project_INC_DIR}/messages
   tool.proto
+  liaison.proto
   )
 
 add_library(netsim_messages SHARED ${PROTO_SRCS} ${PROTO_HDRS})
