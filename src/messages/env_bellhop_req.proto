@@ -1,0 +1,9 @@
+import "iBellhop_messages.proto";
+
+message EnvironmentiBellhopRequest
+{
+    required int32 environment_id = 1;
+    required iBellhopRequest req = 2;
+}
+
+

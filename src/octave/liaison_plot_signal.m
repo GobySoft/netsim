@@ -87,6 +87,7 @@ if fi == 1
   if fi == num_files  
       xlabel('time (s) since detection start')
   end
+  ylabel('freq (Hz)');
 end
 
 xsize = 1000;

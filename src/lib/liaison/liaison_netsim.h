@@ -18,6 +18,8 @@
 #include "messages/liaison.pb.h"
 #include "messages/groups.h"
 #include "messages/logger.pb.h"
+#include "messages/config_request.pb.h"
+#include "messages/manager_config.pb.h"
 
 class NetsimCommsThread;
     
@@ -28,6 +30,7 @@ public:
     LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg);
 
     void handle_new_log(const LoggerEvent& event);
+    void handle_manager_cfg(const NetSimManagerConfig& cfg);
    
     
 private:
@@ -43,12 +46,26 @@ private:
     std::unique_ptr<Wt::WResource> spect_image_resource_;
 
     Wt::WGroupBox* tl_box_;
+    Wt::WTable* tl_table_;
+    
+    Wt::WText* tl_tx_txt_;
     Wt::WComboBox* tl_tx_;
+
+    Wt::WText* tl_rx_txt_;
     Wt::WComboBox* tl_rx_;    
-    Wt::WLineEdit* tl_r_;
-    Wt::WLineEdit* tl_dr_;
-    Wt::WLineEdit* tl_z_;
-    Wt::WLineEdit* tl_dz_;
+
+    Wt::WText* tl_r_txt_;
+    Wt::WSpinBox* tl_r_;
+    
+    Wt::WText* tl_dr_txt_;
+    Wt::WSpinBox* tl_dr_;
+
+    Wt::WText* tl_z_txt_;
+    Wt::WSpinBox* tl_z_;
+
+    Wt::WText* tl_dz_txt_;
+    Wt::WSpinBox* tl_dz_;
+    
     Wt::WPushButton* tl_request_;
     
 };
@@ -68,8 +85,20 @@ NetsimCommsThread(LiaisonNetsim* wt_app, const goby::common::protobuf::LiaisonCo
                         wt_app_->post_to_wt(
                             [=]() { wt_app_->handle_new_log(event); });
                     });
+	    
+            interprocess().subscribe<groups::configuration,
+                NetSimManagerConfig>(
+                    [this](const NetSimManagerConfig& manager_cfg)
+                    {
+                        wt_app_->post_to_wt(
+                            [=]() { wt_app_->handle_manager_cfg(manager_cfg); });
+                    });
 
-                
+	    
+	    ConfigRequest req;
+	    req.set_subsystem(ConfigRequest::MANAGER);
+	    interprocess().publish<groups::config_request>(req);
+	    
         }
     ~NetsimCommsThread()
     {
