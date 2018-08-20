@@ -8,7 +8,9 @@ namespace groups
     // published by netsim
     constexpr goby::Group impulse_request{"impulse_request"};
     constexpr goby::Group buffer_size_change{"buffer_size_change"};
-
+    constexpr goby::Group logger_event{"logger_event"};
+    
+    
     // published by netsim_manager
     constexpr goby::Group env_nav_update{"environment_nav_update"};
     constexpr goby::Group env_impulse_req{"environment_impulse_request"};

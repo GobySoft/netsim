@@ -1,3 +1,6 @@
+pkg prefix /home/toby/octave;
+pkg local_list /home/toby/.octave_packages
+pkg global_list /home/toby/.octave_packages
 pkg load signal
 close all;
 dir=argv(){1};
@@ -6,7 +9,7 @@ packet_id=str2num(argv(){3});
 %dir='/home/toby/Desktop/netsim_logs/audio'
 %run_start='20180814T183836'
 %packet_id=5
-
+    
 in_files=glob([dir '/netsim_' run_start '_in_' sprintf('%03d', packet_id) '*.bin']);
 out_files=glob([dir '/netsim_' run_start '_out_' sprintf('%03d', packet_id) '*.bin']);
 num_files=length(in_files)+length(out_files);
@@ -28,7 +31,7 @@ for fi = 1:num_files
     dt(fi) = out_packet_time(fi-1) - in_packet_time;
   end
   
-  data{fi} = fread(fid,Inf,'double');  
+  data{fi} = fread(fid,Inf,'float');  
   time{fi} = (1.0:size(data{fi}))/fs + dt(fi);
   %max_time = max(max_time, max(time{fi}));
   fclose(fid);
@@ -56,26 +59,43 @@ if fi == 1
   xlim([0 max_time]);
   
   ylabel('amplitude');
-  xlabel(['time (s) since ' num2str(in_packet_time)]);
-  title(file, 'Interpreter', 'None');
-  
+
+  if fi == num_files  
+      xlabel('time (s) since detection start')
+  end
+
+  [re_s, re_e, re_te, re_m, re_t, re_nm, re_sp]= regexp(file, "_modem([0-9]+)\.bin");
+  port=str2num(re_t{1}{1})+62000;
+      
+  if fi == 1
+      title_str=["Transmitter " num2str(port)];
+  else
+      title_str=["Receiver " num2str(port)];
+  end
+
+  title(title_str);
+
   figure(2, "visible", "off")
   subplot(num_files, 1, fi);
-  [S, f, t] = specgram(data{fi}, 512, 96000);
+  [S, f, t] = specgram(data{fi}, 2048, 96000);
   S = 20*log10(abs(S));
   imagesc(t + dt(fi), f, S);
   xlim([0 max_time]);
   set(gca,'YDir','normal')
   colorbar
-  title(file, 'Interpreter', 'None')
+  title(title_str);
+  if fi == num_files  
+      xlabel('time (s) since detection start')
+  end
 end
 
-xsize = 640;
-ysize = 479;
+xsize = 1000;
+ysize = 400;
 
 figure(1, "visible", "off")
-print([in_files{1} '.timeseries.png'],'-dpng');
+print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_timeseries.png"],'-dpng',['-S' num2str(xsize) ',' num2str(ysize)]);
 
 figure(2, "visible", "off")
-%  print([in_files{1} '.png'],'-dpng',['-S' num2str(xsize) ',' num2str(ysize)]);
-print([in_files{1} '.spectrogram.png'],'-dpng');
+print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_spectrogram.png"],'-dpng',['-S' num2str(xsize) ',' num2str(ysize)]);
+%print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_spectrogram.png"],'-dpng');
+

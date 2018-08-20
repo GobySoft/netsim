@@ -16,6 +16,8 @@
 #include "goby/middleware/multi-thread-application.h"
 
 #include "messages/liaison.pb.h"
+#include "messages/groups.h"
+#include "messages/logger.pb.h"
 
 class NetsimCommsThread;
     
@@ -24,12 +26,31 @@ class LiaisonNetsim : public goby::common::LiaisonContainerWithComms<LiaisonNets
 {
 public:
     LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg);
-        
-private:
-        
-    const protobuf::LiaisonNetsimConfig& netsim_cfg_;
- 
 
+    void handle_new_log(const LoggerEvent& event);
+   
+    
+private:
+    
+    
+    const protobuf::LiaisonNetsimConfig& netsim_cfg_;
+
+    Wt::WGroupBox* timeseries_box_;
+    Wt::WImage* timeseries_image_;
+    std::unique_ptr<Wt::WResource> timeseries_image_resource_;
+    Wt::WGroupBox* spect_box_;
+    Wt::WImage* spect_image_;
+    std::unique_ptr<Wt::WResource> spect_image_resource_;
+
+    Wt::WGroupBox* tl_box_;
+    Wt::WComboBox* tl_tx_;
+    Wt::WComboBox* tl_rx_;    
+    Wt::WLineEdit* tl_r_;
+    Wt::WLineEdit* tl_dr_;
+    Wt::WLineEdit* tl_z_;
+    Wt::WLineEdit* tl_dz_;
+    Wt::WPushButton* tl_request_;
+    
 };
     
      
@@ -40,13 +61,13 @@ NetsimCommsThread(LiaisonNetsim* wt_app, const goby::common::protobuf::LiaisonCo
     goby::common::LiaisonCommsThread<LiaisonNetsim>(wt_app, config, index),
         wt_app_(wt_app)
         {
-            /* interprocess().subscribe<dsl::progressive_imagery::groups::updated_image, */
-            /*     dsl::protobuf::UpdatedImageEvent>( */
-            /*         [this](const dsl::protobuf::UpdatedImageEvent& updated_image) */
-            /*         { */
-            /*             wt_app_->post_to_wt( */
-            /*                 [=]() { wt_app_->handle_updated_image(updated_image); });    */
-            /*         }); */
+            interprocess().subscribe<groups::logger_event,
+                LoggerEvent>(
+                    [this](const LoggerEvent& event)
+                    {
+                        wt_app_->post_to_wt(
+                            [=]() { wt_app_->handle_new_log(event); });
+                    });
 
             /* interprocess().subscribe<dsl::progressive_imagery::groups::received_status, */
             /*     dsl::protobuf::ReceivedStatus>( */
