@@ -1,0 +1,12 @@
+message LoggerEvent
+{
+    enum Event
+    {
+	ALL_LOGS_CLOSED_FOR_PACKET = 1;
+    }
+    required Event event = 1;
+    
+    required string log_dir = 2;
+    required string start_time = 3;
+    required int32 packet_id = 4;
+}
