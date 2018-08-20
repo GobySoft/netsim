@@ -61,7 +61,7 @@ NetsimCommsThread(LiaisonNetsim* wt_app, const goby::common::protobuf::LiaisonCo
     goby::common::LiaisonCommsThread<LiaisonNetsim>(wt_app, config, index),
         wt_app_(wt_app)
         {
-            interprocess().subscribe<groups::logger_event,
+            interprocess().subscribe<groups::post_process_event,
                 LoggerEvent>(
                     [this](const LoggerEvent& event)
                     {
@@ -69,13 +69,6 @@ NetsimCommsThread(LiaisonNetsim* wt_app, const goby::common::protobuf::LiaisonCo
                             [=]() { wt_app_->handle_new_log(event); });
                     });
 
-            /* interprocess().subscribe<dsl::progressive_imagery::groups::received_status, */
-            /*     dsl::protobuf::ReceivedStatus>( */
-            /*         [this](const dsl::protobuf::ReceivedStatus& status) */
-            /*         { */
-            /*             wt_app_->post_to_wt( */
-            /*                 [=]() { wt_app_->handle_received_status(status); }); */
-            /*         }); */
                 
         }
     ~NetsimCommsThread()

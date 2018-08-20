@@ -39,24 +39,6 @@ void LiaisonNetsim::handle_new_log(const LoggerEvent& event)
 	std::stringstream timeseries_out_path;
 	timeseries_out_path << event.log_dir() << "/netsim_" << event.start_time() << "_" << std::setw(3) << std::setfill('0') << event.packet_id() << "_timeseries.png";
 
-	static std::atomic<int> octave_run {-1};
-	
-	if(octave_run != event.packet_id())
-	{
-	    octave_run = event.packet_id();
-	    std::stringstream octave_cmd;
-	    octave_cmd << "flatpak run org.octave.Octave /opt/netsim/src/octave/liaison_plot_signal.m " << event.log_dir() << " " << event.start_time() << " " << event.packet_id();
-	    glog.is_debug1() && glog << "Running: " << octave_cmd.str() << std::endl;
-	    system(octave_cmd.str().c_str());
-	    glog.is_debug1() && glog << "Octave complete" << std::endl;
-	}
-	else
-	{
-	    while(!boost::filesystem::exists(spect_out_path.str()))
-		usleep(10000);
-
-	}
-
 	{
 	    spect_image_resource_.reset(new WFileResource(spect_out_path.str().c_str()));
 	    Wt::WLink link(spect_image_resource_.get());

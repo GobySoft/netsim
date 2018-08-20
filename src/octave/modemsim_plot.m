@@ -1,8 +1,8 @@
 pkg load signal
 close all;
-dir='/opt/logs/audio'
-run_start='20180803T132701'
-packet_id_start=0
+dir='/home/toby/Desktop/netsim_logs/audio'
+run_start='20180814T183836'
+packet_id_start=5
 packet_id_end=5
 
 for packet_id = packet_id_start:packet_id_end
