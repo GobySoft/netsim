@@ -50,22 +50,31 @@ if fi == 1
     dt(fi) = out_packet_time(fi-1) - in_packet_time;
   end
 
+  [re_s, re_e, re_te, re_m, re_t, re_nm, re_sp]= regexp(file, "_modem([0-9]+)\.bin");
+  port=str2num(re_t{1}{1})+62000;
+
+  
   figure(1, "visible", "off")
-  subplot(num_files, 1, fi);
+  subplot(num_files, 1, port-62000+1);
   
   downsample_factor=20;
   % downsample to reduce visual data to render
-  plot(downsample(time{fi},downsample_factor), downsample(data{fi}, downsample_factor));
+
+
+  if fi == 1
+      plotcol='k'
+  else
+      plotcol=''
+  endif
+
+  plot(downsample(time{fi},downsample_factor), downsample(data{fi}, downsample_factor), plotcol);
   xlim([0 max_time]);
   
   ylabel('amplitude');
 
-  if fi == num_files  
-      xlabel('time (s) since detection start')
-  end
-
-  [re_s, re_e, re_te, re_m, re_t, re_nm, re_sp]= regexp(file, "_modem([0-9]+)\.bin");
-  port=str2num(re_t{1}{1})+62000;
+%  if fi == num_files  
+%      xlabel('time (s) since detection start')
+%  end
       
   if fi == 1
       title_str=["Transmitter " num2str(port)];
@@ -76,17 +85,17 @@ if fi == 1
   title(title_str);
 
   figure(2, "visible", "off")
-  subplot(num_files, 1, fi);
+  subplot(num_files, 1, port-62000+1);
   [S, f, t] = specgram(data{fi}, 2048, 96000);
   S = 20*log10(abs(S));
   imagesc(t + dt(fi), f, S);
   xlim([0 max_time]);
   set(gca,'YDir','normal')
-  colorbar
+  colorbar;
   title(title_str);
-  if fi == num_files  
-      xlabel('time (s) since detection start')
-  end
+%  if fi == num_files  
+%      xlabel('time (s) since detection start')
+%  end
   ylabel('freq (Hz)');
 end
 

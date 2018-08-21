@@ -180,7 +180,10 @@ void LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
 //    tl_plot_->setImageLink(link);
     tl_plot_->update();
     tl_request_->enable();
-	       		       
+
+    nav_at_last_tx_start_.clear();
+    nav_at_previous_tx_start_.clear();
+    receive_stats_.clear();    	      
 }
 
 void LiaisonNetsim::handle_manager_cfg(const NetSimManagerConfig& cfg)
@@ -239,6 +242,7 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 	    painter.drawText(x, image.height(), text_length_, text_length_, Wt::AlignLeft | Wt::AlignTop, std::to_string((x-(pwidth/2+text_length_))*netsim_->dr_)+ " m");
 	
 	netsim_->tl_image_path_.clear();
+	refresh_key_.clear();
     }
 
 
@@ -261,15 +265,16 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 	
 	for(const auto& nav_pair : navs)
     	{
-    	    if(nav_pair.first == netsim_->transmitter_tcp_port_)
+	    auto rx_modem_tcp_port = nav_pair.first;
+    	    if(rx_modem_tcp_port == netsim_->transmitter_tcp_port_)
     		continue;
 	    
-    	    painter.setPen(netsim_->rx_pens_[nav_pair.first % netsim_->rx_pens_.size()]);
+    	    painter.setPen(netsim_->rx_pens_[rx_modem_tcp_port % netsim_->rx_pens_.size()]);
 
     	    Wt::WBrush brush;
-	    if(rx_stats.count(nav_pair.first))
+	    if(rx_stats.count(rx_modem_tcp_port))
 	    {		
-		const auto& rx_stat = rx_stats.at(nav_pair.first);
+		const auto& rx_stat = rx_stats.at(rx_modem_tcp_port);
 
 		if(rx_stat.has_mm_stats())
 		{
@@ -303,7 +308,6 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 		painter.setBrush(Wt::WBrush(Wt::WColor(0,0,0)));
 	    }
 	    
-    	    int diam = 8;
 
     	    auto depth = nav_pair.second.depth();
 
@@ -314,8 +318,28 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 	    
 	    auto range = std::sqrt(x*x+y*y);
 
-	    glog.is_debug1() && glog << "painting for rx: " << nav_pair.first << " at range: " << range << " and depth " << depth << std::endl;
-	    painter.drawEllipse(range/netsim_->dr_+text_length_, depth/netsim_->dz_, diam, diam);
+	    glog.is_debug1() && glog << "painting for rx: " << rx_modem_tcp_port << " at range: " << range << " and depth " << depth << std::endl;
+
+	    if(rx_modem_tcp_port % 2 == 0)
+		painter.drawEllipse(range/netsim_->dr_+text_length_, depth/netsim_->dz_, diam_, diam_);
+	    else
+		painter.drawRect(range/netsim_->dr_+text_length_, depth/netsim_->dz_, diam_, diam_);
+
+	    // key
+	    if(!refresh_key_.count(rx_modem_tcp_port))
+	    {
+
+		int key_x = this->width().toPixels()-100;
+		auto spacing = 20;
+		auto key_y = rx_modem_tcp_port-62000*spacing;
+		if(rx_modem_tcp_port % 2 == 0)		   
+		    painter.drawEllipse(key_x, key_y, diam_, diam_);
+		else
+		    painter.drawRect(key_x, key_y, diam_, diam_);
+		painter.drawText(key_x + diam_ + 2, key_y, 100, spacing, Wt::AlignRight | Wt::AlignTop, std::to_string(rx_modem_tcp_port));
+	       
+		refresh_key_.insert(rx_modem_tcp_port);		   
+	    }
     	}
 
 	navs.clear();

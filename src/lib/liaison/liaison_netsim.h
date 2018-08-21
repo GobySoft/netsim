@@ -46,6 +46,9 @@ protected:
 private:
     LiaisonNetsim* netsim_;
     int text_length_{ 50 };
+    int diam_{ 8 };
+    // modem_tcp_ports that have reset their key legend
+    std::set<int> refresh_key_;
 };
 
 
@@ -109,7 +112,7 @@ private:
 
     iBellhopResponse tl_bellhop_resp_;
 
-    std::vector<Wt::WPen> rx_pens_ { Wt::WPen(Wt::cyan), Wt::WPen(Wt::white), Wt::WPen(Wt::yellow), Wt::WPen(Wt::gray), Wt::WPen(Wt::magenta) };    
+    std::vector<Wt::WPen> rx_pens_ { Wt::WPen(Wt::white), Wt::WPen(Wt::white), Wt::WPen(Wt::yellow), Wt::WPen(Wt::yellow), Wt::WPen(Wt::gray), Wt::WPen(Wt::gray) };    
     
     // int = modem_tcp_port
     std::map<int, NavUpdate> last_nav_;
@@ -124,6 +127,7 @@ private:
     std::map<int, std::map<int, ReceiveStats>> receive_stats_;
     
     NetSimManagerConfig manager_cfg_;
+
 };
     
      
