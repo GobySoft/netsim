@@ -3,6 +3,7 @@
 #include "config.pb.h"
 #include "messages/groups.h"
 #include "audio_images.h"
+#include "tl_plot.h"
 
 using namespace goby::common::logger;
 using goby::glog;
@@ -13,6 +14,7 @@ public:
     NetSimPostprocess()
         {
             launch_thread<AudioImagesThread>(); 
+            launch_thread<TLPlotThread>(); 
 	}
 };
 

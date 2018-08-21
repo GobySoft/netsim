@@ -25,6 +25,7 @@ namespace groups
     
     // published by goby_moos_gateway
     constexpr goby::Group impulse_response{"impulse_response"};
+    constexpr goby::Group bellhop_response{"bellhop_response"};
 
     // published by netsim_tool
     namespace tool

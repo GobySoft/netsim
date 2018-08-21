@@ -96,6 +96,12 @@ private:
                 auto imp_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "ImpulseResponse");
                 Base::goby_comms().interprocess().publish<groups::impulse_response>(std::dynamic_pointer_cast<ImpulseResponse>(imp_resp_pb));
             }
+            else if(moos_msg.GetKey() == bellhop_resp_var_)
+            {
+                std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
+                auto bellhop_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "iBellhopResponse");
+                Base::goby_comms().interprocess().publish<groups::bellhop_response>(std::dynamic_pointer_cast<iBellhopResponse>(bellhop_resp_pb));
+            }
         }
 
     void goby_to_moos(const EnvironmentImpulseRequest& req)

@@ -1,5 +1,7 @@
 %figure ("visible", "off")
 
+addpath('/opt/lamss-shared/src/thirdparty/at/Matlab/ReadWrite/');
+
 filename=argv(){1}
 %filename='/home/toby/gs/research/ucomms2018/arctic/ICEX16_100m_env.shd'
 
@@ -32,7 +34,7 @@ tlt_max=tlmax;
 tlt_min=tlmin;
 tlt_scaled=255*(1-(tlt-tlt_min)./(tlt_max-tlt_min));
 tlt_scaled(tlt_scaled<0)=0;
-imwrite(uint8(tlt_scaled), 'output2.png');
+imwrite(uint8(tlt_scaled), [filename '.png']);
 
 cbar=repmat(linspace(255, 0, length(zt))', 1, 50);
 imwrite(uint8(cbar), 'cbar.png');

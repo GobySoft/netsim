@@ -21,6 +21,7 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     spect_box_(new WGroupBox("Audio Spectrogram", this)),
     spect_image_(new WImage(spect_box_)),
     tl_box_(new WGroupBox("TL / Statistics", this)),
+    tl_plot_(new TLPaintedWidget(this, tl_box_)),
     tl_table_(new WTable(tl_box_)),
     tl_tx_txt_(new WText("Transmitter: ")),
     tl_tx_(new WComboBox),
@@ -60,15 +61,15 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
 
     tl_dr_->setRange(1, 10000);
     tl_dr_->setSingleStep(10);
-    tl_dr_->setValue(100);
+    tl_dr_->setValue(10);
 
-    tl_z_->setRange(0, 10000);
-    tl_z_->setSingleStep(100);
-    tl_z_->setValue(3000);
+    tl_z_->setRange(-10000, 0);
+    tl_z_->setSingleStep(10);
+    tl_z_->setValue(-400);
     
     tl_dz_->setRange(1, 1000);
-    tl_dz_->setSingleStep(10);
-    tl_dz_->setValue(10);
+    tl_dz_->setSingleStep(1);
+    tl_dz_->setValue(1);
 
     tl_request_->clicked().connect([this](const WMouseEvent& ev)
 				   {
@@ -81,9 +82,12 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
 				       
 				       auto& env = *req.mutable_env();
 				       auto& ai = *env.mutable_adaptive_info();
-				       ai.set_contact(tl_rx_->currentText().narrow());
-				       ai.set_ownship(tl_tx_->currentText().narrow());
-
+				       ai.set_contact(tl_tx_->currentText().narrow());
+				       // iBellhop defines ownship as the moving AUV
+				       ai.set_ownship(tl_rx_->currentText().narrow());
+				       ai.set_auto_receiver_ranges(false);
+				       ai.set_auto_source_depth(true);
+				       
 				       // TODO - fix me
 				       env.set_freq(4000);
 				       auto& output = *env.mutable_output();
@@ -91,22 +95,20 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
 				       auto& rx = *env.mutable_receivers();
 				       auto& tx = *env.mutable_sources();
 
-				       auto z = tl_z_->value();
-				       auto dz = tl_dz_->value();
-				       auto r = tl_r_->value();
-				       auto dr = tl_dr_->value();
+				       z_ = tl_z_->value();
+				       dz_ = tl_dz_->value();
+				       r_ = tl_r_->value();
+				       dr_ = tl_dr_->value();
 				       
-				       rx.set_number_in_depth(std::abs(z/dz));
-				       rx.set_number_in_range(r/dr);
+				       rx.set_number_in_depth(std::abs(z_/dz_));
+				       rx.set_number_in_range(r_/dr_);
 				       rx.mutable_first()->set_depth(0);
 				       rx.mutable_first()->set_range(0);
-				       rx.mutable_last()->set_depth(std::abs(z));
-				       rx.mutable_last()->set_range(r);
+				       rx.mutable_last()->set_depth(std::abs(z_));
+				       rx.mutable_last()->set_range(r_);
 
 				       tx.set_number_in_depth(1);
 
-				       // TODO - fix me
-				       tx.mutable_first()->set_depth(33);
 
 				       auto beams = *env.mutable_beams();
 				       beams.set_approximation_type(bellhop::protobuf::Environment::Beams::GAUSSIAN);
@@ -114,7 +116,8 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
 				       beams.set_theta_max(60);
 				       beams.set_number(1000);				       
 				       
-				       this->post_to_comms([=]() { this->goby_thread()->interprocess().publish<groups::bellhop_request>(req); });				       
+				       this->post_to_comms([=]() { this->goby_thread()->interprocess().publish<groups::bellhop_request>(req); });
+				       tl_request_->disable();
 				   });
     
     set_name("Netsim");
@@ -143,6 +146,18 @@ void LiaisonNetsim::handle_new_log(const LoggerEvent& event)
     }
 }
 
+void LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
+{
+    tl_image_path_ = resp.output_file() + ".png";
+    tl_plot_resource_.reset(new WFileResource(tl_image_path_.c_str()));
+    tl_bellhop_resp_ = resp;
+//    Wt::WLink link(tl_plot_resource_.get());
+//    tl_plot_->setImageLink(link);
+    tl_plot_->update();
+    tl_request_->enable();
+	       		       
+}
+
 void LiaisonNetsim::handle_manager_cfg(const NetSimManagerConfig& cfg)
 {
     for(const auto& sim_env_pair : cfg.sim_env_pair())
@@ -155,4 +170,46 @@ void LiaisonNetsim::handle_manager_cfg(const NetSimManagerConfig& cfg)
 	tl_rx_->setCurrentIndex(1);
 
     
+}
+
+
+void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
+{
+    Wt::WPainter painter(paintDevice);
+
+    if(!netsim_->tl_image_path_.empty())
+    {   	
+	Wt::WPainter::Image image(netsim_->tl_plot_resource_->url(), netsim_->tl_image_path_);
+	int text_length = 50;
+	int tick_length = 10;
+	resize(image.width()+text_length, image.height()+text_length);	
+
+	painter.drawImage(text_length, 0, image);       
+
+	int tick_spacing = 100; //pixels
+
+	Wt::WPen white_pen = Wt::WPen(Wt::WColor(255,255,255));
+	int pwidth= 2;
+	white_pen.setWidth(pwidth);
+	painter.setPen(white_pen);
+	
+	for(int y = pwidth/2; y < image.height(); y += tick_spacing)
+	    painter.drawLine(text_length, y, text_length+tick_length, y);
+
+	for(int x = pwidth/2+text_length; x < image.width(); x += tick_spacing)
+	    painter.drawLine(x, image.height()-tick_length, x, image.height());
+
+
+	Wt::WPen black_pen = Wt::WPen(Wt::WColor(0,0,0));
+	painter.setPen(black_pen);
+
+	for(int y = pwidth/2; y < image.height(); y += tick_spacing)
+	    painter.drawText(0, y, text_length, text_length, Wt::AlignRight | Wt::AlignTop, std::to_string(-(y-pwidth/2)*netsim_->dz_) + " m");
+	    
+	for(int x = pwidth/2+text_length; x < image.width(); x += tick_spacing)
+	    painter.drawText(x, image.height(), text_length, text_length, Wt::AlignLeft | Wt::AlignTop, std::to_string((x-(pwidth/2+text_length))*netsim_->dr_)+ " m");
+	
+	netsim_->tl_image_path_.clear();
+    }
+
 }
