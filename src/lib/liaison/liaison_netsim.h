@@ -25,6 +25,7 @@
 #include "messages/manager_config.pb.h"
 
 #include "iBellhop_messages.pb.h"
+#include "modem_sim.pb.h"
 
 class NetsimCommsThread;
 class LiaisonNetsim;
@@ -37,7 +38,6 @@ TLPaintedWidget(LiaisonNetsim* netsim, Wt::WContainerWidget* parent) :
 	netsim_(netsim)
     {
 	resize(10, 10);
-//	setPreferredMethod(PngImage);     
     }
 
 protected:
@@ -45,6 +45,7 @@ protected:
 
 private:
     LiaisonNetsim* netsim_;
+    int text_length_{ 50 };
 };
 
 
@@ -58,7 +59,11 @@ public:
     void handle_manager_cfg(const NetSimManagerConfig& cfg);
     void handle_bellhop_resp(const iBellhopResponse& resp);
    
-    
+    void handle_updated_nav(const EnvironmentNavUpdate& update)
+    { last_nav_[update.nav().modem_tcp_port()] = update.nav(); }
+    void handle_receive_stats(const ReceiveStats& stats)
+    { receive_stats_[stats.tx_modem_tcp_port()][stats.modem_tcp_port()] = stats; }
+	
 private:
     friend class TLPaintedWidget;
 
@@ -97,11 +102,28 @@ private:
     
     Wt::WPushButton* tl_request_;
 
+    int transmitter_tcp_port_{0};
     int r_, dr_, z_, dz_;
     
     std::string tl_image_path_;
 
     iBellhopResponse tl_bellhop_resp_;
+
+    std::vector<Wt::WPen> rx_pens_ { Wt::WPen(Wt::cyan), Wt::WPen(Wt::white), Wt::WPen(Wt::yellow), Wt::WPen(Wt::gray), Wt::WPen(Wt::magenta) };    
+    
+    // int = modem_tcp_port
+    std::map<int, NavUpdate> last_nav_;
+
+    // tx modem_tcp_port -> map of nav (last tx)
+    std::map<int, std::map<int, NavUpdate>> nav_at_last_tx_start_;
+
+    // tx modem_tcp_port -> map of nav (one prior to last tx)
+    std::map<int, std::map<int, NavUpdate>> nav_at_previous_tx_start_;
+    
+    // tx_modem_tcp_port -> rx_modem_tcp_port -> ReceiveStats
+    std::map<int, std::map<int, ReceiveStats>> receive_stats_;
+    
+    NetSimManagerConfig manager_cfg_;
 };
     
      
@@ -135,6 +157,22 @@ NetsimCommsThread(LiaisonNetsim* wt_app, const goby::common::protobuf::LiaisonCo
                     {
                         wt_app_->post_to_wt(
                             [=]() { wt_app_->handle_manager_cfg(manager_cfg); });
+                    });
+
+            interprocess().subscribe<groups::env_nav_update,
+                EnvironmentNavUpdate>(
+                    [this](const EnvironmentNavUpdate& update)
+                    {
+                        wt_app_->post_to_wt(
+                            [=]() { wt_app_->handle_updated_nav(update); });
+                    });
+
+            interprocess().subscribe<groups::receive_stats,
+                ReceiveStats>(
+                    [this](const ReceiveStats& stats)
+                    {
+                        wt_app_->post_to_wt(
+                            [=]() { wt_app_->handle_receive_stats(stats); });
                     });
 
 	    

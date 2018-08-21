@@ -140,6 +140,13 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
 	    glog.is(WARN) && glog << "Uninitialized EnvironmentNavUpdate: " << env_nav_update.DebugString() << std::endl;
     }
 
+
+    for(const auto& stat : req.stats())	
+    {
+	interprocess().publish<groups::receive_stats>(stat);
+    }
+
+    
     resp.set_status(status);
     
     server_.write(resp, ep);

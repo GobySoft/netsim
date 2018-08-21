@@ -17,8 +17,9 @@ namespace groups
     constexpr goby::Group env_nav_update{"environment_nav_update"};
     constexpr goby::Group env_impulse_req{"environment_impulse_request"};
     constexpr goby::Group env_bellhop_req{"environment_bellhop_request"};
-    constexpr goby::Group configuration{"manager_configuration"};    
-
+    constexpr goby::Group configuration{"configuration"};    
+    constexpr goby::Group receive_stats{"receive_stats"};
+    
     // published by netsim_liaison
     constexpr goby::Group config_request{"config_request"};
     constexpr goby::Group bellhop_request{"bellhop_request"};

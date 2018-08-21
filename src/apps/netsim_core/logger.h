@@ -67,6 +67,16 @@ private:
 	    // write double time to the start of the file
 	    auto& file_ptr = files_[dir][buffer->packet_id][modem_index];
 	    file_ptr->write(reinterpret_cast<const char*>(&buffer->buffer->buffer_start_time), sizeof(double));
+
+	    if(dir == Direction::IN)
+	    {
+		LoggerEvent event;
+		event.set_event(LoggerEvent::PACKET_START);
+		event.set_packet_id(buffer->packet_id);
+		event.set_tx_modem_id(modem_index);
+		interprocess().publish<groups::logger_event>(event);
+	    }
+	    
 	}
 
 	auto& file_ptr = files_[dir][buffer->packet_id][modem_index];

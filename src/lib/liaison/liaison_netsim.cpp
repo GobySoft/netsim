@@ -10,6 +10,8 @@
 #include "liaison_netsim.h"
 #include "iBellhop_messages.pb.h"
 
+#include <goby/util/geodesy.h>
+
 using goby::glog;
 using namespace Wt;
 
@@ -25,8 +27,8 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     tl_table_(new WTable(tl_box_)),
     tl_tx_txt_(new WText("Transmitter: ")),
     tl_tx_(new WComboBox),
-    tl_rx_txt_(new WText("Receiver: ")),
-    tl_rx_(new WComboBox),
+//    tl_rx_txt_(new WText("Receiver: ")),
+//    tl_rx_(new WComboBox),
     tl_r_txt_(new WText("Range max (meters): ")),
     tl_r_(new WSpinBox),
     tl_dr_txt_(new WText("Delta Range (meters): ")),
@@ -35,25 +37,28 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     tl_z_(new WSpinBox),
     tl_dz_txt_(new WText("Delta Depth (meters): ")),
     tl_dz_(new WSpinBox),
-    tl_request_(new WPushButton("Update TL Plot", tl_box_))
+    tl_request_(new WPushButton("Update / Clear TL Plot", tl_box_))
 {
+    for(auto& rx_pen : rx_pens_)
+	rx_pen.setWidth(1);     
+
     tl_table_->elementAt(0, 0)->addWidget(tl_tx_txt_);
     tl_table_->elementAt(0, 1)->addWidget(tl_tx_);
 
-    tl_table_->elementAt(1, 0)->addWidget(tl_rx_txt_);
-    tl_table_->elementAt(1, 1)->addWidget(tl_rx_);
+//    tl_table_->elementAt(1, 0)->addWidget(tl_rx_txt_);
+//    tl_table_->elementAt(1, 1)->addWidget(tl_rx_);
 
-    tl_table_->elementAt(2, 0)->addWidget(tl_r_txt_);
-    tl_table_->elementAt(2, 1)->addWidget(tl_r_);
+    tl_table_->elementAt(1, 0)->addWidget(tl_r_txt_);
+    tl_table_->elementAt(1, 1)->addWidget(tl_r_);
 
-    tl_table_->elementAt(3, 0)->addWidget(tl_dr_txt_);
-    tl_table_->elementAt(3, 1)->addWidget(tl_dr_);
+    tl_table_->elementAt(2, 0)->addWidget(tl_dr_txt_);
+    tl_table_->elementAt(2, 1)->addWidget(tl_dr_);
 
-    tl_table_->elementAt(4, 0)->addWidget(tl_z_txt_);
-    tl_table_->elementAt(4, 1)->addWidget(tl_z_);
+    tl_table_->elementAt(3, 0)->addWidget(tl_z_txt_);
+    tl_table_->elementAt(3, 1)->addWidget(tl_z_);
 
-    tl_table_->elementAt(5, 0)->addWidget(tl_dz_txt_);
-    tl_table_->elementAt(5, 1)->addWidget(tl_dz_);
+    tl_table_->elementAt(4, 0)->addWidget(tl_dz_txt_);
+    tl_table_->elementAt(4, 1)->addWidget(tl_dz_);
 
     tl_r_->setRange(0, 100000);
     tl_r_->setSingleStep(1000);
@@ -83,8 +88,10 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
 				       auto& env = *req.mutable_env();
 				       auto& ai = *env.mutable_adaptive_info();
 				       ai.set_contact(tl_tx_->currentText().narrow());
-				       // iBellhop defines ownship as the moving AUV
-				       ai.set_ownship(tl_rx_->currentText().narrow());
+				       transmitter_tcp_port_ = std::stoi(tl_tx_->currentText().narrow());
+				       // iBellhop defines ownship as the moving AUV, but we'll use the same as tx,
+				       // since we're defining a grid of receivers				       
+				       ai.set_ownship(tl_tx_->currentText().narrow());
 				       ai.set_auto_receiver_ranges(false);
 				       ai.set_auto_source_depth(true);
 				       
@@ -134,14 +141,32 @@ void LiaisonNetsim::handle_new_log(const LoggerEvent& event)
 	timeseries_out_path << event.log_dir() << "/netsim_" << event.start_time() << "_" << std::setw(3) << std::setfill('0') << event.packet_id() << "_timeseries.png";
 
 	{
+	    spect_box_->setTitle("Audio Spectrogram (Packet #" + std::to_string(event.packet_id())+ ")");
 	    spect_image_resource_.reset(new WFileResource(spect_out_path.str().c_str()));
 	    Wt::WLink link(spect_image_resource_.get());
 	    spect_image_->setImageLink(link);
 	}
 	{
+	    timeseries_box_->setTitle("Audio Timeseries (Packet #" + std::to_string(event.packet_id()) + ")");
 	    timeseries_image_resource_.reset(new WFileResource(timeseries_out_path.str().c_str()));
 	    Wt::WLink link(timeseries_image_resource_.get());
 	    timeseries_image_->setImageLink(link);
+	}
+    }
+    else if(event.event() == LoggerEvent::PACKET_START)
+    {
+	if(event.tx_modem_id() < manager_cfg_.sim_env_pair_size())
+	{
+	    glog.is_debug1() && glog << "Packet start detected" << std::endl;
+
+	    auto tcp_port = manager_cfg_.sim_env_pair(event.tx_modem_id()).modem_tcp_port();
+	    nav_at_previous_tx_start_[tcp_port] = nav_at_last_tx_start_[tcp_port];
+	    nav_at_last_tx_start_[tcp_port] = last_nav_;
+
+	    glog.is_debug1() && glog << "Navs updated" << std::endl;
+
+	    // paint any updates from previous round
+	    tl_plot_->update(Wt::PaintUpdate);
 	}
     }
 }
@@ -160,14 +185,19 @@ void LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
 
 void LiaisonNetsim::handle_manager_cfg(const NetSimManagerConfig& cfg)
 {
+    manager_cfg_ = cfg;
+    
+    if(tl_tx_->count() != 0)
+	return;
+
     for(const auto& sim_env_pair : cfg.sim_env_pair())
     {
 	tl_tx_->addItem(std::to_string(sim_env_pair.modem_tcp_port()));
-	tl_rx_->addItem(std::to_string(sim_env_pair.modem_tcp_port()));
+//	tl_rx_->addItem(std::to_string(sim_env_pair.modem_tcp_port()));
     }
 
-    if(tl_rx_->count() > 1)
-	tl_rx_->setCurrentIndex(1);
+//  if(tl_rx_->count() > 1)
+//	tl_rx_->setCurrentIndex(1);
 
     
 }
@@ -180,11 +210,10 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
     if(!netsim_->tl_image_path_.empty())
     {   	
 	Wt::WPainter::Image image(netsim_->tl_plot_resource_->url(), netsim_->tl_image_path_);
-	int text_length = 50;
 	int tick_length = 10;
-	resize(image.width()+text_length, image.height()+text_length);	
+	resize(image.width()+text_length_, image.height()+text_length_);	
 
-	painter.drawImage(text_length, 0, image);       
+	painter.drawImage(text_length_, 0, image);       
 
 	int tick_spacing = 100; //pixels
 
@@ -194,9 +223,9 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 	painter.setPen(white_pen);
 	
 	for(int y = pwidth/2; y < image.height(); y += tick_spacing)
-	    painter.drawLine(text_length, y, text_length+tick_length, y);
+	    painter.drawLine(text_length_, y, text_length_+tick_length, y);
 
-	for(int x = pwidth/2+text_length; x < image.width(); x += tick_spacing)
+	for(int x = pwidth/2+text_length_; x < image.width(); x += tick_spacing)
 	    painter.drawLine(x, image.height()-tick_length, x, image.height());
 
 
@@ -204,12 +233,92 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 	painter.setPen(black_pen);
 
 	for(int y = pwidth/2; y < image.height(); y += tick_spacing)
-	    painter.drawText(0, y, text_length, text_length, Wt::AlignRight | Wt::AlignTop, std::to_string(-(y-pwidth/2)*netsim_->dz_) + " m");
+	    painter.drawText(0, y, text_length_, text_length_, Wt::AlignRight | Wt::AlignTop, std::to_string(-(y-pwidth/2)*netsim_->dz_) + " m");
 	    
-	for(int x = pwidth/2+text_length; x < image.width(); x += tick_spacing)
-	    painter.drawText(x, image.height(), text_length, text_length, Wt::AlignLeft | Wt::AlignTop, std::to_string((x-(pwidth/2+text_length))*netsim_->dr_)+ " m");
+	for(int x = pwidth/2+text_length_; x < image.width(); x += tick_spacing)
+	    painter.drawText(x, image.height(), text_length_, text_length_, Wt::AlignLeft | Wt::AlignTop, std::to_string((x-(pwidth/2+text_length_))*netsim_->dr_)+ " m");
 	
 	netsim_->tl_image_path_.clear();
     }
 
+
+    
+    auto& navs = netsim_->nav_at_previous_tx_start_[netsim_->transmitter_tcp_port_];
+    glog.is_debug1() && glog << "Paint event: navs.size() = " << navs.size() << std::endl;
+    if(!navs.empty() && navs.count(netsim_->transmitter_tcp_port_))
+    {
+	auto& rx_stats = netsim_->receive_stats_[netsim_->transmitter_tcp_port_];
+	
+	using boost::units::degree::degrees;
+	using boost::units::si::meters;
+
+	
+	const auto& tx_nav = navs.at(netsim_->transmitter_tcp_port_);
+	
+	glog.is_debug1() && glog << "calculating for tx: " << tx_nav.ShortDebugString() << std::endl;
+
+	goby::util::UTMGeodesy geo({ tx_nav.lat()*degrees, tx_nav.lon()*degrees });	
+	
+	for(const auto& nav_pair : navs)
+    	{
+    	    if(nav_pair.first == netsim_->transmitter_tcp_port_)
+    		continue;
+	    
+    	    painter.setPen(netsim_->rx_pens_[nav_pair.first % netsim_->rx_pens_.size()]);
+
+    	    Wt::WBrush brush;
+	    if(rx_stats.count(nav_pair.first))
+	    {		
+		const auto& rx_stat = rx_stats.at(nav_pair.first);
+
+		if(rx_stat.has_mm_stats())
+		{
+		    const auto& mm_stat = rx_stat.mm_stats();		    
+		    auto mse = mm_stat.mse_equalizer();
+		    const int min_mse = -15;
+		    const int max_mse = 0;		   
+		    auto scale = (255*(mse-min_mse))/(max_mse-min_mse);
+		    
+		    if(scale > 255)
+			scale = 255;
+		    else if(scale < 0)
+			scale = 0;					 
+
+		    if(mm_stat.number_bad_frames() < mm_stat.number_frames())
+			painter.setBrush(Wt::WBrush(Wt::WColor(0,255-scale,scale)));
+		    else
+			painter.setBrush(Wt::WBrush(Wt::WColor(255,0,0)));
+		}
+		else if(!rx_stat.packet_success())
+		{
+		    painter.setBrush(Wt::WBrush(Wt::WColor(255,0,0)));
+		}
+		else
+		{
+		    painter.setBrush(Wt::WBrush(Wt::WColor(0,255,0)));
+		}		    
+	    }
+	    else
+	    {
+		painter.setBrush(Wt::WBrush(Wt::WColor(0,0,0)));
+	    }
+	    
+    	    int diam = 5;
+
+    	    auto depth = nav_pair.second.depth();
+
+	    auto xy = geo.convert({ nav_pair.second.lat()*degrees, nav_pair.second.lon()*degrees });
+
+	    auto x = xy.x/meters;
+	    auto y = xy.y/meters;
+	    
+	    auto range = std::sqrt(x*x+y*y);
+
+	    glog.is_debug1() && glog << "painting for rx: " << nav_pair.first << " at range: " << range << " and depth " << depth << std::endl;
+	    painter.drawEllipse(range/netsim_->dr_+text_length_, depth/netsim_->dz_, diam, diam);
+    	}
+
+	navs.clear();
+	rx_stats.clear();
+    }
 }
