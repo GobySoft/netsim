@@ -331,12 +331,16 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 
 		int key_x = this->width().toPixels()-100;
 		auto spacing = 20;
-		auto key_y = rx_modem_tcp_port-62000*spacing;
+		auto key_y = (rx_modem_tcp_port-62000)*spacing;
+
+		glog.is_debug1() && glog << "key_x: " << key_x << ", key_y: "<< key_y << std::endl;
+		
+		painter.setBrush(Wt::WBrush(Wt::WColor(255,255,255)));
 		if(rx_modem_tcp_port % 2 == 0)		   
 		    painter.drawEllipse(key_x, key_y, diam_, diam_);
 		else
 		    painter.drawRect(key_x, key_y, diam_, diam_);
-		painter.drawText(key_x + diam_ + 2, key_y, 100, spacing, Wt::AlignRight | Wt::AlignTop, std::to_string(rx_modem_tcp_port));
+		painter.drawText(key_x + diam_ + 2, key_y, 100, spacing, Wt::AlignLeft | Wt::AlignTop, std::to_string(rx_modem_tcp_port));
 	       
 		refresh_key_.insert(rx_modem_tcp_port);		   
 	    }
