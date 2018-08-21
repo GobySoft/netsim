@@ -303,7 +303,7 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 		painter.setBrush(Wt::WBrush(Wt::WColor(0,0,0)));
 	    }
 	    
-    	    int diam = 5;
+    	    int diam = 8;
 
     	    auto depth = nav_pair.second.depth();
 
