@@ -242,7 +242,7 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 	    painter.drawText(x, image.height(), text_length_, text_length_, Wt::AlignLeft | Wt::AlignTop, std::to_string((x-(pwidth/2+text_length_))*netsim_->dr_)+ " m");
 	
 	netsim_->tl_image_path_.clear();
-	refresh_key_.clear();
+//	refresh_key_.clear();
     }
 
 
@@ -325,25 +325,25 @@ void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 	    else
 		painter.drawRect(range/netsim_->dr_+text_length_, depth/netsim_->dz_, diam_, diam_);
 
-	    // key
-	    if(!refresh_key_.count(rx_modem_tcp_port))
-	    {
+	    // // key
+	    // if(!refresh_key_.count(rx_modem_tcp_port))
+	    // {
 
-		int key_x = this->width().toPixels()-100;
-		auto spacing = 20;
-		auto key_y = (rx_modem_tcp_port-62000)*spacing;
+	    // 	int key_x = this->width().toPixels()-100;
+	    // 	auto spacing = 20;
+	    // 	auto key_y = (rx_modem_tcp_port-62000)*spacing;
 
-		glog.is_debug1() && glog << "key_x: " << key_x << ", key_y: "<< key_y << std::endl;
+	    // 	glog.is_debug1() && glog << "key_x: " << key_x << ", key_y: "<< key_y << std::endl;
 		
-		painter.setBrush(Wt::WBrush(Wt::WColor(255,255,255)));
-		if(rx_modem_tcp_port % 2 == 0)		   
-		    painter.drawEllipse(key_x, key_y, diam_, diam_);
-		else
-		    painter.drawRect(key_x, key_y, diam_, diam_);
-		painter.drawText(key_x + diam_ + 2, key_y, 100, spacing, Wt::AlignLeft | Wt::AlignTop, std::to_string(rx_modem_tcp_port));
+	    // 	painter.setBrush(Wt::WBrush(Wt::WColor(255,255,255)));
+	    // 	if(rx_modem_tcp_port % 2 == 0)		   
+	    // 	    painter.drawEllipse(key_x, key_y, diam_, diam_);
+	    // 	else
+	    // 	    painter.drawRect(key_x, key_y, diam_, diam_);
+	    // 	painter.drawText(key_x + diam_ + 2, key_y, 100, spacing, Wt::AlignLeft | Wt::AlignTop, std::to_string(rx_modem_tcp_port));
 	       
-		refresh_key_.insert(rx_modem_tcp_port);		   
-	    }
+	    // 	refresh_key_.insert(rx_modem_tcp_port);		   
+	    // }
     	}
 
 	navs.clear();

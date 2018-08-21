@@ -48,7 +48,7 @@ private:
     int text_length_{ 50 };
     int diam_{ 8 };
     // modem_tcp_ports that have reset their key legend
-    std::set<int> refresh_key_;
+//    std::set<int> refresh_key_;
 };
 
 
