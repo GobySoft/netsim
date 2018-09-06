@@ -76,6 +76,12 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     tl_dz_->setSingleStep(1);
     tl_dz_->setValue(1);
 
+    z_ = tl_z_->value();
+    dz_ = tl_dz_->value();
+    r_ = tl_r_->value();
+    dr_ = tl_dr_->value();
+
+    
     tl_request_->clicked().connect([this](const WMouseEvent& ev)
 				   {
 				       iBellhopRequest req;
