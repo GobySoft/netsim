@@ -42,6 +42,9 @@ include_directories(${LAMSS_INCLUDE_DIRS})
 include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
 protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
 
+include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
+protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
+
 # create variables for various directories
 get_filename_component(project_SRC_DIR src ABSOLUTE)
 get_filename_component(project_BUILD_DIR ${CMAKE_BINARY_DIR} ABSOLUTE)

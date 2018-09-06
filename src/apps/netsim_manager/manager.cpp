@@ -1,9 +1,12 @@
 #include "goby/middleware/single-thread-application.h"
 
-#include "config.pb.h"
 #include "messages/groups.h"
+#include "messages/config_request.pb.h"
 #include "lamss/lib_netsim/tcp_server.h"
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
+#include "lamss/lib_bellhop/iBellhop_messages.pb.h"
+#include "messages/manager_config.pb.h"
+#include "messages/env_bellhop_req.pb.h"
 
 using namespace goby::common::logger;
 using goby::glog;
@@ -19,6 +22,7 @@ private:
     void process_request(const NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep);
 
     void handle_impulse_request(const ImpulseRequest& req);
+    void handle_bellhop_request(const iBellhopRequest& req);
 
 private:
     // maps modem_tcp_port to configuration
@@ -49,6 +53,18 @@ NetSimManager::NetSimManager() :
     interprocess().subscribe<groups::impulse_request, ImpulseRequest>(
 	[this](const ImpulseRequest& req)
 	{ handle_impulse_request(req); });
+
+    interprocess().subscribe<groups::config_request, ConfigRequest>(
+	[this](const ConfigRequest& req)
+	{
+	    if(req.subsystem() == ConfigRequest::MANAGER)
+		interprocess().publish<groups::configuration>(cfg());
+	});
+
+
+    interprocess().subscribe<groups::bellhop_request, iBellhopRequest>(
+	[this](const iBellhopRequest& req)
+	{ handle_bellhop_request(req);} );
 }
 
 void NetSimManager::loop()
@@ -124,6 +140,13 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
 	    glog.is(WARN) && glog << "Uninitialized EnvironmentNavUpdate: " << env_nav_update.DebugString() << std::endl;
     }
 
+
+    for(const auto& stat : req.stats())	
+    {
+	interprocess().publish<groups::receive_stats>(stat);
+    }
+
+    
     resp.set_status(status);
     
     server_.write(resp, ep);
@@ -147,4 +170,25 @@ void NetSimManager::handle_impulse_request(const ImpulseRequest& req)
     env_req.set_environment_id(env_cfg.environment_id());
     *env_req.mutable_req() = req;
     interprocess().publish<groups::env_impulse_req>(env_req);
+}
+
+
+void NetSimManager::handle_bellhop_request(const iBellhopRequest& req)
+{
+    glog.is(DEBUG1) && glog << "Received iBellhopRequest: " << req.ShortDebugString() << std::endl;
+
+    int source = goby::util::as<int>(req.env().adaptive_info().ownship());
+
+    auto env_cfg_it = env_cfg_.find(source);
+    if(env_cfg_it == env_cfg_.end())
+    {
+	glog.is(WARN) && glog << "Unknown source modem_tcp_port: " << source << " (string: " << req.env().adaptive_info().ownship() << ")" << std::endl;
+	return;
+    }
+    const auto& env_cfg = env_cfg_it->second;
+
+    EnvironmentiBellhopRequest env_req;
+    env_req.set_environment_id(env_cfg.environment_id());
+    *env_req.mutable_req() = req;
+    interprocess().publish<groups::env_bellhop_req>(env_req);
 }

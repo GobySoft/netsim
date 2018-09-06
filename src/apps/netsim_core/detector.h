@@ -55,32 +55,59 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 		    // send subbuffer from start of packet to end of buffer
 		    in_packet_ = true;
 		    in_packet_id = global_packet_id++;
-		    auto& first_buffer = prebuffer_.front();
-		    std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(*first_buffer));
 
-		    std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
-		    tagged_subbuffer->buffer = subbuffer;
-		    
-		    tagged_subbuffer->marker = TaggedAudioBuffer::Marker::START;
-		    tagged_subbuffer->packet_id = in_packet_id;
-		    
-		    interthread().publish_dynamic(tagged_subbuffer, detector_audio_group_);
-		    prebuffer_.pop_front();
-
-		    while(!prebuffer_.empty())
+		    if(cfg().continuous())
 		    {
 			std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
-			tagged_buffer->buffer = prebuffer_.front();
+			tagged_buffer->buffer = buffer;	    
+			tagged_buffer->marker = TaggedAudioBuffer::Marker::START;
 			tagged_buffer->packet_id = in_packet_id;
 			interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
-			prebuffer_.pop_front();
 		    }
-		    // assume a packet spans at least one buffer, so no need to check the rest of the buffer
-		    glog.is(DEBUG1) && glog << "Detector Thread (" << ThreadBase::index() << "): Detected START at time: " << std::setprecision(15) << subbuffer->buffer_start_time << std::endl;
+		    else
+		    {
+			auto& first_buffer = prebuffer_.front();
+
+			if(!first_buffer)
+			    break;
+			
+			std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(*first_buffer));
+
+			std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
+			tagged_subbuffer->buffer = subbuffer;
+		    
+			tagged_subbuffer->marker = TaggedAudioBuffer::Marker::START;
+			tagged_subbuffer->packet_id = in_packet_id;
+		    
+			interthread().publish_dynamic(tagged_subbuffer, detector_audio_group_);
+			prebuffer_.pop_front();
+
+			while(!prebuffer_.empty())
+			{
+			    std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+			    tagged_buffer->buffer = prebuffer_.front();
+			    tagged_buffer->packet_id = in_packet_id;
+			    interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
+			    prebuffer_.pop_front();
+			}
+		    }
+
+                    // assume a packet spans at least one buffer, so no need to check the rest of the buffer
+		    glog.is(DEBUG1) && glog << "Detector Thread (" << ThreadBase::index() << "): Detected START at time: " << std::setprecision(15) << buffer->buffer_start_time << std::endl;
 
 		    break;
 		}	       
 	    }
+
+	    if(cfg().continuous() && !in_packet_)
+	    {
+		// send whole buffer
+		std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+		tagged_buffer->buffer = buffer;	    
+		tagged_buffer->packet_id = in_packet_id;
+		interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
+	    }
+	    
 	}
 	else
 	{
@@ -111,13 +138,14 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 		    break;
 		}
 	    }
-	    if(in_packet_)
+	    if(in_packet_ || cfg().continuous())
 	    {
 		// send whole buffer
 		std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
 		tagged_buffer->buffer = buffer;	    
-		tagged_buffer->marker = TaggedAudioBuffer::Marker::MIDDLE;	       
-		tagged_buffer->packet_id = in_packet_id;
+		if(in_packet_)
+		    tagged_buffer->marker = TaggedAudioBuffer::Marker::MIDDLE;	       
+		tagged_buffer->packet_id = in_packet_id;	       
 		interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
 	    }
 	}       

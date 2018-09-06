@@ -177,9 +177,9 @@ JackThread(const NetSimCoreConfig& config, int index)
     {
 	using goby::glog; using namespace goby::common::logger;
 	double buffer_start_time = goby::common::goby_time<double>();
-	auto process_frame_time = jack_last_frame_time(client_);
 
 	std::shared_ptr<AudioBuffer> rx_buffer(new AudioBuffer(buffer_size_));
+	rx_buffer->jack_frame_time = jack_last_frame_time(client_);
 	rx_buffer->buffer_start_time = buffer_start_time;
 	    
 	if(input_port_ != nullptr) // could be briefly empty while we initialize all the threads
@@ -199,7 +199,32 @@ JackThread(const NetSimCoreConfig& config, int index)
 	    audio_in_cv_.notify_all();
 	}   
 
+	// continuous mode - just copy the frame
+	if(cfg().continuous())
 	{
+	    std::unique_lock<std::mutex> lock(audio_out_mutex_);
+	    for (int output_port_i = 0, n = cfg().number_of_modems(); output_port_i < n; ++output_port_i)
+	    {	    
+		if(output_port_[output_port_i] != nullptr &&
+		   !audio_out_buffer_[output_port_i].empty()) 
+		{
+		    auto tx_buffer = audio_out_buffer_[output_port_i].front();
+		    auto expected_jack_frame_time = jack_last_frame_time(client_);
+		    auto actual_jack_frame_time = tx_buffer->buffer->jack_frame_time;
+		    if(actual_jack_frame_time != expected_jack_frame_time)
+		    {
+			glog.is(WARN) && glog << "Wrong frame received for port " << output_port_i << ". Expected frame time: " << expected_jack_frame_time << ", received: " << actual_jack_frame_time << ", offset: " << static_cast<int>(expected_jack_frame_time)-static_cast<int>(actual_jack_frame_time) << std::endl;
+		    }
+
+		    sample_t* sample = (sample_t*)jack_port_get_buffer (output_port_[output_port_i],
+									nframes);
+		    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
+			*(sample++) = tx_buffer->buffer->samples[frame];
+		}
+	    }
+	}
+	else
+	{    
 	    std::unique_lock<std::mutex> lock(audio_out_mutex_);
 	    for (int output_port_i = 0, n = cfg().number_of_modems(); output_port_i < n; ++output_port_i)
 	    {	    
@@ -301,12 +326,23 @@ JackThread(const NetSimCoreConfig& config, int index)
     {
 	
 	std::unique_lock<std::mutex> lock(audio_out_mutex_);
-	if(buffer->marker == TaggedAudioBuffer::Marker::START)
+
+	if(cfg().continuous())
 	{
-	    audio_out_buffer_[modem_index].clear();
-	    new_packet_[modem_index] = true;
+	    // just keep the last frame
+	    if(audio_out_buffer_[modem_index].size() != 1)
+		audio_out_buffer_[modem_index].resize(1);
+	    audio_out_buffer_[modem_index][0] = buffer;
 	}
-	audio_out_buffer_[modem_index].push_back(buffer);
+	else
+	{
+	    if(buffer->marker == TaggedAudioBuffer::Marker::START)
+	    {
+		audio_out_buffer_[modem_index].clear();
+		new_packet_[modem_index] = true;
+	    }
+	    audio_out_buffer_[modem_index].push_back(buffer);
+	}
     }
     
     void loop() override

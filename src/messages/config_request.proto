@@ -1,0 +1,10 @@
+message ConfigRequest
+{
+    enum Subsystem
+    {
+	MANAGER=1;
+    }
+
+    required Subsystem subsystem = 1;
+}
+

@@ -1,6 +1,9 @@
-pkg load signal
+%pkg load signal
+clear all;
 close all;
-files=glob('/tmp/convolvetest_elem_0_frame_*365');
+%files={'netsim_20180803T144437_in_005_modem1.bin' '/tmp/convolvetest_elem_0_frame_000381'};
+files={'CW_4000_1s.dat' '/tmp/convolvetest_elem_0_frame_00469'};
+files={'LFM_4000_1000_1s.dat' '/tmp/convolvetest_elem_0_frame_00202'};
 %files{1} = '/tmp/noise.bin';
 
 
@@ -9,7 +12,8 @@ for file_i = 1:length(files)
   file = files{file_i};
   fid = fopen(file);
   packet_time = fread(fid,1,'double');
-  data = fread(fid,Inf,'double');  
+  data = fread(fid,Inf,'float');  
+  
   time = (1.0:size(data))/fs;
   fclose(fid);
    

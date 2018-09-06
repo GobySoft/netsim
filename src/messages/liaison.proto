@@ -1,0 +1,14 @@
+import "goby/middleware/protobuf/liaison_config.proto";
+
+package protobuf;
+
+extend goby.common.protobuf.LiaisonConfig
+{
+    optional LiaisonNetsimConfig netsim_config = 1300;
+}
+
+
+message LiaisonNetsimConfig
+{
+    //    optional string image_dir = 1;
+}

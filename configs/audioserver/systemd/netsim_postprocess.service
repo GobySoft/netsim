@@ -1,0 +1,11 @@
+[Unit]
+Description=netsim_post process tool for rendering images for user interface
+After=gobyd.service
+BindsTo=gobyd.service
+
+[Service]
+ExecStart=/opt/netsim/build/bin/netsim_postprocess /opt/netsim/missions/netsim_postprocess.pb.cfg
+
+[Install]
+WantedBy=gobyd.service
+

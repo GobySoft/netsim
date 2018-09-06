@@ -6,6 +6,8 @@
 
 #include "goby/middleware/multi-thread-application.h"
 #include "config.pb.h"
+#include "messages/logger.pb.h"
+#include "messages/groups.h"
 
 using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
 
@@ -65,17 +67,41 @@ private:
 	    // write double time to the start of the file
 	    auto& file_ptr = files_[dir][buffer->packet_id][modem_index];
 	    file_ptr->write(reinterpret_cast<const char*>(&buffer->buffer->buffer_start_time), sizeof(double));
+
+	    if(dir == Direction::IN)
+	    {
+		LoggerEvent event;
+		event.set_event(LoggerEvent::PACKET_START);
+		event.set_packet_id(buffer->packet_id);
+		event.set_tx_modem_id(modem_index);
+		interprocess().publish<groups::logger_event>(event);
+	    }
+	    
 	}
 
 	auto& file_ptr = files_[dir][buffer->packet_id][modem_index];
-	if(!file_ptr)
-	    glog.is(WARN) && glog << "No TaggedAudioBuffer::Marker::START so cannot log to file. Modem " << modem_index << ", dir: " << dir_to_str(dir)  << std::endl;	   
-	else
+	if(file_ptr)
 	    file_ptr->write(reinterpret_cast<const char*>(&buffer->buffer->samples[0]), buffer->buffer->samples.size()*sizeof(sample_t));
+//	else
+//	    glog.is(WARN) && glog << "No TaggedAudioBuffer::Marker::START so cannot log to file. Modem " << modem_index << ", dir: " << dir_to_str(dir)  << std::endl;	   
 
 	// cleanly close out file
 	if(buffer->marker == TaggedAudioBuffer::Marker::END)
+	{
 	    files_[dir][buffer->packet_id].erase(modem_index);
+
+	    if(dir == Direction::OUT && files_[Direction::OUT][buffer->packet_id].empty())
+	    {
+		LoggerEvent event;
+		event.set_event(LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET);
+		event.set_log_dir(cfg().logger().log_directory());
+		std::stringstream ss_time;
+		ss_time << start_time;
+		event.set_start_time(ss_time.str());
+		event.set_packet_id(buffer->packet_id);
+		interprocess().publish<groups::logger_event>(event);
+	    }
+	}
     }
 
 
