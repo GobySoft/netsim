@@ -76,6 +76,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		    imp_req.set_source(cfg().node_name(i));
 		    imp_req.set_receiver(cfg().node_name(ThreadBase::index()));
 		    interprocess().publish<groups::impulse_request>(imp_req);
+		    goby::glog.is_debug1() && goby::glog << "Sent impulse request for " << i << std::endl;
 		}
 	    }
 	}
@@ -137,8 +138,11 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 	}
 	
 	impulse_responses_[modem_index] = impulse_response;	
-	if(convolve_[modem_index])
+
+	goby::glog.is_debug1() && goby::glog << "Start update_ray_table: " << modem_index << std::endl;
+ 	if(convolve_[modem_index])
 	    convolve_[modem_index]->update_ray_table(impulse_response);
+	goby::glog.is_debug1() && goby::glog << "End update_ray_table: " << modem_index << std::endl;
     }
 	
     void impulse_response_discrete(ImpulseResponse impulse_response)
@@ -271,8 +275,8 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 
 	    // if test mode, just echo back data
 	    // otherwise, actually run convolution
-//	    if(!cfg().processor().test_mode())
-//	    {
+	    if(!cfg().processor().test_mode())
+	    {
 		    
 		double signal_timestamp;
 		    
@@ -289,15 +293,15 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		new_audio_buffer->buffer_start_time = signal_timestamp;
 
 		new_tagged_buffer->buffer = new_audio_buffer;
-//	    }
-//	    else
-//	    {
-//		std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(buffer->buffer->samples.begin(), buffer->buffer->samples.end()));
-//		new_audio_buffer->jack_frame_time = buffer->buffer->jack_frame_time + cfg().jack().expected_number_buffer_delay()*buffer_size;
+	    }
+	    else
+	    {
+		std::shared_ptr<AudioBuffer> new_audio_buffer(new AudioBuffer(buffer->buffer->samples.begin(), buffer->buffer->samples.end()));
+		new_audio_buffer->jack_frame_time = buffer->buffer->jack_frame_time + cfg().jack().expected_number_buffer_delay()*buffer_size;
 
-//		new_tagged_buffer->buffer = new_audio_buffer;
-//		
-//	    }
+		new_tagged_buffer->buffer = new_audio_buffer;
+		
+	    }
 		
 	    interthread().publish_dynamic(new_tagged_buffer, audio_out_groups_[modem_index]);
 	}

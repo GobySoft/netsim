@@ -65,8 +65,12 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 			interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
 		    }
 		    else
-		    {		   
+		    {
 			auto& first_buffer = prebuffer_.front();
+
+			if(!first_buffer)
+			    break;
+			
 			std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(*first_buffer));
 
 			std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
