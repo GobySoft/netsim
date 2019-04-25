@@ -103,9 +103,9 @@ xsize = 1000;
 ysize = 400;
 
 figure(1, "visible", "off")
-print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_timeseries.png"],'-dpng',['-S' num2str(xsize) ',' num2str(ysize)]);
+print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_timeseries.eps"],'-deps',['-S' num2str(xsize) ',' num2str(ysize)],'-color');
 
 figure(2, "visible", "off")
-print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_spectrogram.png"],'-dpng',['-S' num2str(xsize) ',' num2str(ysize)]);
-%print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_spectrogram.png"],'-dpng');
+print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_spectrogram.eps"],'-deps',['-S' num2str(xsize) ',' num2str(ysize)],'-color');
+%print([dir "/netsim_" run_start "_" sprintf('%03d', packet_id) "_spectrogram.eps"],'-deps');
 
