@@ -80,6 +80,23 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		}
 	    }
 	}
+	else
+	{
+	    // clear out any buffers that never got used
+	    double now = goby::common::goby_time<double>();
+	    for(auto it = audio_buffer_.begin(); it != audio_buffer_.end(); )
+	    {       	
+		if(!it->second.empty() && now > it->second.front()->buffer->buffer_start_time + buffer_expire_seconds_)
+		{
+		    goby::glog.is_debug1() && goby::glog << "Processor Thread (" << ThreadBase::index() << ") Erasing buffer (id: " << it->first << ") that we didn't receive an impulse response for within " << buffer_expire_seconds_ << " seconds" << std::endl;   
+		    audio_buffer_.erase(it++);
+		}
+		else
+		{
+		    ++it;
+		}
+	    }
+	}
     }
 
     std::tuple<bool, int> find_index_from_source(const std::string& source)
@@ -194,16 +211,6 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
         double timestamp;
             
         ArrayGain array_gain;
-
-	if(cfg().processor().test_mode())
-	{
-	    impulse_response.clear_raytrace();
-	    {
-	        auto* raytrace = impulse_response.add_raytrace();
-	        raytrace->add_element()->set_delay(.5);
-	        raytrace->set_amplitude(1);
-	    }
-	}
 	
         auto& full_signal = full_signal_[impulse_response.request_id()];
         auto& convolve = convolve_.at(impulse_response.request_id());
@@ -314,13 +321,32 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		if(buffer->marker == TaggedAudioBuffer::Marker::START)
 		{
 		    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received START buffer (id: " << buffer->packet_id << ", time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
-                
-		    ImpulseRequest imp_req;
-		    imp_req.set_request_time(buffer->buffer->buffer_start_time);
-		    imp_req.set_request_id(buffer->packet_id);
-		    imp_req.set_source(cfg().node_name(modem_index));
-		    imp_req.set_receiver(cfg().node_name(ThreadBase::index()));
-		    interprocess().publish<groups::impulse_request>(imp_req);
+
+		    if(!cfg().processor().test_mode())
+		    {
+			ImpulseRequest imp_req;
+			imp_req.set_request_time(buffer->buffer->buffer_start_time);
+			imp_req.set_request_id(buffer->packet_id);
+			imp_req.set_source(cfg().node_name(modem_index));
+			imp_req.set_receiver(cfg().node_name(ThreadBase::index()));
+			interprocess().publish<groups::impulse_request>(imp_req);
+		    }
+		    else
+		    {
+			ImpulseResponse impulse_response;
+			impulse_response.set_request_time(buffer->buffer->buffer_start_time);
+			impulse_response.set_request_id(buffer->packet_id);
+			impulse_response.set_source(cfg().node_name(modem_index));
+			impulse_response.set_receiver(cfg().node_name(ThreadBase::index()));
+			impulse_response.clear_raytrace();
+			{
+			    auto* raytrace = impulse_response.add_raytrace();
+			    raytrace->add_element()->set_delay(cfg().processor().test_mode_delay_sec());
+			    raytrace->set_amplitude(1);
+			}
+			audio_buffer_[buffer->packet_id].push_back(buffer);
+			impulse_response_discrete(impulse_response);
+		    }
 		}
 		else if(audio_buffer_[buffer->packet_id].empty())
 		{
@@ -328,7 +354,9 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		    return;
 		}
             
-		audio_buffer_[buffer->packet_id].push_back(buffer);
+		
+		if(!cfg().processor().test_mode())
+		    audio_buffer_[buffer->packet_id].push_back(buffer);
 	    }
 	    else
 	    {
@@ -341,10 +369,10 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		auto previous_end = full_signal.at(0).size();
 
 		auto convolve_start_time = goby::common::goby_time<double>();
-		glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): CConvolve::signal_block" << std::endl;
+//		glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): CConvolve::signal_block" << std::endl;
 		convolve->signal_block(double_buffer, noise, full_signal);
 		auto convolve_end_time = goby::common::goby_time<double>();
-		glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Signal block took: " << convolve_end_time - convolve_start_time << " seconds." << std::endl;
+//		glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Signal block took: " << convolve_end_time - convolve_start_time << " seconds." << std::endl;
 
 		if(buffer->marker == TaggedAudioBuffer::Marker::END)
 		{
@@ -409,6 +437,9 @@ private:
     // map of packet id to buffer (while waiting for ImpulseResponse) (discrete mode)
     std::map<int, std::deque<std::shared_ptr<const TaggedAudioBuffer>>> audio_buffer_;
 
+    // if after this time we still have data in the audio buffer, erase it (ImpulseRequest timeout)
+    const int buffer_expire_seconds_ = 10;
+    
     int blocksize_{0};
     
     // map of tx modem id to latest impulse response

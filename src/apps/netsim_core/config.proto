@@ -12,6 +12,9 @@ message JackConfig
 // number of buffers delayed TX from RX
 // TODO - remove if possible
     optional int32 expected_number_buffer_delay = 6 [ default = 2 ];
+
+// end to end delay, subtracted from playback start for discrete mode
+    optional double calibration_seconds = 10 [default = 0];
 }
 
 message DetectorConfig
@@ -39,6 +42,7 @@ message ProcessorConfig
     optional double acomms_frequency = 7 [default = 25000];
 
     optional bool test_mode = 8 [default = false];    
+    optional double test_mode_delay_sec = 9 [ default = 1];
 
     optional float impulse_response_update_hertz = 10 [default = 0.1];
     

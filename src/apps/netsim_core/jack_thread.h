@@ -240,7 +240,7 @@ JackThread(const NetSimCoreConfig& config, int index)
 			audio_out_index_[output_port_i] = 0;
 
 			if(tx_buffer->buffer->buffer_start_time > buffer_start_time) // playback is in the future, otherwise start asap (0)			   
-			    frame_start = (tx_buffer->buffer->buffer_start_time - buffer_start_time)*fs_;
+			    frame_start = (tx_buffer->buffer->buffer_start_time - buffer_start_time - cfg().jack().calibration_seconds())*fs_;
 			else
 			    frame_start = 0;
 			
