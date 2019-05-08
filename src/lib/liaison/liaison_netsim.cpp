@@ -18,11 +18,11 @@ using namespace Wt;
 LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     : goby::common::LiaisonContainerWithComms<LiaisonNetsim, NetsimCommsThread>(cfg),
     netsim_cfg_(cfg.GetExtension(protobuf::netsim_config)),
-    timeseries_box_(new WGroupBox("Audio Timeseries", this)),
+    timeseries_box_(new WPanel(this)),
     timeseries_image_(new WImage(timeseries_box_)),
-    spect_box_(new WGroupBox("Audio Spectrogram", this)),
+    spect_box_(new WPanel(this)),
     spect_image_(new WImage(spect_box_)),
-    tl_box_(new WGroupBox("TL / Statistics", this)),
+    tl_box_(new WPanel(this)),
     tl_plot_(new TLPaintedWidget(this, tl_box_)),
     tl_table_(new WTable(tl_box_)),
     tl_tx_txt_(new WText("Transmitter: ")),
@@ -39,6 +39,17 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     tl_dz_(new WSpinBox),
     tl_request_(new WPushButton("Update / Clear TL Plot", tl_box_))
 {
+
+    timeseries_box_->setTitle("Audio Timeseries");
+    timeseries_box_->setCollapsible(true);
+
+    spect_box_->setTitle("Audio Spectrogram");
+    spect_box_->setCollapsible(true);
+
+    tl_box_->setTitle("TL / Statistics");
+    tl_box_->setCollapsible(true);
+
+    
     for(auto& rx_pen : rx_pens_)
 	rx_pen.setWidth(1);     
 
