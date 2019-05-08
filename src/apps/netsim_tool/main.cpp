@@ -27,12 +27,18 @@ public:
     ModemThread(const goby::acomms::protobuf::DriverConfig& cfg, int index) :
         goby::SimpleThread<goby::acomms::protobuf::DriverConfig>(cfg, 10*boost::units::si::hertz, index)
         {
-            driver_.signal_receive.connect(
-                [this](const ModemTransmission& msg)
-                { interthread().publish<groups::tool::receive_data>(msg); } );
+            {    
+                std::lock_guard<std::mutex> lock(driver_mutex);
+                driver_.signal_receive.connect(
+                    [this](const ModemTransmission& msg)
+                    { interthread().publish<groups::tool::receive_data>(msg); } );
+            }
 
-            driver_.startup(cfg);
-
+            {    
+                std::lock_guard<std::mutex> lock(driver_mutex);
+                driver_.startup(cfg);
+            }
+            
             int i = index;
             interthread().publish<groups::tool::ready>(index);
 
@@ -50,6 +56,7 @@ public:
 
     ~ModemThread()
         {
+            std::lock_guard<std::mutex> lock(driver_mutex);
             driver_.shutdown();
         }
     
@@ -87,7 +94,26 @@ public:
                 {
                     glog.is(VERBOSE) && glog << "Received data: " << msg.ShortDebugString() << std::endl;
                     if(msg.ExtensionSize(micromodem::protobuf::receive_stat) > 0)
+                    {
+                        
                         previous_stats_ = msg.GetExtension(micromodem::protobuf::receive_stat, 0);
+                        
+                        NetSimManagerRequest req;
+                        req.set_id(request_id_++);
+                        auto& stats = *req.add_stats();
+                        stats.set_modem_tcp_port(cfg().rx_driver_cfg().tcp_port());
+                        stats.set_tx_modem_tcp_port(cfg().tx_driver_cfg().tcp_port());
+                        stats.set_packet_success(previous_stats_.mode() == micromodem::protobuf::RECEIVE_GOOD);
+                        *stats.mutable_mm_stats() = previous_stats_;
+                    
+                        if(client_->connected())
+                        {
+                            glog.is(DEBUG1) && glog << "Sent stats: " << req.ShortDebugString() << std::endl;
+                            client_->write(req);
+                        }
+                    
+                    }
+                    
                 }
                 );
 
