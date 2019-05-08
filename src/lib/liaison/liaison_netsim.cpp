@@ -18,11 +18,14 @@ using namespace Wt;
 LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     : goby::common::LiaisonContainerWithComms<LiaisonNetsim, NetsimCommsThread>(cfg),
     netsim_cfg_(cfg.GetExtension(protobuf::netsim_config)),
-    timeseries_box_(new WPanel(this)),
+    timeseries_panel_(new WPanel(this)),
+    timeseries_box_(new WContainerWidget(this)),
     timeseries_image_(new WImage(timeseries_box_)),
-    spect_box_(new WPanel(this)),
+    spect_panel_(new WPanel(this)),
+    spect_box_(new WContainerWidget(this)),
     spect_image_(new WImage(spect_box_)),
-    tl_box_(new WPanel(this)),
+    tl_panel_(new WPanel(this)),
+    tl_box_(new WContainerWidget(this)),
     tl_plot_(new TLPaintedWidget(this, tl_box_)),
     tl_table_(new WTable(tl_box_)),
     tl_tx_txt_(new WText("Transmitter: ")),
@@ -40,14 +43,17 @@ LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
     tl_request_(new WPushButton("Update / Clear TL Plot", tl_box_))
 {
 
-    timeseries_box_->setTitle("Audio Timeseries");
-    timeseries_box_->setCollapsible(true);
+    timeseries_panel_->setTitle("Audio Timeseries");
+    timeseries_panel_->setCentralWidget(timeseries_box_);
+    timeseries_panel_->setCollapsible(true);
 
-    spect_box_->setTitle("Audio Spectrogram");
-    spect_box_->setCollapsible(true);
+    spect_panel_->setTitle("Audio Spectrogram");
+    spect_panel_->setCentralWidget(spect_box_);
+    spect_panel_->setCollapsible(true);
 
-    tl_box_->setTitle("TL / Statistics");
-    tl_box_->setCollapsible(true);
+    tl_panel_->setTitle("TL / Statistics");
+    tl_panel_->setCentralWidget(tl_box_);
+    tl_panel_->setCollapsible(true);
 
     
     for(auto& rx_pen : rx_pens_)
@@ -158,13 +164,13 @@ void LiaisonNetsim::handle_new_log(const LoggerEvent& event)
 	timeseries_out_path << event.log_dir() << "/netsim_" << event.start_time() << "_" << std::setw(3) << std::setfill('0') << event.packet_id() << "_timeseries.png";
 
 	{
-	    spect_box_->setTitle("Audio Spectrogram (Packet #" + std::to_string(event.packet_id())+ ")");
+	    spect_panel_->setTitle("Audio Spectrogram (Packet #" + std::to_string(event.packet_id())+ ")");
 	    spect_image_resource_.reset(new WFileResource(spect_out_path.str().c_str()));
 	    Wt::WLink link(spect_image_resource_.get());
 	    spect_image_->setImageLink(link);
 	}
 	{
-	    timeseries_box_->setTitle("Audio Timeseries (Packet #" + std::to_string(event.packet_id()) + ")");
+	    timeseries_panel_->setTitle("Audio Timeseries (Packet #" + std::to_string(event.packet_id()) + ")");
 	    timeseries_image_resource_.reset(new WFileResource(timeseries_out_path.str().c_str()));
 	    Wt::WLink link(timeseries_image_resource_.get());
 	    timeseries_image_->setImageLink(link);

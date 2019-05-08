@@ -72,14 +72,17 @@ private:
 
     const protobuf::LiaisonNetsimConfig& netsim_cfg_;
 
-    Wt::WPanel* timeseries_box_;
+    Wt::WPanel* timeseries_panel_;
+    Wt::WContainerWidget* timeseries_box_;
     Wt::WImage* timeseries_image_;
     std::unique_ptr<Wt::WResource> timeseries_image_resource_;
-    Wt::WPanel* spect_box_;
+    Wt::WPanel* spect_panel_;
+    Wt::WContainerWidget* spect_box_;
     Wt::WImage* spect_image_;
     std::unique_ptr<Wt::WResource> spect_image_resource_;
 
-    Wt::WPanel* tl_box_;
+    Wt::WPanel* tl_panel_;
+    Wt::WContainerWidget* tl_box_;
     TLPaintedWidget* tl_plot_;
     std::unique_ptr<Wt::WResource> tl_plot_resource_;
     
