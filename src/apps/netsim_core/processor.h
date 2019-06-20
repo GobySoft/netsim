@@ -22,7 +22,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 
         // generate 10 seconds of noise
 	CConvolve temp;
-	temp.create_noise(10.0*cfg().sampling_freq(), noise_);  
+	temp.create_white_noise(1, 10.0*cfg().sampling_freq(), cfg().processor().noise_level(), cfg().sampling_freq(), noise_);  
 
         // subscribe to all the detectors except our own id, since we ignore our transmissions
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
@@ -425,7 +425,7 @@ private:
 
     jack_nframes_t frames_since_silence{0};
 
-    std::vector<double> noise_;
+    std::vector<std::vector<double> > noise_;
     // map of packet id to convolve (discrete mode) OR
     // map of tx modem id to convolve (continuous mode)
     std::map<int, std::unique_ptr<CConvolve>> convolve_;

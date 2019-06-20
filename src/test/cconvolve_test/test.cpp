@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
    
     const char* replica_file = argv[1];
 
-    std::vector<double> noise;
+    std::vector<std::vector<double>> noise;
     std::vector<std::vector<double>> full_signal;
     const int frame_size = 1024;
     const int sampling_freq = 96000;
@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
     
     // generate 10 seconds of noise
     CConvolve temp;
-    temp.create_noise(10.0*sampling_freq, noise);
+    temp.create_white_noise(1, 10.0*sampling_freq, noise_level, sampling_freq, noise);
     //write_file("/tmp/noise.bin", 0, noise);
     
     
