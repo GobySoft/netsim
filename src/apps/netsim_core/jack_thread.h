@@ -8,13 +8,15 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "goby/middleware/marshalling/protobuf.h"
+
 #include "common.h"
-#include "goby/middleware/multi-thread-application.h"
-#include "goby/common/time.h"
+#include "goby/zeromq/application/multi_thread.h"
+#include "goby/time/legacy.h"
 #include "config.pb.h"
 #include "messages/groups.h"
 
-using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
 
 int jack_process(jack_nframes_t nframes, void* arg);
 void jack_shutdown (void *arg);
@@ -32,12 +34,12 @@ JackThread(const NetSimCoreConfig& config, int index)
 	fs_(config.sampling_freq()),
 	audio_in_group_(std::string("audio_in_") + std::to_string(ThreadBase::index()))
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 	static_assert(sizeof(float) == 4, "Float must be 4 bytes");
 
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	{
-	    audio_out_groups_.push_back(goby::DynamicGroup(std::string("audio_out_from_") + std::to_string(ThreadBase::index()) + "_to_" + std::to_string(i)));
+	    audio_out_groups_.push_back(goby::middleware::DynamicGroup(std::string("audio_out_from_") + std::to_string(ThreadBase::index()) + "_to_" + std::to_string(i)));
 	    auto audio_out_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) {this->audio_out(buffer, i); };
 	    interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[i]);
 	}
@@ -175,7 +177,7 @@ JackThread(const NetSimCoreConfig& config, int index)
     // special realtime thread once for each audio cycle.
     int jack_process (jack_nframes_t nframes)
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 	double buffer_start_time = goby::common::goby_time<double>();
 
 	std::shared_ptr<AudioBuffer> rx_buffer(new AudioBuffer(buffer_size_));
@@ -298,18 +300,18 @@ JackThread(const NetSimCoreConfig& config, int index)
 
     void jack_shutdown()
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 	glog.is(DIE) && glog << "Jack has shutdown, so we can't go on." << std::endl;
     }
     int jack_xrun()
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 	glog.is(WARN) && glog << "Jack Thread " << ThreadBase::index() << ": Jack buffer xrun (underflow or overflow)" << std::endl;
 	return 0;
     }
     int jack_buffer_size_change(jack_nframes_t nframes)
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 	buffer_size_ = nframes;
 	empty_buffer_.reset(new TaggedAudioBuffer);
 	empty_buffer_->buffer = std::shared_ptr<AudioBuffer>(new AudioBuffer(buffer_size_));
@@ -347,7 +349,7 @@ JackThread(const NetSimCoreConfig& config, int index)
     
     void loop() override
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
       
 	std::shared_ptr<AudioBuffer> temp_buffer;
 	// grab a element to publish while locked
@@ -381,8 +383,8 @@ private:
     std::vector<jack_port_t*> output_port_;
     const jack_nframes_t fs_;
     
-    goby::DynamicGroup audio_in_group_;
-    std::vector<goby::DynamicGroup> audio_out_groups_;
+    goby::middleware::DynamicGroup audio_in_group_;
+    std::vector<goby::middleware::DynamicGroup> audio_out_groups_;
 
     jack_client_t *client_;
 

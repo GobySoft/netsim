@@ -1,4 +1,6 @@
-#include "goby/middleware/single-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/single_thread.h"
 
 #include "messages/groups.h"
 #include "messages/config_request.pb.h"
@@ -8,10 +10,10 @@
 #include "messages/manager_config.pb.h"
 #include "messages/env_bellhop_req.pb.h"
 
-using namespace goby::common::logger;
+using namespace goby::util::logger;
 using goby::glog;
 
-class NetSimManager : public goby::SingleThreadApplication<NetSimManagerConfig>
+class NetSimManager : public goby::zeromq::SingleThreadApplication<NetSimManagerConfig>
 {
 public:
     NetSimManager();
@@ -42,7 +44,7 @@ int main(int argc, char* argv[])
 
 
 NetSimManager::NetSimManager() :
-    goby::SingleThreadApplication<NetSimManagerConfig>(10*boost::units::si::hertz)
+    goby::zeromq::SingleThreadApplication<NetSimManagerConfig>(10*boost::units::si::hertz)
 {
     process_configuration();
 

@@ -1,4 +1,4 @@
-#include "goby/common/time.h"
+#include "goby/time/legacy.h"
 #include "lamss/lib_henrik_util/CConvolve.h"
 
 void write_file(std::string file_name, double timestamp, const std::vector<double>& signal);

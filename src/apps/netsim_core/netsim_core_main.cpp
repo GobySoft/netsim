@@ -1,4 +1,6 @@
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
 #include "messages/groups.h"
@@ -7,10 +9,10 @@
 #include "processor.h"
 #include "logger.h"
 
-using namespace goby::common::logger;
+using namespace goby::util::logger;
 using goby::glog;
 
-class NetSimCore : public goby::MultiThreadApplication<NetSimCoreConfig>
+class NetSimCore : public goby::zeromq::MultiThreadApplication<NetSimCoreConfig>
 {
 public:
     NetSimCore()

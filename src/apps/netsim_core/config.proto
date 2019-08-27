@@ -1,5 +1,5 @@
-import "goby/common/protobuf/app3.proto";
-import "goby/middleware/protobuf/interprocess_config.proto";
+import "goby/middleware/protobuf/app_config.proto";
+import "goby/zeromq/protobuf/interprocess_config.proto";
 
 message JackConfig
 {
@@ -50,8 +50,8 @@ message ProcessorConfig
 
 message NetSimCoreConfig
 {
-    optional goby.protobuf.App3Config app = 1;
-    optional goby.protobuf.InterProcessPortalConfig interprocess = 2;
+    optional goby.middleware.protobuf.AppConfig app = 1;
+    optional goby.zeromq.protobuf.InterProcessPortalConfig interprocess = 2;
 
     required int32 number_of_modems = 10;
     optional int32 sampling_freq = 11 [default = 96000];

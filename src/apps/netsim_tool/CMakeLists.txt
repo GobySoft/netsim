@@ -7,7 +7,8 @@ add_executable(netsim_tool
   ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_link_libraries(netsim_tool
-  goby_middleware
+  goby
+  goby_zeromq
   netsim_messages
   ${LAMSS_PROTOBUF_LIBRARY}
   ${LAMSS_NETSIM_LIBRARY}

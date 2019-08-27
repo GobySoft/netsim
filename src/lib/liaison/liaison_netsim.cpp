@@ -15,8 +15,8 @@
 using goby::glog;
 using namespace Wt;
 
-LiaisonNetsim::LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg)
-    : goby::common::LiaisonContainerWithComms<LiaisonNetsim, NetsimCommsThread>(cfg),
+LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& cfg)
+    : goby::zeromq::LiaisonContainerWithComms<LiaisonNetsim, NetsimCommsThread>(cfg),
     netsim_cfg_(cfg.GetExtension(protobuf::netsim_config)),
     timeseries_panel_(new WPanel(this)),
     timeseries_box_(new WContainerWidget(this)),

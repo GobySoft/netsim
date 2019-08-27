@@ -1,9 +1,9 @@
+#include "goby/middleware/marshalling/protobuf.h"
 
 #include "goby/acomms/modemdriver/mm_driver.h"
-
-#include "goby/middleware/multi-thread-application.h"
-
+#include "goby/zeromq/application/multi_thread.h"
 #include "goby/util/geodesy.h"
+#include "goby/time/legacy.h"
 
 
 #include "config.pb.h"
@@ -13,19 +13,20 @@
 #include "lamss/lib_netsim/tcp_client.h"
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
 
-using namespace goby::common::logger;
+using namespace goby::util::logger;
 using goby::glog;
-
 using goby::acomms::protobuf::ModemTransmission;
+namespace micromodem = goby::acomms::micromodem;
 
 std::mutex driver_mutex;
 
 
-class ModemThread : public goby::SimpleThread<goby::acomms::protobuf::DriverConfig>
+
+class ModemThread : public goby::middleware::SimpleThread<goby::acomms::protobuf::DriverConfig>
 {
 public:
     ModemThread(const goby::acomms::protobuf::DriverConfig& cfg, int index) :
-        goby::SimpleThread<goby::acomms::protobuf::DriverConfig>(cfg, 10*boost::units::si::hertz, index)
+        goby::middleware::SimpleThread<goby::acomms::protobuf::DriverConfig>(cfg, 10*boost::units::si::hertz, index)
         {
             {    
                 std::lock_guard<std::mutex> lock(driver_mutex);
@@ -73,10 +74,10 @@ private:
 };
 
 
-class NetSimTool : public goby::MultiThreadApplication<NetSimToolConfig>
+class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
 {
 public:
-    NetSimTool() : goby::MultiThreadApplication<NetSimToolConfig>(10*boost::units::si::hertz),
+    NetSimTool() : goby::zeromq::MultiThreadApplication<NetSimToolConfig>(10*boost::units::si::hertz),
         r_(cfg().r_min()),
         z_(cfg().z_min()),
         last_r_(-1),
@@ -84,7 +85,7 @@ public:
         geodesy_({ cfg().lat_origin()*boost::units::degree::degrees,
                     cfg().lon_origin()*boost::units::degree::degrees })
         {
-            goby::glog.add_group("data_out", goby::common::Colors::yellow);    
+            goby::glog.add_group("data_out", goby::util::Colors::yellow);    
 
             launch_thread<ModemThread>(cfg().tx_driver_cfg().modem_id(), cfg().tx_driver_cfg());
             launch_thread<ModemThread>(cfg().rx_driver_cfg().modem_id(), cfg().rx_driver_cfg());
@@ -93,10 +94,10 @@ public:
                 [this](const ModemTransmission& msg)
                 {
                     glog.is(VERBOSE) && glog << "Received data: " << msg.ShortDebugString() << std::endl;
-                    if(msg.ExtensionSize(micromodem::protobuf::receive_stat) > 0)
+                    if(msg.HasExtension(micromodem::protobuf::transmission))
                     {
                         
-                        previous_stats_ = msg.GetExtension(micromodem::protobuf::receive_stat, 0);
+                        previous_stats_ = msg.GetExtension(micromodem::protobuf::transmission).receive_stat(0);
                         
                         NetSimManagerRequest req;
                         req.set_id(request_id_++);

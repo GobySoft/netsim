@@ -1,14 +1,16 @@
 #ifndef PROCESSOR20170816H
 #define PROCESSOR20170816H
 
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
 #include "jack_thread.h"
 
 #include "lamss/lib_henrik_util/CConvolve.h"
 
-using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
 
 class ProcessorThread : public ThreadBase
 {
@@ -28,10 +30,10 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	{
 	    auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(i);
-	    detector_audio_groups_.push_back(goby::DynamicGroup(detector_group_name));
+	    detector_audio_groups_.push_back(goby::middleware::DynamicGroup(detector_group_name));
 	    
 	    auto audio_out_group_name = std::string("audio_out_from_") + std::to_string(i) + std::string("_to_") + std::to_string(ThreadBase::index());	   
-	    audio_out_groups_.push_back(goby::DynamicGroup(audio_out_group_name));
+	    audio_out_groups_.push_back(goby::middleware::DynamicGroup(audio_out_group_name));
 
 	    // don't subscribe to our own audio
 	    if(i != ThreadBase::index())
@@ -116,7 +118,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
     
     void impulse_response_continuous(ImpulseResponse impulse_response)
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
         bool found_index = false;
         int modem_index = 0;
 	std::tie(found_index, modem_index) = find_index_from_source(impulse_response.source());
@@ -164,7 +166,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 	
     void impulse_response_discrete(ImpulseResponse impulse_response)
     {
-        using goby::glog; using namespace goby::common::logger;
+        using goby::glog; using namespace goby::util::logger;
 
         /* ImpulseResponse impulse_response; */
         
@@ -245,7 +247,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
     
     void detector_audio(std::shared_ptr<const TaggedAudioBuffer> buffer, int modem_index, double receive_start_time = 0)
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 
 	if(cfg().continuous())
 	{
@@ -419,9 +421,9 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
     static std::atomic<int> ready;
 private:
     // indexed on tx modem id
-    std::vector<goby::DynamicGroup> detector_audio_groups_;
+    std::vector<goby::middleware::DynamicGroup> detector_audio_groups_;
     // indexed on tx modem id
-    std::vector<goby::DynamicGroup> audio_out_groups_;
+    std::vector<goby::middleware::DynamicGroup> audio_out_groups_;
 
     jack_nframes_t frames_since_silence{0};
 

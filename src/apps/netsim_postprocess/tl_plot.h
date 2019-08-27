@@ -1,12 +1,14 @@
 #ifndef TLPLOT20180821H
 #define TLPLOT20180821H
 
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
 #include "iBellhop_messages.pb.h"
 
-using ThreadBase = goby::SimpleThread<NetSimPostprocessConfig>;
+using ThreadBase = goby::middleware::SimpleThread<NetSimPostprocessConfig>;
 
 class TLPlotThread : public ThreadBase
 {

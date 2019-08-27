@@ -3,13 +3,13 @@
 
 #include <vector>
 
-#include "goby/middleware/liaison/liaison_container.h"
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/zeromq/liaison/liaison_container.h"
+#include "goby/zeromq/application/multi_thread.h"
 
 extern "C"
 {
-    std::vector<goby::common::LiaisonContainer*> goby3_liaison_load(
-        const goby::common::protobuf::LiaisonConfig& cfg);    
+    std::vector<goby::zeromq::LiaisonContainer*> goby3_liaison_load(
+        const goby::apps::zeromq::protobuf::LiaisonConfig& cfg);    
 }
 
     

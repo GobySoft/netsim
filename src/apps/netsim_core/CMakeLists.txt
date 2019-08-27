@@ -6,5 +6,5 @@ add_executable(netsim_core
   jack_thread.cpp
   ${PROTO_SRCS} ${PROTO_HDRS})
 
-target_link_libraries(netsim_core goby_middleware jack ${LAMSS_HENRIK_UTIL_LIBRARY} ${LAMSS_PROTOBUF_LIBRARY} netsim_messages)
+target_link_libraries(netsim_core goby goby_zeromq jack ${LAMSS_HENRIK_UTIL_LIBRARY} ${LAMSS_PROTOBUF_LIBRARY} netsim_messages)
 

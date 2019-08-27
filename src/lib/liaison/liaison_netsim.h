@@ -15,8 +15,10 @@
 #include <Wt/WPainter>
 #include <Wt/WPaintDevice>
 
-#include "goby/middleware/liaison/liaison_container.h"
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/liaison/liaison_container.h"
+#include "goby/zeromq/application/multi_thread.h"
 
 #include "messages/liaison.pb.h"
 #include "messages/groups.h"
@@ -52,11 +54,11 @@ private:
 };
 
 
-class LiaisonNetsim : public goby::common::LiaisonContainerWithComms<LiaisonNetsim,
+class LiaisonNetsim : public goby::zeromq::LiaisonContainerWithComms<LiaisonNetsim,
     NetsimCommsThread>
 {
 public:
-    LiaisonNetsim(const goby::common::protobuf::LiaisonConfig& cfg);
+    LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& cfg);
 
     void handle_new_log(const LoggerEvent& event);
     void handle_manager_cfg(const NetSimManagerConfig& cfg);
@@ -134,11 +136,11 @@ private:
 };
     
      
-class NetsimCommsThread : public goby::common::LiaisonCommsThread<LiaisonNetsim>
+class NetsimCommsThread : public goby::zeromq::LiaisonCommsThread<LiaisonNetsim>
 {
 public:
-NetsimCommsThread(LiaisonNetsim* wt_app, const goby::common::protobuf::LiaisonConfig& config, int index) :
-    goby::common::LiaisonCommsThread<LiaisonNetsim>(wt_app, config, index),
+NetsimCommsThread(LiaisonNetsim* wt_app, const goby::apps::zeromq::protobuf::LiaisonConfig& config, int index) :
+    goby::zeromq::LiaisonCommsThread<LiaisonNetsim>(wt_app, config, index),
         wt_app_(wt_app)
         {
             interprocess().subscribe<groups::post_process_event,

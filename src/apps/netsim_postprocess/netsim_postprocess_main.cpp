@@ -1,14 +1,16 @@
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
 #include "messages/groups.h"
 #include "audio_images.h"
 #include "tl_plot.h"
 
-using namespace goby::common::logger;
+using namespace goby::util::logger;
 using goby::glog;
 
-class NetSimPostprocess : public goby::MultiThreadApplication<NetSimPostprocessConfig>
+class NetSimPostprocess : public goby::zeromq::MultiThreadApplication<NetSimPostprocessConfig>
 {
 public:
     NetSimPostprocess()

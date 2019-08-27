@@ -4,12 +4,12 @@
 #include <fstream>
 #include <sstream>
 
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/zeromq/application/multi_thread.h"
 #include "config.pb.h"
 #include "messages/logger.pb.h"
 #include "messages/groups.h"
 
-using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
 
 class LoggerThread : public ThreadBase
 {
@@ -25,7 +25,7 @@ LoggerThread(const NetSimCoreConfig& config)
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	{
 	    auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(i);
-	    detector_audio_groups_.push_back(goby::DynamicGroup(detector_group_name));
+	    detector_audio_groups_.push_back(goby::middleware::DynamicGroup(detector_group_name));
 	    
 	    auto detector_audio_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) { this->log_audio(buffer, i, -1, Direction::IN); };
 	    interthread().subscribe_dynamic<TaggedAudioBuffer>(detector_audio_callback, detector_audio_groups_[i]);
@@ -37,7 +37,7 @@ LoggerThread(const NetSimCoreConfig& config)
 	    for(int to_i = 0, m = cfg().number_of_modems(); to_i < m; ++to_i)
 	    {
 		auto audio_out_group_name = std::string("audio_out_from_") + std::to_string(from_i) + std::string("_to_") + std::to_string(to_i);
-		audio_out_groups_.push_back(goby::DynamicGroup(audio_out_group_name));
+		audio_out_groups_.push_back(goby::middleware::DynamicGroup(audio_out_group_name));
 		
 		auto audio_out_callback = [this, from_i, to_i](std::shared_ptr<const TaggedAudioBuffer> buffer) { this->log_audio(buffer, from_i, to_i, Direction::OUT); };
 		interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[from_i*cfg().number_of_modems()+to_i]);
@@ -49,7 +49,7 @@ private:
 
     void log_audio(std::shared_ptr<const TaggedAudioBuffer> buffer, int from_modem_index, int to_modem_index, Direction dir)
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 
 	int modem_index = (dir == Direction::IN) ? from_modem_index : to_modem_index;	    
        
@@ -109,8 +109,8 @@ private:
     { return (dir == Direction::IN) ? "IN": "OUT"; }
     
 private:
-    std::vector<goby::DynamicGroup> detector_audio_groups_;
-    std::vector<goby::DynamicGroup> audio_out_groups_;
+    std::vector<goby::middleware::DynamicGroup> detector_audio_groups_;
+    std::vector<goby::middleware::DynamicGroup> audio_out_groups_;
 
     // map direction to packet_id to input/output modem_id
     std::map<Direction, std::map<int, std::map<int, std::unique_ptr<std::ofstream>>>> files_;

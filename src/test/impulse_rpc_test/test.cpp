@@ -1,4 +1,6 @@
-#include "goby/middleware/single-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/single_thread.h"
 
 #include "messages/groups.h"
 #include "config.pb.h"
@@ -6,10 +8,10 @@
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
 
 
-class ImpulseRPCTest : public goby::SingleThreadApplication<ImpulseRPCTestConfig>
+class ImpulseRPCTest : public goby::zeromq::SingleThreadApplication<ImpulseRPCTestConfig>
 {
 public:
-    ImpulseRPCTest() : goby::SingleThreadApplication<ImpulseRPCTestConfig>(0.1*boost::units::si::hertz)
+    ImpulseRPCTest() : goby::zeromq::SingleThreadApplication<ImpulseRPCTestConfig>(0.1*boost::units::si::hertz)
         {
             interprocess().subscribe<groups::impulse_response, ImpulseResponse>(
                 [](const ImpulseResponse& imp_res)

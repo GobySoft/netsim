@@ -1,3 +1,5 @@
+#include "goby/middleware/marshalling/protobuf.h"
+
 #include "goby/moos/middleware/moos_plugin_translator.h"
 #include "goby/moos/moos_translator.h"
 
@@ -6,7 +8,8 @@
 #include "messages/env_bellhop_req.pb.h"
 
 using goby::glog;
-using namespace goby::common::logger;
+using namespace goby::util::logger;
+using goby::apps::moos::protobuf::GobyMOOSGatewayConfig;
 
 class NetSimCoreTranslation : public goby::moos::Translator
 {
@@ -15,28 +18,27 @@ public:
     
     NetSimCoreTranslation(const GobyMOOSGatewayConfig& cfg) :
         Base(cfg),
-	environment_id_(cfg.moos_port() % 10) // based on MOOS port 0-9
+	environment_id_(cfg.moos().port() % 10) // based on MOOS port 0-9
         {
 	    glog.is(DEBUG1) && glog << "Environment id: " << environment_id_ << std::endl;
 
-            Base::goby_comms().interprocess().subscribe<groups::env_impulse_req, EnvironmentImpulseRequest>(
+            goby().interprocess().subscribe<groups::env_impulse_req, EnvironmentImpulseRequest>(
                 [this](const EnvironmentImpulseRequest& i) { this->goby_to_moos(i); }
                 );
 
-            Base::goby_comms().interprocess().subscribe<groups::env_nav_update, EnvironmentNavUpdate>(
+            goby().interprocess().subscribe<groups::env_nav_update, EnvironmentNavUpdate>(
                 [this](const EnvironmentNavUpdate& n) { this->goby_to_moos(n); }
                 );
 
-            Base::goby_comms().interprocess().subscribe<groups::env_bellhop_req, EnvironmentiBellhopRequest>(
+            goby().interprocess().subscribe<groups::env_bellhop_req, EnvironmentiBellhopRequest>(
                 [this](const EnvironmentiBellhopRequest& n) { this->goby_to_moos(n); }
                 );
 
 	    
 	    
-            Base::add_moos_trigger(imp_resp_var_);
-            Base::add_moos_trigger(bellhop_resp_var_);
+            moos().add_trigger(imp_resp_var_, [this](const CMOOSMsg& msg) { moos_to_goby(msg); });
+            moos().add_trigger(bellhop_resp_var_, [this](const CMOOSMsg& msg) { moos_to_goby(msg); });
 	    
-
 	    {
 		goby::moos::protobuf::TranslatorEntry imp_resp_entry;
 		imp_resp_entry.set_protobuf_name(ImpulseResponse::descriptor()->full_name());
@@ -87,20 +89,20 @@ public:
 
 private:
     
-    void moos_to_goby(const CMOOSMsg& moos_msg) override
+    void moos_to_goby(const CMOOSMsg& moos_msg)
         {
             if(moos_msg.GetKey() == imp_resp_var_)
             {
                 // publish IMPULSE_RESPONSE
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
                 auto imp_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "ImpulseResponse");
-                Base::goby_comms().interprocess().publish<groups::impulse_response>(std::dynamic_pointer_cast<ImpulseResponse>(imp_resp_pb));
+                goby().interprocess().publish<groups::impulse_response>(std::dynamic_pointer_cast<ImpulseResponse>(imp_resp_pb));
             }
             else if(moos_msg.GetKey() == bellhop_resp_var_)
             {
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
                 auto bellhop_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "iBellhopResponse");
-                Base::goby_comms().interprocess().publish<groups::bellhop_response>(std::dynamic_pointer_cast<iBellhopResponse>(bellhop_resp_pb));
+                goby().interprocess().publish<groups::bellhop_response>(std::dynamic_pointer_cast<iBellhopResponse>(bellhop_resp_pb));
             }
         }
 
@@ -110,7 +112,7 @@ private:
 	    {	       
 		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(req.req());
 		for(auto& moos_msg_pair : moos_msgs)
-		    Base::moos_comms().Post(moos_msg_pair.second);
+		    moos().comms().Post(moos_msg_pair.second);
 	    }
         }
 
@@ -120,7 +122,7 @@ private:
 	    {
 		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(update.nav());
 		for(auto& moos_msg_pair : moos_msgs)
-		    Base::moos_comms().Post(moos_msg_pair.second);
+		    moos().comms().Post(moos_msg_pair.second);
 	    }
         }
 
@@ -130,7 +132,7 @@ private:
 	    {
 		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(req.req());
 		for(auto& moos_msg_pair : moos_msgs)
-		    Base::moos_comms().Post(moos_msg_pair.second);
+		    moos().comms().Post(moos_msg_pair.second);
 	    }
         }
 
@@ -150,10 +152,10 @@ private:
 
 extern "C"
 {
-    void goby3_moos_gateway_load(goby::MultiThreadApplication<GobyMOOSGatewayConfig>* handler)
+    void goby3_moos_gateway_load(goby::zeromq::MultiThreadApplication<GobyMOOSGatewayConfig>* handler)
     { handler->launch_thread<NetSimCoreTranslation>(); }
     
-    void goby3_moos_gateway_unload(goby::MultiThreadApplication<GobyMOOSGatewayConfig>* handler)
+    void goby3_moos_gateway_unload(goby::zeromq::MultiThreadApplication<GobyMOOSGatewayConfig>* handler)
     { handler->join_thread<NetSimCoreTranslation>(); }
 }
 

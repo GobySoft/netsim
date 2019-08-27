@@ -1,8 +1,8 @@
-import "goby/middleware/protobuf/liaison_config.proto";
+import "goby/zeromq/protobuf/liaison_config.proto";
 
 package protobuf;
 
-extend goby.common.protobuf.LiaisonConfig
+extend goby.apps.zeromq.protobuf.LiaisonConfig
 {
     optional LiaisonNetsimConfig netsim_config = 1300;
 }

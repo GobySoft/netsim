@@ -2,5 +2,5 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_CURRENT_BINARY_DIR} config.p
 
 add_executable(impulse_rpc_test test.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 
-target_link_libraries(impulse_rpc_test goby_middleware ${LAMSS_PROTOBUF_LIBRARY})
+target_link_libraries(impulse_rpc_test goby goby_zeromq ${LAMSS_PROTOBUF_LIBRARY})
 

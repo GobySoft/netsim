@@ -1,13 +1,13 @@
-import "goby/common/protobuf/app3.proto";
-import "goby/middleware/protobuf/interprocess_config.proto";
+import "goby/middleware/protobuf/app_config.proto";
+import "goby/zeromq/protobuf/interprocess_config.proto";
 
 import "goby/acomms/protobuf/driver_base.proto";
 import "goby/acomms/protobuf/modem_message.proto";
 
 message NetSimToolConfig
 {
-    optional goby.protobuf.App3Config app = 1;
-    optional goby.protobuf.InterProcessPortalConfig interprocess = 2;
+    optional goby.middleware.protobuf.AppConfig app = 1;
+    optional goby.zeromq.protobuf.InterProcessPortalConfig interprocess = 2;
 
     required goby.acomms.protobuf.DriverConfig tx_driver_cfg = 4;
     required goby.acomms.protobuf.DriverConfig rx_driver_cfg = 5;

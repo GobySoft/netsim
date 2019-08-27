@@ -3,12 +3,14 @@
 
 #include <boost/circular_buffer.hpp>
 
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
 #include "jack_thread.h"
 
-using ThreadBase = goby::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
 
 class DetectorThread : public ThreadBase
 {
@@ -19,7 +21,7 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 	audio_in_group_(std::string("audio_in_") + std::to_string(ThreadBase::index())),
 	detector_audio_group_(std::string("detector_audio_tx_") + std::to_string(ThreadBase::index()))
     {
-	using goby::glog; using namespace goby::common::logger;	
+	using goby::glog; using namespace goby::util::logger;	
 
 	auto audio_in_callback = [this](std::shared_ptr<const AudioBuffer> buffer) { this->audio_in(buffer); };
 
@@ -39,7 +41,7 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 
     void audio_in(std::shared_ptr<const AudioBuffer> buffer)
     {
-	using goby::glog; using namespace goby::common::logger;
+	using goby::glog; using namespace goby::util::logger;
 	       
 	glog.is(DEBUG2) && glog << "Detector Thread (" << ThreadBase::index() << "): Received buffer of size: " << buffer->samples.size() << std::endl;
 
@@ -153,8 +155,8 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 
     static std::atomic<int> ready;
 private:  
-    goby::DynamicGroup audio_in_group_;
-    goby::DynamicGroup detector_audio_group_;
+    goby::middleware::DynamicGroup audio_in_group_;
+    goby::middleware::DynamicGroup detector_audio_group_;
 
     bool in_packet_{false};
     int in_packet_id{-1};

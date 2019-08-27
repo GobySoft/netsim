@@ -1,12 +1,14 @@
 #ifndef AUDIOIMAGES20180820H
 #define AUDIOIMAGES20180820H
 
-#include "goby/middleware/multi-thread-application.h"
+#include "goby/middleware/marshalling/protobuf.h"
+
+#include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
 #include "messages/logger.pb.h"
 
-using ThreadBase = goby::SimpleThread<NetSimPostprocessConfig>;
+using ThreadBase = goby::middleware::SimpleThread<NetSimPostprocessConfig>;
 
 class AudioImagesThread : public ThreadBase
 {
