@@ -19,6 +19,9 @@ namespace groups
     constexpr goby::middleware::Group env_bellhop_req{"environment_bellhop_request"};
     constexpr goby::middleware::Group configuration{"configuration"};    
     constexpr goby::middleware::Group receive_stats{"receive_stats"};
+
+    constexpr goby::middleware::Group gps_line_out{"gps_line_out"};
+    constexpr goby::middleware::Group gps_line_in{"gps_line_in"};
     
     // published by netsim_liaison
     constexpr goby::middleware::Group config_request{"config_request"};

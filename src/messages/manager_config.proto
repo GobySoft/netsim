@@ -1,6 +1,8 @@
 import "goby/middleware/protobuf/app_config.proto";
 import "goby/zeromq/protobuf/interprocess_config.proto";
 
+import "goby/middleware/protobuf/serial_config.proto";
+
 message NetSimManagerConfig
 {
     optional goby.middleware.protobuf.AppConfig app = 1;
@@ -27,5 +29,13 @@ message NetSimManagerConfig
     }
     
     repeated EnvironmentBounds env_bounds = 4;
-    
+
+    // output
+    message GPSSerialOutput
+    {
+	required int32 modem_tcp_port = 1;
+	required goby.middleware.protobuf.SerialConfig serial = 2;
+    }
+    repeated GPSSerialOutput gps_out = 10;
+
 }

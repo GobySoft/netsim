@@ -1,5 +1,5 @@
 sudo cp netsim_socat@.service /etc/systemd/system/
-sudo systemctl enable netsim_socat@{0..7}.service
+sudo systemctl enable netsim_socat@{0..3}.service
 
 install jackd2 libjack-jack2-dev
 

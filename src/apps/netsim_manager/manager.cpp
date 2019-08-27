@@ -1,6 +1,7 @@
 #include "goby/middleware/marshalling/protobuf.h"
 
-#include "goby/zeromq/application/single_thread.h"
+#include "goby/zeromq/application/multi_thread.h"
+#include "goby/middleware/io/serial_line_based.h"
 
 #include "messages/groups.h"
 #include "messages/config_request.pb.h"
@@ -13,7 +14,7 @@
 using namespace goby::util::logger;
 using goby::glog;
 
-class NetSimManager : public goby::zeromq::SingleThreadApplication<NetSimManagerConfig>
+class NetSimManager : public goby::zeromq::MultiThreadApplication<NetSimManagerConfig>
 {
 public:
     NetSimManager();
@@ -26,6 +27,8 @@ private:
     void handle_impulse_request(const ImpulseRequest& req);
     void handle_bellhop_request(const iBellhopRequest& req);
 
+    void write_gps_out(const NavUpdate& nav_update);
+    
 private:
     // maps modem_tcp_port to configuration
     std::map<int, NetSimManagerConfig::SimEnvironmentPair> env_cfg_;
@@ -44,7 +47,7 @@ int main(int argc, char* argv[])
 
 
 NetSimManager::NetSimManager() :
-    goby::zeromq::SingleThreadApplication<NetSimManagerConfig>(10*boost::units::si::hertz)
+    goby::zeromq::MultiThreadApplication<NetSimManagerConfig>(10*boost::units::si::hertz)
 {
     process_configuration();
 
@@ -67,6 +70,12 @@ NetSimManager::NetSimManager() :
     interprocess().subscribe<groups::bellhop_request, iBellhopRequest>(
 	[this](const iBellhopRequest& req)
 	{ handle_bellhop_request(req);} );
+    
+    for(const auto& gps_out : cfg().gps_out())
+    {
+	// use modem_tcp_port as thread index
+	launch_thread<goby::middleware::io::SerialThreadLineBased<groups::gps_line_in, groups::gps_line_out, goby::middleware::io::PubSubLayer::INTERTHREAD, goby::middleware::io::PubSubLayer::INTERTHREAD>>(static_cast<int>(gps_out.modem_tcp_port()), gps_out.serial());
+    }
 }
 
 void NetSimManager::loop()
@@ -137,9 +146,14 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
 	*env_nav_update.mutable_nav() = nav;
 
 	if(env_nav_update.IsInitialized())
+	{
 	    interprocess().publish<groups::env_nav_update>(env_nav_update);
+	    write_gps_out(env_nav_update.nav());
+	}
 	else
+	{
 	    glog.is(WARN) && glog << "Uninitialized EnvironmentNavUpdate: " << env_nav_update.DebugString() << std::endl;
+	}
     }
 
 
@@ -193,4 +207,68 @@ void NetSimManager::handle_bellhop_request(const iBellhopRequest& req)
     env_req.set_environment_id(env_cfg.environment_id());
     *env_req.mutable_req() = req;
     interprocess().publish<groups::env_bellhop_req>(env_req);
+}
+
+void NetSimManager::write_gps_out(const NavUpdate& nav_update)
+{
+    auto io_msg = std::make_shared<goby::middleware::protobuf::IOData>();
+    io_msg->set_index(nav_update.modem_tcp_port());
+
+    auto now_ptime = goby::time::SystemClock::now<boost::posix_time::ptime>();
+
+    boost::format time_fmt("%02d%02d%02d.%06d");
+    time_fmt % now_ptime.time_of_day().hours() % now_ptime.time_of_day().minutes() %
+        now_ptime.time_of_day().seconds() %
+        (now_ptime.time_of_day().fractional_seconds() * 1000000 /
+         boost::posix_time::time_duration::ticks_per_second());
+
+    boost::format date_fmt("%02d%02d%02d");
+    date_fmt % now_ptime.date().day() % static_cast<int>(now_ptime.date().month()) % (now_ptime.date().year() - now_ptime.date().year()/100*100);
+
+    boost::format lat_fmt("%02d%02d.%04d");
+
+    {
+	double lat = std::abs(nav_update.lat());
+	int degrees = std::floor(lat);
+	int minutes = std::floor((lat - degrees) * 60);
+	int ten_thousandth_minutes = std::floor(((lat - degrees) * 60 - minutes) * 10000);
+	
+	lat_fmt % degrees % minutes % ten_thousandth_minutes;
+    }
+
+    boost::format lon_fmt("%03d%02d.%04d");
+    {
+	double lon = std::abs(nav_update.lon());
+	int degrees = std::floor(lon);
+	int minutes = std::floor((lon - degrees) * 60);
+	int ten_thousandth_minutes = std::floor(((lon - degrees) * 60 - minutes) * 10000);
+	
+	lon_fmt % degrees % minutes % ten_thousandth_minutes;
+    }
+
+    boost::format sog_fmt("%.1f");
+    const double meters_per_second_to_knots = 1.94384;    
+    sog_fmt % (nav_update.speed()*meters_per_second_to_knots);
+
+    boost::format cmg_fmt("%.1f");
+    cmg_fmt % nav_update.heading();    
+    
+    goby::util::NMEASentence gprmc;
+    gprmc.push_back("$GPRMC");
+    gprmc.push_back(time_fmt.str()); // time
+    gprmc.push_back("A"); // OK
+    gprmc.push_back(lat_fmt.str()); // lat, lat hemi
+    gprmc.push_back(nav_update.lat() < 0 ? "S" : "N"); // lat, lat hemi
+    gprmc.push_back(lon_fmt.str()); // lon, lon hemi
+    gprmc.push_back(nav_update.lon() < 0 ? "W" : "E"); // lon, lon hemi
+    gprmc.push_back(sog_fmt.str()); // sog, knots
+    gprmc.push_back(cmg_fmt.str()); // cmg, degrees
+    gprmc.push_back(date_fmt.str()); // date of fix
+    
+    gprmc.push_back("000.0"); // magnetic variation
+    gprmc.push_back("E");
+
+    io_msg->set_data(gprmc.message_cr_nl());
+
+    interthread().publish<groups::gps_line_out>(io_msg);
 }
