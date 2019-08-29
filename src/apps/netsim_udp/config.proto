@@ -1,0 +1,22 @@
+import "goby/middleware/protobuf/app_config.proto";
+import "goby/zeromq/protobuf/interprocess_config.proto";
+import "goby/middleware/protobuf/udp_config.proto";
+import "goby/middleware/protobuf/io.proto";
+
+message NetSimUDPConfig
+{
+    optional goby.middleware.protobuf.AppConfig app = 1;
+    optional goby.zeromq.protobuf.InterProcessPortalConfig interprocess = 2;
+
+    required goby.middleware.protobuf.UDPOneToManyConfig udp = 20;
+
+    message ModemEndPoint
+    {
+        required string name = 1;
+        required uint32 modem_id = 2;
+        required goby.middleware.protobuf.UDPEndPoint endpoint = 3;
+    }
+    repeated ModemEndPoint modem = 30;
+
+    optional bool send_all_as_broadcast = 40 [default =true];
+}
