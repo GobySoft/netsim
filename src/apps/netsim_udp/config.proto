@@ -12,7 +12,7 @@ message NetSimUDPConfig
 
     message ModemEndPoint
     {
-        required string name = 1;
+        required uint32 modem_tcp_port = 1;
         required uint32 modem_id = 2;
         required goby.middleware.protobuf.UDPEndPoint endpoint = 3;
     }
