@@ -4,7 +4,7 @@ After=sound.target
 
 [Service]
 ExecStartPre=/opt/netsim/scripts/fix_fast_track_levels.sh
-ExecStart=/bin/bash -c "Ultra=$$(/usr/bin/aplay -l | /bin/grep F8R | cut -d ':' -f 1 | cut -d ' ' -f 2); export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -R -dalsa -dhw:$$Ultra -r96000 -p1024 -n2 -H -M"
+ExecStart=/bin/bash -c "Ultra=$$(/usr/bin/aplay -l | /bin/grep F8R | cut -d ':' -f 1 | cut -d ' ' -f 2); export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -R -dalsa -dhw:$$Ultra -r96000 -p256 -n2 -H -M"
 
 [Install]
 WantedBy=multi-user.target

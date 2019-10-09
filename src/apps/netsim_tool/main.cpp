@@ -94,7 +94,7 @@ public:
                 [this](const ModemTransmission& msg)
                 {
                     glog.is(VERBOSE) && glog << "Received data: " << msg.ShortDebugString() << std::endl;
-                    if(msg.HasExtension(micromodem::protobuf::transmission))
+                    if(msg.HasExtension(micromodem::protobuf::transmission) && msg.GetExtension(micromodem::protobuf::transmission).receive_stat_size() > 0)
                     {
                         
                         previous_stats_ = msg.GetExtension(micromodem::protobuf::transmission).receive_stat(0);
