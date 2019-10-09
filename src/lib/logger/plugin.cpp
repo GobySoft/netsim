@@ -6,8 +6,15 @@
 #include "goby/util/debug_logger.h"
 #include "goby/middleware/log.h"
 
+#include "messages/tool.pb.h"
+
 using namespace goby::util::logger;
 using goby::glog;
+
+// ensure linking netsim_messages
+netsim::protobuf::ToolReceiveStats dummy;
+
+
 
 namespace netsim
 {
