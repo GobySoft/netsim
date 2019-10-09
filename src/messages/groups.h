@@ -38,6 +38,9 @@ constexpr goby::middleware::Group receive_data{"tool::receive_data"};
 constexpr goby::middleware::Group ready{"tool::ready"};
 constexpr goby::middleware::Group transmit{"tool::transmit"};
 constexpr goby::middleware::Group rx_stats{"tool::rx_stats"};
+constexpr goby::middleware::Group raw_in{"tool::raw_in"};
+constexpr goby::middleware::Group raw_out{"tool::raw_out"};
+
 } // namespace tool
 
 
