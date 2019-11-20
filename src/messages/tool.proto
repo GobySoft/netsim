@@ -1,4 +1,5 @@
 import "goby/acomms/protobuf/mm_driver.proto";
+import "goby/acomms/protobuf/modem_message.proto";
 
 
 package netsim.protobuf;
@@ -10,4 +11,10 @@ message ToolReceiveStats
     required int32 source_z = 11;
     required int32 receiver_r = 20;
     required int32 receiver_z = 21;
+}
+
+message ToolModemRaw
+{
+    required int32 modem_id = 1;
+    required goby.acomms.protobuf.ModemRaw msg = 2;
 }

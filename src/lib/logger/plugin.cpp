@@ -6,6 +6,9 @@
 #include "goby/util/debug_logger.h"
 #include "goby/middleware/log.h"
 
+#include "goby/middleware/log/dccl_log_plugin.h"
+#include "goby/middleware/log/protobuf_log_plugin.h"
+
 #include "messages/tool.pb.h"
 
 using namespace goby::util::logger;
@@ -29,6 +32,11 @@ namespace netsim
         bool provide_entry(goby::middleware::HDF5ProtobufEntry* entry) override;
     private:
         std::deque<std::pair<std::string, std::unique_ptr<std::ifstream>>> logs_;
+        goby::middleware::log::ProtobufPlugin pb_plugin_;
+        goby::middleware::log::ProtobufPlugin dccl_plugin_; 
+
+        std::deque<std::shared_ptr<google::protobuf::Message>> messages_;
+        std::string last_channel_;
     };    
 
 }
@@ -51,16 +59,35 @@ netsim::HDF5Plugin::HDF5Plugin(goby::middleware::protobuf::HDF5Config* cfg)
         std::unique_ptr<std::ifstream> log(new std::ifstream(file.c_str()));
         
         if(!log->is_open())
+        {
             glog.is(WARN) && glog << "Could not open " << file << " for reading" << std::endl;
+        }
         else
+        {
+            pb_plugin_.register_read_hooks(*log);
+            dccl_plugin_.register_read_hooks(*log);
+            
             logs_.push_back(std::make_pair(file, std::move(log)));
+        }
+        
     }
 
     glog.is(VERBOSE) && glog << "Processing log: " << logs_.front().first << std::endl;
+
+
 }
 
 bool netsim::HDF5Plugin::provide_entry(goby::middleware::HDF5ProtobufEntry* entry)
 {
+    if(!messages_.empty())
+    {
+        entry->time = 0;
+        entry->channel = last_channel_;
+        entry->msg = messages_.front();
+        messages_.pop_front();
+        return true;
+    }
+    
     while(!logs_.empty())
     {
         auto& current_log = *logs_.front().second;
@@ -71,18 +98,25 @@ bool netsim::HDF5Plugin::provide_entry(goby::middleware::HDF5ProtobufEntry* entr
 
             if(log_entry.scheme() == goby::middleware::MarshallingScheme::DCCL || log_entry.scheme() == goby::middleware::MarshallingScheme::PROTOBUF)
             {
-                auto msg = dccl::DynamicProtobufManager::new_protobuf_message<std::unique_ptr<google::protobuf::Message>>(log_entry.type());
-                msg->ParseFromArray(&log_entry.data()[0], log_entry.data().size());
-                if(msg)
+                if(log_entry.scheme() == goby::middleware::MarshallingScheme::DCCL)
                 {
-                    entry->channel = std::string(log_entry.group());
-                    std::cout << log_entry.type() << " " << log_entry.group() << " " << entry->channel << std::endl;
-
-                    auto desc = msg->GetDescriptor();
-                    auto refl = msg->GetReflection();
+                    auto msgs = dccl_plugin_.parse_message(log_entry);
+                    messages_.assign(msgs.begin(), msgs.end());
+                }
+                else
+                {
+                    auto msgs = pb_plugin_.parse_message(log_entry);
+                    messages_.assign(msgs.begin(), msgs.end());
+                }
+                
+                if(!messages_.empty())
+                {
+                    //                    std::cout << "#" << messages_.size() << " " << log_entry.type() << " " << log_entry.group() << " " << entry->channel << std::endl;
+                    last_channel_ = std::string(log_entry.group());
                     entry->time = 0;
-                    
-                    entry->msg = std::shared_ptr<google::protobuf::Message>(std::move(msg));
+                    entry->channel = last_channel_;
+                    entry->msg = messages_.front();
+                    messages_.pop_front();
                     return true;
                 }
                 else
