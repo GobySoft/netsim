@@ -11,7 +11,7 @@ itheta = 1;
 isd    = 1;
 
 pressure = squeeze( pressure( itheta, isd, :, : ) );
-zt       = Pos.r.depth;
+zt       = Pos.r.z;
 rt       = Pos.r.range;
 
 tlt = abs( pressure );

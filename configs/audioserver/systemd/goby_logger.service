@@ -1,0 +1,11 @@
+[Unit]
+Description=Goby Logger
+After=gobyd.service
+BindsTo=gobyd.service
+
+[Service]
+ExecStart=/opt/goby3/bin/goby_logger --interprocess 'platform: "netsim" transport: TCP' --log_dir /opt/logs --load_shared_library /opt/netsim/build/lib/libnetsim_messages.so
+
+[Install]
+WantedBy=gobyd.service
+

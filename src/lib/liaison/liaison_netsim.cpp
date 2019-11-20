@@ -196,14 +196,17 @@ void LiaisonNetsim::handle_new_log(const LoggerEvent& event)
 
 void LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
 {
-    tl_image_path_ = resp.output_file() + ".png";
-    tl_plot_resource_.reset(new WFileResource(tl_image_path_.c_str()));
-    tl_bellhop_resp_ = resp;
+    if(resp.success())
+    {
+	tl_image_path_ = resp.output_file() + ".png";
+	tl_plot_resource_.reset(new WFileResource(tl_image_path_.c_str()));
+	tl_bellhop_resp_ = resp;
 //    Wt::WLink link(tl_plot_resource_.get());
 //    tl_plot_->setImageLink(link);
-    tl_plot_->update();
+	tl_plot_->update();
+    }
     tl_request_->enable();
-
+   
     nav_at_last_tx_start_.clear();
     nav_at_previous_tx_start_.clear();
     receive_stats_.clear();    	      
