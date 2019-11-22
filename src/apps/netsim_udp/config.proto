@@ -3,8 +3,12 @@ import "goby/zeromq/protobuf/interprocess_config.proto";
 import "goby/middleware/protobuf/udp_config.proto";
 import "goby/middleware/protobuf/io.proto";
 
+import "dccl/option_extensions.proto";
+
 message NetSimUDPConfig
 {
+    option (dccl.msg).unit_system = "si";
+
     optional goby.middleware.protobuf.AppConfig app = 1;
     optional goby.zeromq.protobuf.InterProcessPortalConfig interprocess = 2;
 
@@ -18,5 +22,15 @@ message NetSimUDPConfig
     }
     repeated ModemEndPoint modem = 30;
 
-    optional bool send_all_as_broadcast = 40 [default =true];
+    optional bool send_all_as_broadcast = 40 [default = true];
+
+    message RangeToBernoulliProbability
+    {
+        required double range = 1;
+        required double success_probability = 2;
+    }
+
+    repeated RangeToBernoulliProbability range_to_packet_success = 50;
+    optional double sound_speed = 51
+        [default = 1500, (dccl.field).units.derived_dimensions = "velocity"];
 }
