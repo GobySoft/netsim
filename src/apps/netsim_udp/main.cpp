@@ -1,3 +1,4 @@
+#include <random>
 
 #include "goby/middleware/marshalling/protobuf.h"
 
@@ -21,7 +22,9 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
 {
   public:
     NetSimUDP()
-        : goby::zeromq::MultiThreadApplication<NetSimUDPConfig>(100 * boost::units::si::hertz)
+        : goby::zeromq::MultiThreadApplication<NetSimUDPConfig>(100 * boost::units::si::hertz),
+          outlier_occurence_(cfg().outlier_probability()),
+          outlier_dowtt_(cfg().outlier_mean(), cfg().outlier_stdev())
     {
         for (const auto& modem : cfg().modem())
         {
@@ -94,6 +97,13 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
     // valid messages waiting for propagation time to elapse
     std::multimap<goby::time::MicroTime, std::shared_ptr<goby::middleware::protobuf::IOData>>
         delay_buffer_;
+
+    std::random_device rd_{};
+    std::mt19937 outlier_gen_{rd_()};
+    // coin flip if a given range is an outlier
+    std::bernoulli_distribution outlier_occurence_;
+    // what is the actual outlier owtt (added to actual travel time)
+    std::normal_distribution<> outlier_dowtt_;
 };
 
 int main(int argc, char* argv[]) { return goby::run<NetSimUDP>(argc, argv); }
@@ -135,21 +145,26 @@ void NetSimUDP::process_impulse_response(const ImpulseResponse& r)
     if (r.raytrace_size())
     {
         double first_arrival = std::numeric_limits<double>::infinity();
+        double outlier_time = 0;
         for (const auto& ray : r.raytrace())
         {
+            // randomly add an offset to the owtt for simulating outliers
+            if (outlier_occurence_(outlier_gen_))
+                outlier_time = outlier_dowtt_(outlier_gen_);
+
             if (ray.element_size() > 0 && ray.element(0).delay() < first_arrival)
                 first_arrival = ray.element(0).delay();
         }
 
         goby::glog.is_debug1() && goby::glog << "Received impulse response: " << r.source() << "->"
                                              << r.receiver() << ", first arrival: " << first_arrival
-                                             << std::endl;
+                                             << ", outlier dt: " << outlier_time << std::endl;
 
         for (auto it = it_p.first; it != it_p.second; ++it)
         {
             auto msg = it->second;
             auto& mm_tx = *msg.MutableExtension(goby::acomms::micromodem::protobuf::transmission);
-            auto owtt = first_arrival * boost::units::si::seconds;
+            auto owtt = (first_arrival + outlier_time) * boost::units::si::seconds;
 
             auto& ranging_reply = *mm_tx.mutable_ranging_reply();
             ranging_reply.add_one_way_travel_time_with_units(owtt);
@@ -172,6 +187,6 @@ void NetSimUDP::process_impulse_response(const ImpulseResponse& r)
                                            << std::distance(it_p.first, it_p.second) << " messages"
                                            << std::endl;
     }
-    
+
     forward_buffer_[src_id].erase(it_p.first, it_p.second);
 }

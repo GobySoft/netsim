@@ -19,4 +19,9 @@ message NetSimUDPConfig
     repeated ModemEndPoint modem = 30;
 
     optional bool send_all_as_broadcast = 40 [default =true];
+
+
+    optional double outlier_probability = 60 [default = 0];
+    optional double outlier_mean = 61 [default = 1];
+    optional double outlier_stdev = 62 [default = 0.1];
 }
