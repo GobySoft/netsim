@@ -1,8 +1,10 @@
+#include <random>
 
 #include "goby/middleware/marshalling/protobuf.h"
 
 #include "goby/acomms/protobuf/modem_message.pb.h"
 #include "goby/middleware/io/udp_one_to_many.h"
+#include "goby/util/sci.h"
 #include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
@@ -21,7 +23,9 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
 {
   public:
     NetSimUDP()
-        : goby::zeromq::MultiThreadApplication<NetSimUDPConfig>(100 * boost::units::si::hertz)
+        : goby::zeromq::MultiThreadApplication<NetSimUDPConfig>(100 * boost::units::si::hertz),
+          outlier_occurence_(cfg().outlier_probability()),
+          outlier_dowtt_(cfg().outlier_mean(), cfg().outlier_stdev())
     {
         for (const auto& modem : cfg().modem())
         {
@@ -30,6 +34,18 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
                 std::make_pair(modem.endpoint().SerializeAsString(), modem.modem_id()));
             tcp_port_to_id_.insert(
                 std::make_pair(std::to_string(modem.modem_tcp_port()), modem.modem_id()));
+        }
+
+        for (const auto& range_prob : cfg().range_to_packet_success())
+            range_to_packet_success_prob_.insert(
+                std::make_pair(range_prob.range(), range_prob.success_probability()));
+
+        if (range_to_packet_success_prob_.size() < 2)
+        {
+            glog.is_verbose() && glog << "Use 100% packet success. To define range based success "
+                                         "rate, use at least 'range_to_packet_success' values"
+                                      << std::endl;
+            range_to_packet_success_prob_.clear();
         }
 
         launch_thread<goby::middleware::io::UDPOneToManyThread<udp_in, udp_out>>(cfg().udp());
@@ -81,6 +97,7 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
     void process_impulse_response(const ImpulseResponse& r);
 
     void loop() override;
+    double travel_time(ImpulseResponse impulse_response);
 
   private:
     std::map<int, NetSimUDPConfig::ModemEndPoint> modems_;
@@ -94,6 +111,17 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
     // valid messages waiting for propagation time to elapse
     std::multimap<goby::time::MicroTime, std::shared_ptr<goby::middleware::protobuf::IOData>>
         delay_buffer_;
+
+    // map of range to probability of packet success
+    std::map<double, double> range_to_packet_success_prob_;
+
+    std::random_device rd_;
+    std::mt19937 rand_gen_{rd_()};
+    std::mt19937 outlier_gen_{rd_()};
+    // coin flip if a given range is an outlier
+    std::bernoulli_distribution outlier_occurence_;
+    // what is the actual outlier owtt (added to actual travel time)
+    std::normal_distribution<> outlier_dowtt_;
 };
 
 int main(int argc, char* argv[]) { return goby::run<NetSimUDP>(argc, argv); }
@@ -134,35 +162,56 @@ void NetSimUDP::process_impulse_response(const ImpulseResponse& r)
 
     if (r.raytrace_size())
     {
-        double first_arrival = std::numeric_limits<double>::infinity();
-        for (const auto& ray : r.raytrace())
-        {
-            if (ray.element_size() > 0 && ray.element(0).delay() < first_arrival)
-                first_arrival = ray.element(0).delay();
-        }
+        double first_arrival = travel_time(r);
+        double outlier_time = 0;
+        // randomly add an offset to the owtt for simulating outliers
+        if (outlier_occurence_(outlier_gen_))
+            outlier_time = outlier_dowtt_(outlier_gen_);
 
         goby::glog.is_debug1() && goby::glog << "Received impulse response: " << r.source() << "->"
-                                             << r.receiver() << ", first arrival: " << first_arrival
-                                             << std::endl;
+                                             << r.receiver() << ", arrival time: " << first_arrival
+                                             << ", outlier dt: " << outlier_time << std::endl;
 
         for (auto it = it_p.first; it != it_p.second; ++it)
         {
             auto msg = it->second;
             auto& mm_tx = *msg.MutableExtension(goby::acomms::micromodem::protobuf::transmission);
-            auto owtt = first_arrival * boost::units::si::seconds;
+            auto owtt = (first_arrival + outlier_time) * boost::units::si::seconds;
 
-            auto& ranging_reply = *mm_tx.mutable_ranging_reply();
-            ranging_reply.add_one_way_travel_time_with_units(owtt);
-            auto io_msg_out = std::make_shared<goby::middleware::protobuf::IOData>();
-            msg.SerializeToString(io_msg_out->mutable_data());
-            *io_msg_out->mutable_udp_dest() = modems_.at(dest_id).endpoint();
+            auto approx_range = owtt * cfg().sound_speed_with_units();
 
-            auto resend_time = msg.time_with_units() + goby::time::MicroTime(owtt);
-            delay_buffer_.insert(std::make_pair(resend_time, io_msg_out));
+            bool packet_success = true;
 
-            goby::glog.is_debug1() && goby::glog << "Delaying " << src_id << "->" << dest_id
-                                                 << " message until: " << resend_time.value()
-                                                 << std::endl;
+            if (!range_to_packet_success_prob_.empty())
+            {
+                double p = goby::util::linear_interpolate<double, double>(
+                    approx_range / boost::units::si::meters, range_to_packet_success_prob_);
+
+                glog.is_debug1() && glog << "Probability of success: " << p << std::endl;
+                std::bernoulli_distribution d(p);
+                packet_success = d(rand_gen_);
+            }
+
+            if (packet_success)
+            {
+                auto& ranging_reply = *mm_tx.mutable_ranging_reply();
+                ranging_reply.add_one_way_travel_time_with_units(owtt);
+                auto io_msg_out = std::make_shared<goby::middleware::protobuf::IOData>();
+                msg.SerializeToString(io_msg_out->mutable_data());
+                *io_msg_out->mutable_udp_dest() = modems_.at(dest_id).endpoint();
+
+                auto resend_time = msg.time_with_units() + goby::time::MicroTime(owtt);
+                delay_buffer_.insert(std::make_pair(resend_time, io_msg_out));
+
+                goby::glog.is_debug1() && goby::glog << "Delaying " << src_id << "->" << dest_id
+                                                     << " message until: " << resend_time.value()
+                                                     << std::endl;
+            }
+            else
+            {
+                goby::glog.is_debug1() && goby::glog << "Dropping " << src_id << "->" << dest_id
+                                                     << " message (failed coin flip)" << std::endl;
+            }
         }
     }
     else
@@ -172,6 +221,28 @@ void NetSimUDP::process_impulse_response(const ImpulseResponse& r)
                                            << std::distance(it_p.first, it_p.second) << " messages"
                                            << std::endl;
     }
-    
+
     forward_buffer_[src_id].erase(it_p.first, it_p.second);
+}
+
+double NetSimUDP::travel_time(ImpulseResponse impulse_response)
+{
+    // returns delay for strongest direct ray
+    double max_amp = 0;
+    int max_indx = 0;
+    double delay;
+    for (int i = 0; i < impulse_response.raytrace_size(); i++)
+    {
+        double amp = std::fabs(impulse_response.raytrace(i).amplitude());
+        int bounces = impulse_response.raytrace(i).surface_bounces() +
+                      impulse_response.raytrace(i).bottom_bounces();
+        if (amp > max_amp && bounces == 0)
+        {
+            max_amp = amp;
+            max_indx = i;
+            delay = impulse_response.raytrace(i).element(0).delay();
+        }
+    }
+    glog.is_debug2() && glog << "travel_time: max_indx " << max_indx << std::endl;
+    return delay;
 }
