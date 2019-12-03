@@ -155,6 +155,12 @@ void NetSimUDP::loop()
 
 void NetSimUDP::process_impulse_response(const ImpulseResponse& r)
 {
+    if(!tcp_port_to_id_.count(r.source())|| !tcp_port_to_id_.at(r.receiver()))
+    {
+        glog.is_debug1() && glog << "Ignoring impulse response for unknown source/receiver pair" << std::endl;
+        return;
+    }
+    
     int src_id = tcp_port_to_id_.at(r.source());
     int dest_id = tcp_port_to_id_.at(r.receiver());
 
