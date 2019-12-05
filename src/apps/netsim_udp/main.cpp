@@ -242,7 +242,8 @@ double NetSimUDP::travel_time(ImpulseResponse impulse_response)
         double amp = std::fabs(impulse_response.raytrace(i).amplitude());
         int bounces = impulse_response.raytrace(i).surface_bounces() +
                       impulse_response.raytrace(i).bottom_bounces();
-        if (amp > max_amp && bounces == 0)
+	//        if (amp > max_amp && bounces == 0)
+	        if (amp > max_amp )
         {
             max_amp = amp;
             max_indx = i;
