@@ -93,6 +93,7 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
 
   private:
     void forward_packet(int src_id, int dest_id, const ModemTransmission& msg);
+    double performance_request(int src_id, int dest_id);
 
     void process_impulse_response(const ImpulseResponse& r);
 
@@ -139,6 +140,23 @@ void NetSimUDP::forward_packet(int src_id, int dest_id, const ModemTransmission&
                                          << std::endl;
 
     forward_buffer_[src_id].insert(std::make_pair(dest_id, msg));
+}
+
+double NetSimUDP::performance_request(int src_id, int dest_id)
+{
+    static int perf_req_id(0);
+    ObjFuncRequest perf_req;
+    perf_req.set_request_time(goby::time::SystemClock::now<goby::time::SITime>().value());
+    perf_req.set_request_id(perf_req_id++);
+    perf_req.set_contact(std::to_string(modems_.at(src_id).modem_tcp_port()));
+    ObjFuncRequest::Receiver* receiver = 0;
+    receiver = perf_req.add_receiver();
+    receiver -> set_node(std::to_string(modems_.at(dest_id).modem_tcp_port()));
+    interprocess().publish<groups::performance_request>(perf_req);
+    goby::glog.is_debug1() && goby::glog << "Sent performance request: "
+					 << perf_req.ShortDebugString()
+                                         << std::endl;
+
 }
 
 void NetSimUDP::loop()

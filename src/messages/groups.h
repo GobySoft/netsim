@@ -27,9 +27,13 @@ constexpr goby::middleware::Group gps_line_in{"gps_line_in"};
 constexpr goby::middleware::Group config_request{"config_request"};
 constexpr goby::middleware::Group bellhop_request{"bellhop_request"};
 
+// published by netsim_udp
+constexpr goby::middleware::Group performance_request{"performance_request"};
+
 // published by goby_moos_gateway
 constexpr goby::middleware::Group impulse_response{"impulse_response"};
 constexpr goby::middleware::Group bellhop_response{"bellhop_response"};
+constexpr goby::middleware::Group performance_response{"performance_response"};
 
 // published by netsim_tool
 namespace tool
