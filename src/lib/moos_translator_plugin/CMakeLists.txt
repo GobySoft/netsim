@@ -1,3 +1,5 @@
+set (CMAKE_CXX_FLAGS_RELEASE "-g")
+
 add_library(netsim_moos_plugin SHARED moos_plugin.cpp)
 target_link_libraries(netsim_moos_plugin goby goby_moos goby_zeromq ${LAMSS_PROTOBUF_LIBRARY} boost_regex netsim_messages)
 
