@@ -17,6 +17,7 @@ constexpr goby::middleware::Group post_process_event{"post_process_event"};
 constexpr goby::middleware::Group env_nav_update{"environment_nav_update"};
 constexpr goby::middleware::Group env_impulse_req{"environment_impulse_request"};
 constexpr goby::middleware::Group env_bellhop_req{"environment_bellhop_request"};
+constexpr goby::middleware::Group env_performance_req{"environment_performance_request"};
 constexpr goby::middleware::Group configuration{"configuration"};
 constexpr goby::middleware::Group receive_stats{"receive_stats"};
 

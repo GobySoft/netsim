@@ -34,6 +34,10 @@ public:
                 [this](const EnvironmentiBellhopRequest& n) { this->goby_to_moos(n); }
                 );
 
+            goby().interprocess().subscribe<groups::env_performance_req, EnvironmentObjFuncRequest>(
+                [this](const EnvironmentObjFuncRequest& i) { this->goby_to_moos(i); }
+                );
+
 	    
 	    
             moos().add_trigger(imp_resp_var_, [this](const CMOOSMsg& msg) { moos_to_goby(msg); });
@@ -155,6 +159,16 @@ private:
         {
 	    if(req.environment_id() == environment_id_)
 	    {
+		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(req.req());
+		for(auto& moos_msg_pair : moos_msgs)
+		    moos().comms().Post(moos_msg_pair.second);
+	    }
+        }
+
+    void goby_to_moos(const EnvironmentObjFuncRequest& req)
+        {
+	    if(req.environment_id() == environment_id_)
+	    {	       
 		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(req.req());
 		for(auto& moos_msg_pair : moos_msgs)
 		    moos().comms().Post(moos_msg_pair.second);

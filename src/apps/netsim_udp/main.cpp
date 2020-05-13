@@ -60,6 +60,8 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
 	// Create Performance table for modem combinations
 	perf_count = 0;
 	perf_table.clear();
+        last_performance_request = 0;
+        performance_request_interval = 5;
 	ModemPairPerformance new_perf;
 	for (int i=0; i< cfg().modem_size(); i++)
 	  {
@@ -112,16 +114,17 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
                 }
             });
 
+	interprocess().subscribe<groups::performance_response, ObjFuncResponse>(
+	    [this](const ObjFuncResponse& r)
+	    { process_performance_response(r); });
+
         interprocess().subscribe<groups::impulse_response, ImpulseResponse>(
             [this](const ImpulseResponse& r) { process_impulse_response(r); });
-
-	interprocess().subscribe<groups::performance_response, ObjFuncResponse>(
-            [this](const ObjFuncResponse& r) { process_performance_response(r); });
 }
 
   private:
     void forward_packet(int src_id, int dest_id, const ModemTransmission& msg);
-    double performance_request(int src_id, int dest_id);
+    void performance_request(int src_id, int dest_id);
 
     void process_impulse_response(const ImpulseResponse& r);
     void process_performance_response(const ObjFuncResponse& r);
@@ -137,7 +140,8 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
 
     std::vector<ModemPairPerformance> perf_table;
     int perf_count ;
-  
+    double last_performance_request;
+    double performance_request_interval;
     // messages waiting for an ImpulseResponse
     // src id -> dest id -> message
     std::map<int, std::multimap<int, ModemTransmission>> forward_buffer_;
@@ -162,7 +166,9 @@ int main(int argc, char* argv[]) { return goby::run<NetSimUDP>(argc, argv); }
 
 void NetSimUDP::forward_packet(int src_id, int dest_id, const ModemTransmission& msg)
 {
-    static int imp_req_id(0);
+  // performance_request
+  performance_request(src_id,dest_id);
+  static int imp_req_id(0);
     ImpulseRequest imp_req;
     imp_req.set_request_time(goby::time::SystemClock::now<goby::time::SITime>().value());
     imp_req.set_request_id(imp_req_id++);
@@ -175,7 +181,7 @@ void NetSimUDP::forward_packet(int src_id, int dest_id, const ModemTransmission&
     forward_buffer_[src_id].insert(std::make_pair(dest_id, msg));
 }
 
-double NetSimUDP::performance_request(int src_id, int dest_id)
+void NetSimUDP::performance_request(int src_id, int dest_id)
 {
     static int perf_req_id(0);
     ObjFuncRequest perf_req;
@@ -196,28 +202,23 @@ double NetSimUDP::performance_request(int src_id, int dest_id)
 void NetSimUDP::loop()
 {
     auto now = goby::time::SystemClock::now<goby::time::MicroTime>();
-
     auto upper_it = delay_buffer_.upper_bound(now);
 
     for (auto it = delay_buffer_.begin(); it != upper_it; ++it)
         interthread().publish<udp_out>(it->second);
-    
-    // request performance estimate for transmit success probability
-    performance_request(perf_table[perf_count].src_id,
-			perf_table[perf_count].dest_id);
-    perf_count++;
-    if (perf_count >= perf_table.size())
-      perf_count = 0;
-    
+
     delay_buffer_.erase(delay_buffer_.begin(), upper_it);
 }
 
 
 void NetSimUDP::process_performance_response(const ObjFuncResponse& r)
 {
+    goby::glog.is_debug1() && goby::glog << "Received performance response: "
+					 << r.ShortDebugString()
+                                         << std::endl;
   if (r.requestor() != "netsim_udp" || r.receiver_size() < 1)
     return;
-  
+
   int src_id = tcp_port_to_id_.at(r.contact());
 
   for (int i = 0; i < r.receiver_size(); i++) 
@@ -230,12 +231,14 @@ void NetSimUDP::process_performance_response(const ObjFuncResponse& r)
 	    ( dest_id == perf_table[j].src_id && src_id == perf_table[j].dest_id))
 	  {
 	    perf_table[j].mpp = r.receiver(i).mpp();
+	    glog.is_debug1() && glog << "MPP performance received for src_id="
+				     << src_id
+				     << ", dest_id="
+				     << dest_id
+				     << ", mpp=" << perf_table[j].mpp
+				     << ", mpp_probab=" << perf_table[j].mpp_probab()
+				     << std::endl;
 	  }
-      glog.is_debug1() && glog << "Performance received for src_id="
-			       << src_id
-			       << ", dest_id="
-			       << dest_id
-			       << std::endl;
     }
 }
 
