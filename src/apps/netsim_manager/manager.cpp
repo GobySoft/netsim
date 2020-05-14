@@ -25,6 +25,7 @@ private:
     void process_request(const NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep);
 
     void handle_impulse_request(const ImpulseRequest& req);
+    void handle_performance_request(const ObjFuncRequest& req);
     void handle_bellhop_request(const iBellhopRequest& req);
 
     void write_gps_out(const NavUpdate& nav_update);
@@ -58,6 +59,10 @@ NetSimManager::NetSimManager() :
     interprocess().subscribe<groups::impulse_request, ImpulseRequest>(
 	[this](const ImpulseRequest& req)
 	{ handle_impulse_request(req); });
+
+    interprocess().subscribe<groups::performance_request, ObjFuncRequest>(
+	[this](const ObjFuncRequest& req)
+	{ handle_performance_request(req); });
 
     interprocess().subscribe<groups::config_request, ConfigRequest>(
 	[this](const ConfigRequest& req)
@@ -186,6 +191,26 @@ void NetSimManager::handle_impulse_request(const ImpulseRequest& req)
     env_req.set_environment_id(env_cfg.environment_id());
     *env_req.mutable_req() = req;
     interprocess().publish<groups::env_impulse_req>(env_req);
+}
+
+void NetSimManager::handle_performance_request(const ObjFuncRequest& req)
+{
+    glog.is(DEBUG1) && glog << "Received ObjFuncRequest: " << req.ShortDebugString() << std::endl;
+
+    int source = goby::util::as<int>(req.contact());
+
+    auto env_cfg_it = env_cfg_.find(source);
+    if(env_cfg_it == env_cfg_.end())
+    {
+	glog.is(WARN) && glog << "Unknown source modem_tcp_port: " << source << " (string: " << req.contact() << ")" << std::endl;
+	return;
+    }
+    const auto& env_cfg = env_cfg_it->second;
+
+    EnvironmentObjFuncRequest env_req;
+    env_req.set_environment_id(env_cfg.environment_id());
+    *env_req.mutable_req() = req;
+    interprocess().publish<groups::env_performance_req>(env_req);
 }
 
 
