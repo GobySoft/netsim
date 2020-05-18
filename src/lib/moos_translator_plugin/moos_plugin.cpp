@@ -34,10 +34,15 @@ public:
                 [this](const EnvironmentiBellhopRequest& n) { this->goby_to_moos(n); }
                 );
 
+            goby().interprocess().subscribe<groups::env_performance_req, EnvironmentObjFuncRequest>(
+                [this](const EnvironmentObjFuncRequest& i) { this->goby_to_moos(i); }
+                );
+
 	    
 	    
             moos().add_trigger(imp_resp_var_, [this](const CMOOSMsg& msg) { moos_to_goby(msg); });
             moos().add_trigger(bellhop_resp_var_, [this](const CMOOSMsg& msg) { moos_to_goby(msg); });
+            moos().add_trigger(perf_resp_var_, [this](const CMOOSMsg& msg) { moos_to_goby(msg); });
 	    
 	    {
 		goby::moos::protobuf::TranslatorEntry imp_resp_entry;
@@ -83,7 +88,25 @@ public:
 		publish.set_moos_var(bellhop_req_var_);
 		translator_.add_entry(bellhop_req_entry);
 	    }
+	    // HS 2020-05-08 >>>>>>>
+	    {
+		goby::moos::protobuf::TranslatorEntry perf_resp_entry;
+		perf_resp_entry.set_protobuf_name(ObjFuncResponse::descriptor()->full_name());
+		auto& create = *perf_resp_entry.add_create();
+		create.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
+		create.set_moos_var(perf_resp_var_);
+		translator_.add_entry(perf_resp_entry);
+	    }
 
+	    {
+		goby::moos::protobuf::TranslatorEntry perf_req_entry;
+		perf_req_entry.set_protobuf_name(ObjFuncRequest::descriptor()->full_name());
+		auto& publish = *perf_req_entry.add_publish();
+		publish.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
+		publish.set_moos_var(perf_req_var_);
+		translator_.add_entry(perf_req_entry);
+	    }
+	    // <<<<<<
 	    
 	}
 
@@ -103,6 +126,12 @@ private:
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
                 auto bellhop_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "iBellhopResponse");
                 goby().interprocess().publish<groups::bellhop_response>(std::dynamic_pointer_cast<iBellhopResponse>(bellhop_resp_pb));
+            }
+            else if(moos_msg.GetKey() == perf_resp_var_)
+            {
+                std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
+                auto perf_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "ObjFuncResponse");
+                goby().interprocess().publish<groups::performance_response>(std::dynamic_pointer_cast<ObjFuncResponse>(perf_resp_pb));
             }
         }
 
@@ -136,6 +165,16 @@ private:
 	    }
         }
 
+    void goby_to_moos(const EnvironmentObjFuncRequest& req)
+        {
+	    if(req.environment_id() == environment_id_)
+	    {	       
+		std::multimap<std::string, CMOOSMsg> moos_msgs = translator_.protobuf_to_moos(req.req());
+		for(auto& moos_msg_pair : moos_msgs)
+		    moos().comms().Post(moos_msg_pair.second);
+	    }
+        }
+
     
 private:
     goby::moos::MOOSTranslator translator_;
@@ -145,7 +184,10 @@ private:
 
     const std::string bellhop_req_var_{"BELLHOP_REQUEST"};
     const std::string bellhop_resp_var_{"BELLHOP_RESPONSE"};
-
+  // HS 2020-05-08 - performance estimate
+    const std::string perf_resp_var_{"PERFORMANCE_RESPONSE"};
+    const std::string perf_req_var_{"PERFORMANCE_REQUEST"};
+  
     int environment_id_;
 
 };
