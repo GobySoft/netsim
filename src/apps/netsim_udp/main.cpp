@@ -359,5 +359,5 @@ double NetSimUDP::travel_time(ImpulseResponse impulse_response)
 
 double ModemPairPerformance::mpp_probab()
 {
-  return(std::max(0.0,std::min(1.0, ((mpp-30)*80/50+20)/100.0)));
+  return(std::max(0.0,std::min(1.0, ((mpp-30)*80./50.+20)/100.0)));
 }
