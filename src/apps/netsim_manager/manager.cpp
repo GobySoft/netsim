@@ -1,7 +1,7 @@
 #include "goby/middleware/marshalling/protobuf.h"
 
 #include "goby/zeromq/application/multi_thread.h"
-#include "goby/middleware/io/serial_line_based.h"
+#include "goby/middleware/io/line_based/serial.h"
 
 #include "messages/groups.h"
 #include "messages/config_request.pb.h"
