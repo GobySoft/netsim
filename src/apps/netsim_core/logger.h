@@ -114,7 +114,7 @@ private:
 
     // map direction to packet_id to input/output modem_id
     std::map<Direction, std::map<int, std::map<int, std::unique_ptr<std::ofstream>>>> files_;
-    std::string start_time{goby::common::goby_file_timestamp()};
+    std::string start_time{goby::time::file_str()};
 };
 
 #endif

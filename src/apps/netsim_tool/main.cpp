@@ -10,7 +10,7 @@
 #include "netsim/messages/tool.pb.h"
 
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
-#include "lamss/lib_netsim/tcp_client.h"
+#include "netsim/tcp/tcp_client.h"
 
 using namespace goby::util::logger;
 using goby::glog;
@@ -153,7 +153,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
         req.set_id(request_id_++);
         auto& nav = *req.add_nav();
         nav.set_modem_tcp_port(cfg().tx_driver_cfg().tcp_port());
-        nav.set_time(goby::common::goby_time<double>());
+        nav.set_time(goby::time::SystemClock::now<goby::time::SITime>().value());
 
         nav.set_lat(cfg().lat_origin());
         nav.set_lon(cfg().lon_origin());
@@ -242,7 +242,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
         req.set_id(request_id_++);
         auto& nav = *req.add_nav();
         nav.set_modem_tcp_port(cfg().rx_driver_cfg().tcp_port());
-        nav.set_time(goby::common::goby_time<double>());
+        nav.set_time(goby::time::SystemClock::now<goby::time::SITime>().value());
 
         auto latlon = geodesy_.convert(goby::util::UTMGeodesy::XYPoint(
             {r_ * boost::units::si::meters, 0 * boost::units::si::meters}));

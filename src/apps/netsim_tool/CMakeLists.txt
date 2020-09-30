@@ -10,7 +10,7 @@ target_link_libraries(netsim_tool
   goby
   goby_zeromq
   netsim_messages
+  netsim_tcp
   ${LAMSS_PROTOBUF_LIBRARY}
-  ${LAMSS_NETSIM_LIBRARY}
   )
 

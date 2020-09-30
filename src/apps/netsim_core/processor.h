@@ -73,7 +73,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		if(i != ThreadBase::index())
 		{		    
 		    ImpulseRequest imp_req;
-		    imp_req.set_request_time(goby::common::goby_time<double>());
+		    imp_req.set_request_time(goby::time::SystemClock::now<goby::time::SITime>().value());
 		    imp_req.set_request_id(imp_req_id++);
 		    imp_req.set_source(cfg().node_name(i));
 		    imp_req.set_receiver(cfg().node_name(ThreadBase::index()));
@@ -85,7 +85,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 	else
 	{
 	    // clear out any buffers that never got used
-	    double now = goby::common::goby_time<double>();
+	    double now = goby::time::SystemClock::now<goby::time::SITime>().value();
 	    for(auto it = audio_buffer_.begin(); it != audio_buffer_.end(); )
 	    {       	
 		if(!it->second.empty() && now > it->second.front()->buffer->buffer_start_time + buffer_expire_seconds_)
@@ -206,7 +206,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 	    return;	    
 	}
         
-        glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): time: " << std::setprecision(15) << goby::common::goby_time<double>() << ", Received ImpulseResponse: " << impulse_response.DebugString() << std::endl;
+        glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): time: " << std::setprecision(15) << goby::time::SystemClock::now<goby::time::SITime>().value() << ", Received ImpulseResponse: " << impulse_response.DebugString() << std::endl;
         
         
         convolve_[impulse_response.request_id()].reset(new CConvolve);
@@ -322,7 +322,7 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 	    {
 		if(buffer->marker == TaggedAudioBuffer::Marker::START)
 		{
-		    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received START buffer (id: " << buffer->packet_id << ", time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
+		    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received START buffer (id: " << buffer->packet_id << ", time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::time::SystemClock::now<goby::time::SITime>().value()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
 
 		    if(!cfg().processor().test_mode())
 		    {
@@ -370,15 +370,15 @@ ProcessorThread(const NetSimCoreConfig& config, int index)
 		const auto& noise = noise_;
 		auto previous_end = full_signal.at(0).size();
 
-		auto convolve_start_time = goby::common::goby_time<double>();
+		auto convolve_start_time = goby::time::SystemClock::now<goby::time::SITime>().value();
 //		glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): CConvolve::signal_block" << std::endl;
 		convolve->signal_block(double_buffer, noise, full_signal);
-		auto convolve_end_time = goby::common::goby_time<double>();
+		auto convolve_end_time = goby::time::SystemClock::now<goby::time::SITime>().value();
 //		glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Signal block took: " << convolve_end_time - convolve_start_time << " seconds." << std::endl;
 
 		if(buffer->marker == TaggedAudioBuffer::Marker::END)
 		{
-		    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received END buffer (id: " << buffer->packet_id << ", (time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::common::goby_time<double>()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
+		    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): Received END buffer (id: " << buffer->packet_id << ", (time: " << std::setprecision(15) << buffer->buffer->buffer_start_time << ", delay: " << (goby::time::SystemClock::now<goby::time::SITime>().value()-buffer->buffer->buffer_start_time) << ") of size: " << buffer->buffer->samples.size() << " from transmitter modem: " << modem_index << std::endl;
 
 		    glog.is(DEBUG1) && glog << "Processor Thread (" << ThreadBase::index() << "): CConvolve::finalize" << std::endl;
 		    convolve->finalize(noise, full_signal);

@@ -178,7 +178,7 @@ JackThread(const NetSimCoreConfig& config, int index)
     int jack_process (jack_nframes_t nframes)
     {
 	using goby::glog; using namespace goby::util::logger;
-	double buffer_start_time = goby::common::goby_time<double>();
+	double buffer_start_time = goby::time::SystemClock::now<goby::time::SITime>().value();
 
 	std::shared_ptr<AudioBuffer> rx_buffer(new AudioBuffer(buffer_size_));
 	rx_buffer->jack_frame_time = jack_last_frame_time(client_);
