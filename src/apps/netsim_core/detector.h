@@ -7,7 +7,7 @@
 
 #include "goby/zeromq/application/multi_thread.h"
 
-#include "config.pb.h"
+#include "netsim/messages/core_config.pb.h"
 #include "jack_thread.h"
 
 using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;

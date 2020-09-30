@@ -5,7 +5,7 @@
 #include <sstream>
 
 #include "goby/zeromq/application/multi_thread.h"
-#include "config.pb.h"
+#include "netsim/messages/core_config.pb.h"
 #include "netsim/messages/logger.pb.h"
 #include "netsim/messages/groups.h"
 
