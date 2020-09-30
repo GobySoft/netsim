@@ -79,18 +79,39 @@ function(PROTOBUF_GENERATE_CPP SRCS HDRS CPP_OUT_DIR)
   set(${SRCS})
   set(${HDRS})
   foreach(FIL ${ARGN})
+
+    # full file name (relative to current source directory)
     get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
-    get_filename_component(FIL_WE ${FIL} NAME_WE)
+    # relative file name (need to do this in case an absolute path is passed in)
+    STRING(REGEX REPLACE "^${CMAKE_CURRENT_SOURCE_DIR}/" "" REL_FIL ${ABS_FIL})
+    # name without extension, e.g. for "foo.proto", ${FIL_WE} is "foo"
+    get_filename_component(FIL_WE ${REL_FIL} NAME_WE)
+    # relative directory to current source directory, e.g. for "dir/foo.proto", ${FIL_DIR} is "dir"
+    get_filename_component(FIL_DIR ${REL_FIL} DIRECTORY BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})     
     
-    list(APPEND ${SRCS} "${CPP_OUT_DIR}/${FIL_WE}.pb.cc")
-    list(APPEND ${HDRS} "${CPP_OUT_DIR}/${FIL_WE}.pb.h")   
+    # if not empty (that is, proto is in this directory)
+    if(FIL_DIR)
+      set(FULL_OUT_DIR "${CPP_OUT_DIR}/${FIL_DIR}")
+    else() # avoid an extra /
+      set(FULL_OUT_DIR "${CPP_OUT_DIR}")
+    endif()
+    
+    list(APPEND ${SRCS} "${FULL_OUT_DIR}/${FIL_WE}.pb.cc")
+    list(APPEND ${HDRS} "${FULL_OUT_DIR}/${FIL_WE}.pb.h")   
+
+    # we need the output proto in the same directory as the generated code to make sure we generate the relative
+    # files correctly for later inclusion into other protos (Protobuf is picky about this)
+    set(FIL_DEST ${FULL_OUT_DIR}/${FIL_WE}.proto)
+
+    # copy proto to destination 
+    configure_file(${FIL_WE}.proto ${FIL_DEST} COPYONLY)
     
     add_custom_command(
-      OUTPUT "${CPP_OUT_DIR}/${FIL_WE}.pb.cc"
-             "${CPP_OUT_DIR}/${FIL_WE}.pb.h"
+      OUTPUT "${FULL_OUT_DIR}/${FIL_WE}.pb.cc"
+             "${FULL_OUT_DIR}/${FIL_WE}.pb.h"
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      ARGS --cpp_out ${CPP_OUT_DIR} ${ABS_FIL} "-I${CMAKE_CURRENT_SOURCE_DIR}" ${ALL_PROTOBUF_INCLUDE_DIRS} --dccl_out ${CPP_OUT_DIR}
-      DEPENDS ${ABS_FIL}
+      ARGS --cpp_out ${CPP_OUT_DIR} ${FIL_DEST} ${ALL_PROTOBUF_INCLUDE_DIRS} --dccl_out ${CPP_OUT_DIR} 
+      DEPENDS ${FIL_DEST}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"
       VERBATIM )
   endforeach()

@@ -6,7 +6,7 @@
 #include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
-#include "messages/logger.pb.h"
+#include "netsim/messages/logger.pb.h"
 
 using ThreadBase = goby::middleware::SimpleThread<NetSimPostprocessConfig>;
 

@@ -8,7 +8,7 @@
 #include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
-#include "messages/groups.h"
+#include "netsim/messages/groups.h"
 
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
 

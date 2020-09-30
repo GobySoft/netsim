@@ -3,13 +3,13 @@
 #include "goby/zeromq/application/multi_thread.h"
 #include "goby/middleware/io/line_based/serial.h"
 
-#include "messages/groups.h"
-#include "messages/config_request.pb.h"
-#include "lamss/lib_netsim/tcp_server.h"
+#include "netsim/messages/groups.h"
+#include "netsim/messages/config_request.pb.h"
+#include "netsim/tcp/tcp_server.h"
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
 #include "lamss/lib_bellhop/iBellhop_messages.pb.h"
-#include "messages/manager_config.pb.h"
-#include "messages/env_bellhop_req.pb.h"
+#include "netsim/messages/manager_config.pb.h"
+#include "netsim/messages/env_bellhop_req.pb.h"
 
 using namespace goby::util::logger;
 using goby::glog;

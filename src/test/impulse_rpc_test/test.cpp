@@ -2,7 +2,7 @@
 
 #include "goby/zeromq/application/single_thread.h"
 
-#include "messages/groups.h"
+#include "netsim/messages/groups.h"
 #include "config.pb.h"
 
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"

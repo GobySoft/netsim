@@ -14,7 +14,7 @@
 #include "goby/zeromq/application/multi_thread.h"
 #include "goby/time/legacy.h"
 #include "config.pb.h"
-#include "messages/groups.h"
+#include "netsim/messages/groups.h"
 
 using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
 

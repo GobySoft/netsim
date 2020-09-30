@@ -20,11 +20,11 @@
 #include "goby/zeromq/liaison/liaison_container.h"
 #include "goby/zeromq/application/multi_thread.h"
 
-#include "messages/liaison.pb.h"
-#include "messages/groups.h"
-#include "messages/logger.pb.h"
-#include "messages/config_request.pb.h"
-#include "messages/manager_config.pb.h"
+#include "netsim/messages/liaison.pb.h"
+#include "netsim/messages/groups.h"
+#include "netsim/messages/logger.pb.h"
+#include "netsim/messages/config_request.pb.h"
+#include "netsim/messages/manager_config.pb.h"
 
 #include "iBellhop_messages.pb.h"
 #include "modem_sim.pb.h"

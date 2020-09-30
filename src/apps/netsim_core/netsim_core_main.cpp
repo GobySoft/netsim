@@ -3,7 +3,7 @@
 #include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
-#include "messages/groups.h"
+#include "netsim/messages/groups.h"
 #include "jack_thread.h"
 #include "detector.h"
 #include "processor.h"

@@ -4,8 +4,8 @@
 #include "goby/moos/moos_translator.h"
 
 #include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
-#include "messages/groups.h"
-#include "messages/env_bellhop_req.pb.h"
+#include "netsim/messages/groups.h"
+#include "netsim/messages/env_bellhop_req.pb.h"
 
 using goby::glog;
 using namespace goby::util::logger;

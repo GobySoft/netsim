@@ -65,11 +65,12 @@ protobuf_include_dirs(${project_INC_DIR})
 add_subdirectory(src)
 
 ## configure to build/include
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR} 
-  src/messages/*.proto
-  src/messages/*.h
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR}/lib
+  src/lib/messages/*.proto
+  src/lib/messages/*.h
+  src/lib/tcp/*.h
   )
 foreach(I ${INCLUDE_FILES})
-  configure_file(${project_SRC_DIR}/${I} ${project_INC_DIR}/${I} @ONLY)
+  configure_file(${project_SRC_DIR}/lib/${I} ${project_INC_DIR}/netsim/${I} @ONLY)
 endforeach()
 
