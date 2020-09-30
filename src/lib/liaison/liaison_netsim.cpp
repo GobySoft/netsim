@@ -8,7 +8,6 @@
 #include <boost/filesystem.hpp>
 
 #include "liaison_netsim.h"
-#include "iBellhop_messages.pb.h"
 
 #include <goby/util/geodesy.h>
 

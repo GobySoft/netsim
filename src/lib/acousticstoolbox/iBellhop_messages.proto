@@ -1,0 +1,82 @@
+syntax="proto2";
+
+import "goby/moos/protobuf/goby_moos_app.proto";
+import "goby/protobuf/option_extensions.proto";
+
+import "netsim/acousticstoolbox/environment.proto";
+
+message iBellhopConfig
+{
+  optional goby.moos.protobuf.GobyMOOSAppConfig common = 1 [(goby.field).description="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto
+  
+  required bellhop.protobuf.Environment initial_env = 2 [(goby.field).description="Environment used as a background for all requests"];
+  
+  optional string moos_var_request = 3 [(goby.field).description="MOOS variable to listen for requests on", default="BELLHOP_REQUEST"];
+  optional string moos_var_response = 4 [(goby.field).description="MOOS variable to publish responses", default="BELLHOP_RESPONSE"];
+
+  optional string output_env_dir = 5 [(goby.field).description="Directory to write generated ENV files in", default="/tmp"]; 
+
+  optional bool extrapolate_nav = 6 [(goby.field).description="If true, use last heading to extrapolate navigation data", default=false]; 
+
+  optional string local_sound_speed_var = 7 [(goby.field).description="If set, post interpolated sound speed readings from the env file to this variable."];
+
+  optional int32 max_number_of_receivers = 10 [default = 1000000];    
+  
+}
+
+message iBellhopRequest
+{
+  required bellhop.protobuf.Environment env = 1 [(goby.field).description="Environment updates to initial env"];
+  optional int32 request_number = 2 [(goby.field).description="Up to the requestor to set; will be put in the iBellhopResponse."];
+
+  
+  enum WaterColumnAction 
+  {
+    MERGE_WATER_COLUMNS = 1;
+    MERGE_SAMPLES = 2;
+    OVERWRITE = 3;
+  }
+  optional WaterColumnAction water_column_action = 3 [default = MERGE_SAMPLES, (goby.field).description="How to merge water column when merging Environment file. MERGE_WATER_COLUMNS adds the additional water_column vectors to the existing vectors. MERGE_SAMPLES merges the samples of the first water_column vectors of the default and request environment files. OVERWITE replaces the default environment water_column with those in the request."];
+}
+
+message iBellhopResponse
+{
+  required bool success = 1 [(goby.field).description="Was the request ok?"];
+  required string requestor = 2 [(goby.field).description="CMOOSMsg::GetSource() of the requesting application"];
+  optional bellhop.protobuf.Environment env = 3 [(goby.field).description="Complete environmental file used for run (request merged with initial)"];  
+  optional string output_file = 4 [(goby.field).description="Path to file that bellhop.exe wrote"];
+
+  
+  optional TLAveragedInRange avg_tl = 5 [(goby.field).description="written if read_shd = true and output is a SHD file (TL types)"];
+  message TLAveragedInRange
+  {
+    repeated TLSample sample = 1;
+    message TLSample
+    {
+      required double depth = 1;
+      required double tl = 2;
+    }
+  }
+
+  optional bytes serialized_tl_matrix = 10 [(goby.field).description="TL matrix serialized using boost::serialization: written if read_shd = true, full_shd_matrix = true, and output is a SHD file (TL types)"];
+  
+  optional int32 request_number = 6 [(goby.field).description="Same as the request number set in the iBellhopRequest"];  
+}
+
+message SVPInfoRequest
+{
+  repeated double depth = 1;
+}
+
+message SVPInfoResponse
+{
+  repeated SVPSample svp_sample = 1;
+  message SVPSample 
+    {
+      required double depth = 1;
+      required double sound_speed = 2;
+    }
+  required double surface_sound_speed = 2;
+  optional double water_depth = 3;
+  optional double bottom_sound_speed = 4;
+}

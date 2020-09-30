@@ -32,13 +32,15 @@ include_directories(${IVP_INCLUDE_DIRS})
 
 find_package(LAMSS REQUIRED)
 include_directories(${LAMSS_INCLUDE_DIRS})
-include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
-protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
+#include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
+#protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
 
-include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
-protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
+#include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
+#protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
 
 find_package(MOOS 10 REQUIRED)
+
+find_package(Boost REQUIRED serialization)
 
 # create variables for various directories
 get_filename_component(project_SRC_DIR src ABSOLUTE)
@@ -69,6 +71,7 @@ file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR}/lib
   src/lib/messages/*.proto
   src/lib/messages/*.h
   src/lib/tcp/*.h
+  src/lib/acousticstoolbox/*.h
   )
 foreach(I ${INCLUDE_FILES})
   configure_file(${project_SRC_DIR}/lib/${I} ${project_INC_DIR}/netsim/${I} @ONLY)

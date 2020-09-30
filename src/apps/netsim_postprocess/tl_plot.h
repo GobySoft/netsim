@@ -6,7 +6,7 @@
 #include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
-#include "iBellhop_messages.pb.h"
+#include "netsim/acousticstoolbox/iBellhop_messages.pb.h"
 
 using ThreadBase = goby::middleware::SimpleThread<NetSimPostprocessConfig>;
 

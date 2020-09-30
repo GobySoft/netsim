@@ -1,6 +1,6 @@
 syntax="proto2";
 
-import "iBellhop_messages.proto";
+import "netsim/acousticstoolbox/iBellhop_messages.proto";
 
 message EnvironmentiBellhopRequest
 {

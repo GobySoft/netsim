@@ -1,0 +1,192 @@
+import "dccl/option_extensions.proto";
+
+import "goby/protobuf/option_extensions.proto";
+import "goby/acomms/protobuf/mm_driver.proto";
+
+message ImpulseResponse
+{
+    required string source = 1;
+    required string receiver = 2;
+    optional int32 number_array_elements = 3 [default = 1];
+    repeated RayTrace raytrace = 4;
+    message RayTrace
+    {
+        required double amplitude = 2 [(goby.field).description = "Pascal"];
+        optional double doppler = 3 [
+            (goby.field).description = "Doppler blueshift factor",
+            default = 1.0
+        ];
+        optional double elevation = 4
+            [(goby.field).description = "Degrees", default = 0];
+        optional int32 surface_bounces = 5
+            [(goby.field).description = "Number of ray surface bounces"];
+        optional int32 bottom_bounces = 6
+            [(goby.field).description = "Number of ray bottom bounces"];
+        repeated ArrayElementDelay element = 7;
+        message ArrayElementDelay
+        {
+            required double delay = 1;
+        }
+    }
+    optional double noise_level = 5;
+    optional double receiver_sound_speed = 6 [default = 1500];
+    optional double surface_sound_speed = 7 [default = 1500];
+    optional double bottom_sound_speed = 8 [default = 1500];
+
+    optional string covariance_file = 9;
+
+    optional int32 request_id = 10;
+    optional double request_time = 11;
+    optional double range = 12;
+}
+
+message ImpulseRequest
+{
+    required string source = 1;
+    required string receiver = 2;
+
+    optional double sampling_frequency = 6 [default = 12000];
+    optional int32 nfft = 7 [default = 2048];
+
+    optional int32 request_id = 10;
+    optional double request_time = 11;
+}
+
+message TransmitResponse
+{
+    required string source = 1;
+    required string receiver = 2;
+    required double pingtime = 3;
+    optional double timestamp = 4;
+    optional string file = 5;  // augments replica_path with contact names
+    optional int32 channels = 6;
+    optional int32 samples = 7;
+}
+
+message TransmitRequest
+{
+    required string source = 1;
+    required string receiver = 2;
+    required double pingtime = 3;
+    required string replica_path = 4;  // Must have extension .dat
+}
+
+message ArrayGain
+{
+    repeated BeamGain beam_gain = 1;
+    message BeamGain
+    {
+        required double elevation = 1
+            [(goby.field).description = "Arrival beam elevation in degrees"];
+        required double gain_db = 2 [(goby.field).description = "dB"];
+    }
+}
+
+message ObjFuncRequest
+{
+    option (dccl.msg).unit_system = "si";
+
+    required string contact = 1;
+    optional int32 request_id = 2;
+    optional double request_time = 3
+        [(dccl.field).units = {base_dimensions: "T"}];
+
+    repeated Receiver receiver = 4;
+    required string requestor = 5;
+    message Receiver
+    {
+        optional string node = 1;
+        optional double range = 2;
+        optional double depth = 3;
+    }
+}
+
+message ObjFuncResponse
+{
+    option (dccl.msg).unit_system = "si";
+
+    required string contact = 1;
+    optional double contact_depth = 6;
+    optional int32 request_id = 2;
+    optional double request_time = 3
+        [(dccl.field).units = {base_dimensions: "T"}];
+    repeated Receiver receiver = 4;
+    required string requestor = 5;
+    message Receiver
+    {
+        optional string node = 1;
+        required double range = 2;
+        required double depth = 3;
+        required double metric_db = 4;
+        optional double snr = 5;
+        optional double mpp = 6;
+    }
+}
+
+message NavUpdate
+{
+    required int32 modem_tcp_port = 1;
+    required double time = 2;
+    required double lat = 3;
+    required double lon = 4;
+    required double depth = 5;
+    required double speed = 6;
+    required double heading = 7;
+}
+
+message ReceiveStats
+{
+    required int32 modem_tcp_port = 1;
+    required int32 tx_modem_tcp_port = 2;
+    required bool packet_success = 3;
+    optional goby.acomms.micromodem.protobuf.ReceiveStatistics mm_stats = 4;
+}
+
+message NetSimManagerRequest
+{
+    required int32 id = 1;
+    repeated NavUpdate nav = 2;
+    repeated ReceiveStats stats = 3;
+}
+
+message NetSimManagerResponse
+{
+    required int32 request_id = 1;
+    enum Status
+    {
+        UPDATE_ACCEPTED = 1;
+        UPDATE_FAILED_INVALID_MODEM_TCP_PORT = 2;
+        UPDATE_FAILED_INVALID_SOURCE_ADDRESS = 3;
+        UPDATE_FAILED_OUT_OF_DEFINED_REGION = 4;
+    }
+    required Status status = 2;
+}
+
+message EnvironmentNavUpdate
+{
+    required int32 environment_id = 1;
+    required NavUpdate nav = 2;
+}
+
+message EnvironmentImpulseRequest
+{
+    required int32 environment_id = 1;
+    required ImpulseRequest req = 2;
+}
+
+message EnvironmentObjFuncRequest
+{
+    required int32 environment_id = 1;
+    required ObjFuncRequest req = 2;
+}
+
+message TransmitGroupVelocity
+{
+    required double timestamp = 1;
+    required string source = 2;
+    required string receiver = 3;
+    required double range = 4;
+    required double delay = 5;
+    required double group_velocity = 6;
+    required double group_velocity_std = 7;
+}

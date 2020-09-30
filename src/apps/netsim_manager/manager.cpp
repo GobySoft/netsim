@@ -6,8 +6,8 @@
 #include "netsim/messages/groups.h"
 #include "netsim/messages/config_request.pb.h"
 #include "netsim/tcp/tcp_server.h"
-#include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
-#include "lamss/lib_bellhop/iBellhop_messages.pb.h"
+#include "netsim/messages/netsim.pb.h"
+#include "netsim/acousticstoolbox/iBellhop_messages.pb.h"
 #include "netsim/messages/manager_config.pb.h"
 #include "netsim/messages/env_bellhop_req.pb.h"
 

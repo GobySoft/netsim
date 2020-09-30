@@ -1,0 +1,23 @@
+
+////////////////////////////////////////
+// global variables anyone can use them
+
+ServerHost = localhost
+ServerPort = 9003
+Community  = spermwhale
+
+////////////////////////////////////////
+
+ProcessConfig = acomms_depth_vis
+{
+    AppTick    	= 10
+    CommsTick  	= 10
+    Port       	= COM6
+    BaudRate   	= 4800
+    Verbose    	= true
+    Streaming  	= false
+    MOOSComms  	= true
+    SerialComms = false
+   
+    SUBSCRIBE = BHV_ACOMMS_DEPTH_FUNC @ 0
+}

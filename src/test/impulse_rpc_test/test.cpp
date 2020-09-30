@@ -5,7 +5,7 @@
 #include "netsim/messages/groups.h"
 #include "config.pb.h"
 
-#include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
+#include "netsim/messages/netsim.pb.h"
 
 
 class ImpulseRPCTest : public goby::zeromq::SingleThreadApplication<ImpulseRPCTestConfig>

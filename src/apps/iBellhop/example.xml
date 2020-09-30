@@ -1,0 +1,96 @@
+<!-- example xml representation of Porter's BELLHOP ENV file -->
+<env>
+  <title>DSOP Base TL</title>
+  <freq>500</freq> <!-- hertz --> 
+
+  <!--  type = arrival_times, eigenrays, rays, coherent_pressure, incoherent_pressure, semicoherent_pressure -->
+  <output type="incoherent_pressure"></output>
+
+  <!-- type = vacuum, rigid, half_space -->
+  <surface type="vacuum"></surface>
+  <water_column>    
+    <interpolation>cubic_spline</interpolation> 
+    <use_attenuation>true</use_attenuation>
+    <cp depth="0.0000000e+00">1.5377889e+03</cp>
+    <cp depth="1.0000000e+01">1.5378686e+03</cp>
+    <cp depth="2.0000000e+01">1.5379703e+03</cp>
+    <cp depth="3.0000000e+01">1.5380951e+03</cp>
+    <cp depth="5.0000000e+01">1.5383277e+03</cp>
+    <cp depth="7.5000000e+01">1.5384324e+03</cp>
+    <cp depth="1.0000000e+02">1.5378874e+03</cp>
+    <cp depth="1.2500000e+02">1.5355741e+03</cp>
+    <cp depth="1.5000000e+02">1.5321705e+03</cp>
+    <cp depth="2.0000000e+02">1.5243158e+03</cp>
+    <cp depth="2.5000000e+02">1.5170844e+03</cp>
+    <cp depth="3.0000000e+02">1.5113237e+03</cp>
+    <cp depth="4.0000000e+02">1.4998603e+03</cp>
+    <cp depth="5.0000000e+02">1.4908948e+03</cp>
+    <cp depth="6.0000000e+02">1.4862527e+03</cp>
+    <cp depth="7.0000000e+02">1.4842065e+03</cp>
+    <cp depth="8.0000000e+02">1.4834365e+03</cp>
+    <cp depth="9.0000000e+02">1.4826757e+03</cp>
+    <cp depth="1.0000000e+03">1.4825752e+03</cp>
+    <cp depth="1.1000000e+03">1.4826209e+03</cp>
+    <cp depth="1.2000000e+03">1.4830304e+03</cp>
+    <cp depth="1.3000000e+03">1.4834762e+03</cp>
+    <cp depth="1.4000000e+03">1.4843964e+03</cp>
+    <cp depth="1.5000000e+03">1.4852395e+03</cp>
+    <cp depth="1.7500000e+03">1.4881166e+03</cp>
+    <cp depth="2.0000000e+03">1.4910494e+03</cp>
+    <cp depth="2.5000000e+03">1.4981750e+03</cp>
+    <cp depth="3.0000000e+03">1.5062671e+03</cp>
+    <cp depth="3.5000000e+03">1.5147061e+03</cp>
+    <cp depth="4.0000000e+03">1.5234204e+03</cp>
+    <cp depth="4.5000000e+03">1.5323953e+03</cp>
+    <cp depth="5.0000000e+03">1.5416240e+03</cp>
+    <cp depth="5.5000000e+03">1.5508048e+03</cp>
+  </water_column>
+  
+  <!-- vacuum, rigid, half_space -->
+  <bottom type="half_space">
+    <!-- units = dB_per_m_kHz, parameter_loss, dB_per_m, Nepers_per_m, Q_factor, dB_per_wavelength -->
+    <attenuation units="dB_per_wavelength">0.5</attenuation>
+    <cp>1700</cp>
+    <cs>200</cs>
+    <depth>5500</depth>
+    <density>2.0</density>
+  </bottom>
+  <sources>
+    <number_in_depth>1</number_in_depth>
+    <first>
+      <depth>200</depth>
+    </first>
+  </sources>
+  <receivers>
+    <number_in_range>1000</number_in_range>
+    <number_in_depth>301</number_in_depth>
+    <first>
+      <depth>2000</depth>
+      <range>0</range>
+    </first>
+    <last>
+      <range>50000</range>
+      <depth>5000</depth>
+    </last>
+  </receivers>
+  <beams>
+    <!-- geometric,cartesian,ray_centered,gaussian -->
+    <approximation_type>gaussian</approximation_type>
+    <theta_min>-60</theta_min>
+    <theta_max>60</theta_max>
+    <number>1000</number>
+  </beams>
+<!-- for use in iBellhop to generate adaptive parameters for the parts
+       of the .env file -->
+  <adaptive_info>
+    <!-- which contact to generate automatic information -->
+    <contact>TGT_1</contact>   
+    <!-- read and parse resulting shd file? only for output.type=*_pressure -->
+    <read_shd>false</read_shd>
+    <!-- calculate ranges in over the next look_ahead_seconds?-->
+    <auto_receiver_ranges>true</auto_receiver_ranges>
+    <look_ahead_seconds>30</look_ahead_seconds>
+    <!-- use contact depth for source depth? -->
+    <auto_source_depth>true</auto_source_depth>
+  </adaptive_info>
+</env>

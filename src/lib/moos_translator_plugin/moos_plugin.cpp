@@ -3,7 +3,7 @@
 #include "goby/moos/middleware/moos_plugin_translator.h"
 #include "goby/moos/moos_translator.h"
 
-#include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
+#include "netsim/messages/netsim.pb.h"
 #include "netsim/messages/groups.h"
 #include "netsim/messages/env_bellhop_req.pb.h"
 

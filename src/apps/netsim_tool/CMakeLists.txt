@@ -8,9 +8,9 @@ add_executable(netsim_tool
 
 target_link_libraries(netsim_tool
   goby
+  goby_moos
   goby_zeromq
   netsim_messages
   netsim_tcp
-  ${LAMSS_PROTOBUF_LIBRARY}
   )
 

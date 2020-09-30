@@ -1,4 +1,5 @@
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${project_INC_DIR}
+  netsim/messages/netsim.proto
   netsim/messages/tool.proto
   netsim/messages/liaison.proto
   netsim/messages/logger.proto
@@ -8,4 +9,4 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${project_INC_DIR}
   )
 
 add_library(netsim_messages SHARED ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(netsim_messages ${PROTOBUF_LIBRARIES} dccl ${LAMSS_BELLHOP_TOOLS_LIBRARY})
+target_link_libraries(netsim_messages ${PROTOBUF_LIBRARIES} dccl netsim_acousticstoolbox)

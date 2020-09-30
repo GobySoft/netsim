@@ -10,7 +10,7 @@
 #include "config.pb.h"
 #include "netsim/messages/groups.h"
 
-#include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
+#include "netsim/messages/netsim.pb.h"
 
 using goby::glog;
 
