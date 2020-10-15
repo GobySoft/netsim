@@ -12,6 +12,10 @@ else()
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
+# versions
+set(NETSIM_VERSION "0.0.0")
+set(NETSIM_SOVERSION "0")
+
 find_package(ProtobufLocal REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 

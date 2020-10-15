@@ -10,7 +10,7 @@
 
 #include "goby/middleware/marshalling/protobuf.h"
 
-#include "common.h"
+#include "netsim/core/common.h"
 #include "goby/zeromq/application/multi_thread.h"
 #include "goby/time/legacy.h"
 #include "netsim/messages/core_config.pb.h"

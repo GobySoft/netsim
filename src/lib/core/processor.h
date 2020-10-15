@@ -5,7 +5,9 @@
 
 #include "goby/zeromq/application/multi_thread.h"
 
+#include "common.h"
 #include "netsim/messages/core_config.pb.h"
+#include "netsim/messages/groups.h"
 #include <jack/types.h>
 
 using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
@@ -52,6 +54,11 @@ class ProcessorThreadBase : public ThreadBase
                                 int modem_index) = 0;
 
     virtual void update_buffer_size(const jack_nframes_t& buffer_size) = 0;
+
+    goby::middleware::DynamicGroup& audio_out_group(int tx_modem_id)
+    {
+        return audio_out_groups_[tx_modem_id];
+    }
 
   private:
     // indexed on tx modem id
