@@ -3,6 +3,8 @@ import "dccl/option_extensions.proto";
 import "goby/protobuf/option_extensions.proto";
 import "goby/acomms/protobuf/mm_driver.proto";
 
+package netsim.protobuf;
+
 message ImpulseResponse
 {
     required string source = 1;

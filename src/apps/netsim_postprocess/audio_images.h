@@ -19,11 +19,11 @@ AudioImagesThread(const NetSimPostprocessConfig& config)
     {
 	using goby::glog;
 
-        interprocess().subscribe<groups::logger_event,
-            LoggerEvent>(
-                [this](const LoggerEvent& event)
+        interprocess().subscribe<netsim::groups::logger_event,
+            netsim::protobuf::LoggerEvent>(
+                [this](const netsim::protobuf::LoggerEvent& event)
                 {
-		    if(event.event() == LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET)
+		    if(event.event() == netsim::protobuf::LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET)
 		    {
                         std::stringstream octave_cmd, convert_cmd;
 			octave_cmd << "flatpak run org.octave.Octave /opt/netsim/src/octave/liaison_plot_signal.m " << event.log_dir() << " " << event.start_time() << " " << event.packet_id();
@@ -35,7 +35,7 @@ AudioImagesThread(const NetSimPostprocessConfig& config)
 			system(convert_cmd.str().c_str());
 			glog.is_debug1() && glog << "Octave / ImageMagick complete" << std::endl;
 		    }
-                    interprocess().publish<groups::post_process_event>(event);
+                    interprocess().publish<netsim::groups::post_process_event>(event);
                 });
     }
 

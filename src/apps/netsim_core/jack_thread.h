@@ -16,7 +16,7 @@
 #include "netsim/messages/core_config.pb.h"
 #include "netsim/messages/groups.h"
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 int jack_process(jack_nframes_t nframes, void* arg);
 void jack_shutdown (void *arg);
@@ -27,7 +27,7 @@ class JackThread : public ThreadBase
 {
 public:
     
-JackThread(const NetSimCoreConfig& config, int index)
+JackThread(const netsim::protobuf::NetSimCoreConfig& config, int index)
     : ThreadBase(config, ThreadBase::loop_max_frequency(), index),
 	input_port_(nullptr),
 	output_port_(config.number_of_modems(), nullptr),
@@ -319,7 +319,7 @@ JackThread(const NetSimCoreConfig& config, int index)
 
 	// only one Jack thread needs to publish this change
 	if(ThreadBase::index() == 0)
-	    interthread().publish<groups::buffer_size_change>(buffer_size_);
+	    interthread().publish<netsim::groups::buffer_size_change>(buffer_size_);
 
 	return 0;
     }

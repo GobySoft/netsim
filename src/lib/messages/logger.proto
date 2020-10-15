@@ -1,5 +1,7 @@
 syntax="proto2";
 
+package netsim.protobuf;
+
 message LoggerEvent
 {
     enum Event

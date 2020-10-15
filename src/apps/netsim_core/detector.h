@@ -10,13 +10,13 @@
 #include "netsim/messages/core_config.pb.h"
 #include "jack_thread.h"
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 class DetectorThread : public ThreadBase
 {
 public:
 
-DetectorThread(const NetSimCoreConfig& config, int index)
+DetectorThread(const netsim::protobuf::NetSimCoreConfig& config, int index)
     : ThreadBase(config, 0, index),
 	audio_in_group_(std::string("audio_in_") + std::to_string(ThreadBase::index())),
 	detector_audio_group_(std::string("detector_audio_tx_") + std::to_string(ThreadBase::index()))
@@ -26,7 +26,7 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 	auto audio_in_callback = [this](std::shared_ptr<const AudioBuffer> buffer) { this->audio_in(buffer); };
 
 	interthread().subscribe_dynamic<AudioBuffer>(audio_in_callback, audio_in_group_);
-	interthread().subscribe<groups::buffer_size_change, jack_nframes_t>(
+	interthread().subscribe<netsim::groups::buffer_size_change, jack_nframes_t>(
 	    [this](const jack_nframes_t& buffer_size)
 	    {
 		size_t new_prebuffer_size = (cfg().sampling_freq()*cfg().detector().packet_begin_prebuffer_seconds())/buffer_size;

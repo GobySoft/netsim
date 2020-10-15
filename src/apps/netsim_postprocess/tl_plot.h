@@ -19,7 +19,7 @@ TLPlotThread(const NetSimPostprocessConfig& config)
     {
 	using goby::glog;
 
-        interprocess().subscribe<groups::bellhop_response,
+        interprocess().subscribe<netsim::groups::bellhop_response,
             iBellhopResponse>(
                 [this](const iBellhopResponse& resp)
                 {
@@ -35,7 +35,7 @@ TLPlotThread(const NetSimPostprocessConfig& config)
 			    glog.is_debug1() && glog << "Octave complete" << std::endl;
 			}
 			
-			interprocess().publish<groups::post_process_event>(resp);
+			interprocess().publish<netsim::groups::post_process_event>(resp);
 		    }
                 });
     }

@@ -114,24 +114,24 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
                 }
             });
 
-	interprocess().subscribe<groups::performance_response, ObjFuncResponse>(
-	    [this](const ObjFuncResponse& r)
+	interprocess().subscribe<netsim::groups::performance_response, netsim::protobuf::ObjFuncResponse>(
+	    [this](const netsim::protobuf::ObjFuncResponse& r)
 	    { process_performance_response(r); });
 
-        interprocess().subscribe<groups::impulse_response, ImpulseResponse>(
-            [this](const ImpulseResponse& r) { process_impulse_response(r); });
+        interprocess().subscribe<netsim::groups::impulse_response, netsim::protobuf::ImpulseResponse>(
+            [this](const netsim::protobuf::ImpulseResponse& r) { process_impulse_response(r); });
 }
 
   private:
     void forward_packet(int src_id, int dest_id, const ModemTransmission& msg);
     void performance_request(int src_id, int dest_id);
 
-    void process_impulse_response(const ImpulseResponse& r);
-    void process_performance_response(const ObjFuncResponse& r);
+    void process_impulse_response(const netsim::protobuf::ImpulseResponse& r);
+    void process_performance_response(const netsim::protobuf::ObjFuncResponse& r);
     double transmit_probability(int src_id, int dest_id);
 
     void loop() override;
-    double travel_time(ImpulseResponse impulse_response);
+    double travel_time(netsim::protobuf::ImpulseResponse impulse_response);
 
   private:
     std::map<int, NetSimUDPConfig::ModemEndPoint> modems_;
@@ -142,7 +142,7 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
     int perf_count ;
     double last_performance_request;
     double performance_request_interval;
-    // messages waiting for an ImpulseResponse
+    // messages waiting for an netsim::protobuf::ImpulseResponse
     // src id -> dest id -> message
     std::map<int, std::multimap<int, ModemTransmission>> forward_buffer_;
 
@@ -169,12 +169,12 @@ void NetSimUDP::forward_packet(int src_id, int dest_id, const ModemTransmission&
   // performance_request
   performance_request(src_id,dest_id);
   static int imp_req_id(0);
-    ImpulseRequest imp_req;
+    netsim::protobuf::ImpulseRequest imp_req;
     imp_req.set_request_time(goby::time::SystemClock::now<goby::time::SITime>().value());
     imp_req.set_request_id(imp_req_id++);
     imp_req.set_source(std::to_string(modems_.at(src_id).modem_tcp_port()));
     imp_req.set_receiver(std::to_string(modems_.at(dest_id).modem_tcp_port()));
-    interprocess().publish<groups::impulse_request>(imp_req);
+    interprocess().publish<netsim::groups::impulse_request>(imp_req);
     goby::glog.is_debug1() && goby::glog << "Sent impulse request: " << imp_req.ShortDebugString()
                                          << std::endl;
 
@@ -184,15 +184,15 @@ void NetSimUDP::forward_packet(int src_id, int dest_id, const ModemTransmission&
 void NetSimUDP::performance_request(int src_id, int dest_id)
 {
     static int perf_req_id(0);
-    ObjFuncRequest perf_req;
+    netsim::protobuf::ObjFuncRequest perf_req;
     perf_req.set_request_time(goby::time::SystemClock::now<goby::time::SITime>().value());
     perf_req.set_request_id(perf_req_id++);
     perf_req.set_requestor("netsim_udp");
     perf_req.set_contact(std::to_string(modems_.at(src_id).modem_tcp_port()));
-    ObjFuncRequest::Receiver* receiver = 0;
+    netsim::protobuf::ObjFuncRequest::Receiver* receiver = 0;
     receiver = perf_req.add_receiver();
     receiver -> set_node(std::to_string(modems_.at(dest_id).modem_tcp_port()));
-    interprocess().publish<groups::performance_request>(perf_req);
+    interprocess().publish<netsim::groups::performance_request>(perf_req);
     goby::glog.is_debug1() && goby::glog << "Sent performance request: "
 					 << perf_req.ShortDebugString()
                                          << std::endl;
@@ -211,7 +211,7 @@ void NetSimUDP::loop()
 }
 
 
-void NetSimUDP::process_performance_response(const ObjFuncResponse& r)
+void NetSimUDP::process_performance_response(const netsim::protobuf::ObjFuncResponse& r)
 {
    
   //  if (r.requestor() != "netsim_udp" )
@@ -254,7 +254,7 @@ double NetSimUDP::transmit_probability(int src_id, int dest_id)
 	  }
 }
 
-void NetSimUDP::process_impulse_response(const ImpulseResponse& r)
+void NetSimUDP::process_impulse_response(const netsim::protobuf::ImpulseResponse& r)
 {
     if(!tcp_port_to_id_.count(r.source())|| !tcp_port_to_id_.at(r.receiver()))
     {
@@ -334,7 +334,7 @@ void NetSimUDP::process_impulse_response(const ImpulseResponse& r)
     forward_buffer_[src_id].erase(it_p.first, it_p.second);
 }
 
-double NetSimUDP::travel_time(ImpulseResponse impulse_response)
+double NetSimUDP::travel_time(netsim::protobuf::ImpulseResponse impulse_response)
 {
     // returns delay for strongest direct ray
     double max_amp = 0;

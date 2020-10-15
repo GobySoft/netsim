@@ -29,7 +29,7 @@ class ModemThread : public goby::middleware::SimpleThread<goby::acomms::protobuf
         {
             std::lock_guard<std::mutex> lock(driver_mutex);
             driver_.signal_receive.connect([this](const ModemTransmission& msg) {
-                interprocess().publish<groups::tool::receive_data>(msg);
+                interprocess().publish<netsim::groups::tool::receive_data>(msg);
             });
 
             driver_.signal_raw_incoming.connect(
@@ -37,7 +37,7 @@ class ModemThread : public goby::middleware::SimpleThread<goby::acomms::protobuf
                     netsim::protobuf::ToolModemRaw tool_raw;
                     tool_raw.set_modem_id(index);
                     *tool_raw.mutable_msg() = raw;
-                    interprocess().publish<groups::tool::raw_in>(tool_raw);
+                    interprocess().publish<netsim::groups::tool::raw_in>(tool_raw);
                 });
             
             driver_.signal_raw_outgoing.connect(
@@ -45,7 +45,7 @@ class ModemThread : public goby::middleware::SimpleThread<goby::acomms::protobuf
                     netsim::protobuf::ToolModemRaw tool_raw;
                     tool_raw.set_modem_id(index);
                     *tool_raw.mutable_msg() = raw;
-                    interprocess().publish<groups::tool::raw_out>(tool_raw);
+                    interprocess().publish<netsim::groups::tool::raw_out>(tool_raw);
                 });
         }
 
@@ -55,9 +55,9 @@ class ModemThread : public goby::middleware::SimpleThread<goby::acomms::protobuf
         }
 
         int i = index;
-        interthread().publish<groups::tool::ready>(index);
+        interthread().publish<netsim::groups::tool::ready>(index);
 
-        interthread().subscribe<groups::tool::transmit, ModemTransmission>(
+        interthread().subscribe<netsim::groups::tool::transmit, ModemTransmission>(
             [this](const ModemTransmission& msg) {
                 if (this->index() == msg.src())
                 {
@@ -101,7 +101,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
         launch_thread<ModemThread>(cfg().tx_driver_cfg().modem_id(), cfg().tx_driver_cfg());
         launch_thread<ModemThread>(cfg().rx_driver_cfg().modem_id(), cfg().rx_driver_cfg());
 
-        interthread().subscribe<groups::tool::receive_data, ModemTransmission>(
+        interthread().subscribe<netsim::groups::tool::receive_data, ModemTransmission>(
             [this](const ModemTransmission& msg) {
                 glog.is(VERBOSE) && glog << "Received data: " << msg.ShortDebugString()
                                          << std::endl;
@@ -111,7 +111,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
                     previous_stats_ =
                         msg.GetExtension(micromodem::protobuf::transmission).receive_stat(0);
 
-                    NetSimManagerRequest req;
+                    netsim::protobuf::NetSimManagerRequest req;
                     req.set_id(request_id_++);
                     auto& stats = *req.add_stats();
                     stats.set_modem_tcp_port(cfg().rx_driver_cfg().tcp_port());
@@ -129,14 +129,14 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
                 }
             });
 
-        interthread().subscribe<groups::tool::ready, int>([this](const int& driver_id) {
+        interthread().subscribe<netsim::groups::tool::ready, int>([this](const int& driver_id) {
             glog.is(VERBOSE) && glog << "Driver " << driver_id << " is ready" << std::endl;
             ++drivers_ready_;
         });
 
         client_->connect(cfg().netsim_manager_ip_addr(), cfg().netsim_manager_tcp_port());
-        client_->read_callback<NetSimManagerResponse>(
-            [](const NetSimManagerResponse& t, const boost::asio::ip::tcp::endpoint& ep) {
+        client_->read_callback<netsim::protobuf::NetSimManagerResponse>(
+            [](const netsim::protobuf::NetSimManagerResponse& t, const boost::asio::ip::tcp::endpoint& ep) {
                 glog.is(DEBUG1) && glog << "Received response from [" << ep
                                         << "]: " << t.ShortDebugString() << std::endl;
             });
@@ -149,7 +149,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
 
         glog.is(VERBOSE) && glog << "Connected to netsim_manager" << std::endl;
 
-        NetSimManagerRequest req;
+        netsim::protobuf::NetSimManagerRequest req;
         req.set_id(request_id_++);
         auto& nav = *req.add_nav();
         nav.set_modem_tcp_port(cfg().tx_driver_cfg().tcp_port());
@@ -196,7 +196,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
                 glog.is(VERBOSE) && glog << group("data_out") << tool_stats.ShortDebugString()
                                          << std::endl;
 
-                interprocess().publish<groups::tool::rx_stats>(tool_stats);
+                interprocess().publish<netsim::groups::tool::rx_stats>(tool_stats);
 
                 previous_stats_.Clear();
             }
@@ -212,7 +212,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
             glog.is(VERBOSE) && glog << "Starting transmission at: r=" << r_ << ", z=" << z_
                                      << std::endl;
 
-            interprocess().publish<groups::tool::transmit>(cfg().transmission());
+            interprocess().publish<netsim::groups::tool::transmit>(cfg().transmission());
 
             last_r_ = r_;
             last_z_ = z_;
@@ -238,7 +238,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
 
     void update_receiver_position()
     {
-        NetSimManagerRequest req;
+        netsim::protobuf::NetSimManagerRequest req;
         req.set_id(request_id_++);
         auto& nav = *req.add_nav();
         nav.set_modem_tcp_port(cfg().rx_driver_cfg().tcp_port());

@@ -5,6 +5,8 @@ import "goby/zeromq/protobuf/interprocess_config.proto";
 
 import "goby/middleware/protobuf/serial_config.proto";
 
+package netsim.protobuf;
+
 message NetSimManagerConfig
 {
     optional goby.middleware.protobuf.AppConfig app = 1;

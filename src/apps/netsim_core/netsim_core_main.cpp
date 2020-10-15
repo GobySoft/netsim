@@ -12,12 +12,12 @@
 using namespace goby::util::logger;
 using goby::glog;
 
-class NetSimCore : public goby::zeromq::MultiThreadApplication<NetSimCoreConfig>
+class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig>
 {
   public:
     NetSimCore()
     {
-        typedef void (*processor_load_func)(goby::zeromq::MultiThreadApplication<NetSimCoreConfig>* handler, int output_index);
+        typedef void (*processor_load_func)(goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig>* handler, int output_index);
         processor_load_func processor_load_ptr = (processor_load_func)dlsym(
             NetSimCore::processor_library_handle_, "netsim_launch_processor_thread");
 

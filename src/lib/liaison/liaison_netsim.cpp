@@ -16,7 +16,7 @@ using namespace Wt;
 
 LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& cfg)
     : goby::zeromq::LiaisonContainerWithComms<LiaisonNetsim, NetsimCommsThread>(cfg),
-    netsim_cfg_(cfg.GetExtension(protobuf::netsim_config)),
+    netsim_cfg_(cfg.GetExtension(netsim::protobuf::netsim_config)),
     timeseries_panel_(new WPanel(this)),
     timeseries_box_(new WContainerWidget(this)),
     timeseries_image_(new WImage(timeseries_box_)),
@@ -145,16 +145,16 @@ LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& 
 				       beams.set_theta_max(60);
 				       beams.set_number(1000);				       
 				       
-				       this->post_to_comms([=]() { this->goby_thread()->interprocess().publish<groups::bellhop_request>(req); });
+				       this->post_to_comms([=]() { this->goby_thread()->interprocess().publish<netsim::groups::bellhop_request>(req); });
 				       tl_request_->disable();
 				   });
     
     set_name("Netsim");
 }
 
-void LiaisonNetsim::handle_new_log(const LoggerEvent& event)
+void LiaisonNetsim::handle_new_log(const netsim::protobuf::LoggerEvent& event)
 {
-    if(event.event() == LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET)
+    if(event.event() == netsim::protobuf::LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET)
     {
 	std::stringstream spect_out_path;
 	spect_out_path << event.log_dir() << "/netsim_" << event.start_time() << "_" << std::setw(3) << std::setfill('0') << event.packet_id() << "_spectrogram.png";
@@ -175,7 +175,7 @@ void LiaisonNetsim::handle_new_log(const LoggerEvent& event)
 	    timeseries_image_->setImageLink(link);
 	}
     }
-    else if(event.event() == LoggerEvent::PACKET_START)
+    else if(event.event() == netsim::protobuf::LoggerEvent::PACKET_START)
     {
 	if(event.tx_modem_id() < manager_cfg_.sim_env_pair_size())
 	{
@@ -211,7 +211,7 @@ void LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
     receive_stats_.clear();    	      
 }
 
-void LiaisonNetsim::handle_manager_cfg(const NetSimManagerConfig& cfg)
+void LiaisonNetsim::handle_manager_cfg(const netsim::protobuf::NetSimManagerConfig& cfg)
 {
     manager_cfg_ = cfg;
     

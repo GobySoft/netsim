@@ -9,7 +9,7 @@
 #include "netsim/messages/logger.pb.h"
 #include "netsim/messages/groups.h"
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 class LoggerThread : public ThreadBase
 {
@@ -17,7 +17,7 @@ private:
     enum class Direction { IN, OUT};
 
 public:
-LoggerThread(const NetSimCoreConfig& config)
+LoggerThread(const netsim::protobuf::NetSimCoreConfig& config)
     : ThreadBase(config, 0)
     {
 	
@@ -70,11 +70,11 @@ private:
 
 	    if(dir == Direction::IN)
 	    {
-		LoggerEvent event;
-		event.set_event(LoggerEvent::PACKET_START);
+		netsim::protobuf::LoggerEvent event;
+		event.set_event(netsim::protobuf::LoggerEvent::PACKET_START);
 		event.set_packet_id(buffer->packet_id);
 		event.set_tx_modem_id(modem_index);
-		interprocess().publish<groups::logger_event>(event);
+		interprocess().publish<netsim::groups::logger_event>(event);
 	    }
 	    
 	}
@@ -92,14 +92,14 @@ private:
 
 	    if(dir == Direction::OUT && files_[Direction::OUT][buffer->packet_id].empty())
 	    {
-		LoggerEvent event;
-		event.set_event(LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET);
+		netsim::protobuf::LoggerEvent event;
+		event.set_event(netsim::protobuf::LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET);
 		event.set_log_dir(cfg().logger().log_directory());
 		std::stringstream ss_time;
 		ss_time << start_time;
 		event.set_start_time(ss_time.str());
 		event.set_packet_id(buffer->packet_id);
-		interprocess().publish<groups::logger_event>(event);
+		interprocess().publish<netsim::groups::logger_event>(event);
 	    }
 	}
     }

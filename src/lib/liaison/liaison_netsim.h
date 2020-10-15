@@ -60,19 +60,19 @@ class LiaisonNetsim : public goby::zeromq::LiaisonContainerWithComms<LiaisonNets
 public:
     LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& cfg);
 
-    void handle_new_log(const LoggerEvent& event);
-    void handle_manager_cfg(const NetSimManagerConfig& cfg);
+    void handle_new_log(const netsim::protobuf::LoggerEvent& event);
+    void handle_manager_cfg(const netsim::protobuf::NetSimManagerConfig& cfg);
     void handle_bellhop_resp(const iBellhopResponse& resp);
    
-    void handle_updated_nav(const EnvironmentNavUpdate& update)
+    void handle_updated_nav(const netsim::protobuf::EnvironmentNavUpdate& update)
     { last_nav_[update.nav().modem_tcp_port()] = update.nav(); }
-    void handle_receive_stats(const ReceiveStats& stats)
+    void handle_receive_stats(const netsim::protobuf::ReceiveStats& stats)
     { receive_stats_[stats.tx_modem_tcp_port()][stats.modem_tcp_port()] = stats; }
 	
 private:
     friend class TLPaintedWidget;
 
-    const protobuf::LiaisonNetsimConfig& netsim_cfg_;
+    const netsim::protobuf::LiaisonNetsimConfig& netsim_cfg_;
 
     Wt::WPanel* timeseries_panel_;
     Wt::WContainerWidget* timeseries_box_;
@@ -120,18 +120,18 @@ private:
     std::vector<Wt::WPen> rx_pens_ { Wt::WPen(Wt::white), Wt::WPen(Wt::white), Wt::WPen(Wt::yellow), Wt::WPen(Wt::yellow), Wt::WPen(Wt::gray), Wt::WPen(Wt::gray) };    
     
     // int = modem_tcp_port
-    std::map<int, NavUpdate> last_nav_;
+    std::map<int, netsim::protobuf::NavUpdate> last_nav_;
 
     // tx modem_tcp_port -> map of nav (last tx)
-    std::map<int, std::map<int, NavUpdate>> nav_at_last_tx_start_;
+    std::map<int, std::map<int, netsim::protobuf::NavUpdate>> nav_at_last_tx_start_;
 
     // tx modem_tcp_port -> map of nav (one prior to last tx)
-    std::map<int, std::map<int, NavUpdate>> nav_at_previous_tx_start_;
+    std::map<int, std::map<int, netsim::protobuf::NavUpdate>> nav_at_previous_tx_start_;
     
-    // tx_modem_tcp_port -> rx_modem_tcp_port -> ReceiveStats
-    std::map<int, std::map<int, ReceiveStats>> receive_stats_;
+    // tx_modem_tcp_port -> rx_modem_tcp_port -> netsim::protobuf::ReceiveStats
+    std::map<int, std::map<int, netsim::protobuf::ReceiveStats>> receive_stats_;
     
-    NetSimManagerConfig manager_cfg_;
+    netsim::protobuf::NetSimManagerConfig manager_cfg_;
 
 };
     
@@ -143,15 +143,15 @@ NetsimCommsThread(LiaisonNetsim* wt_app, const goby::apps::zeromq::protobuf::Lia
     goby::zeromq::LiaisonCommsThread<LiaisonNetsim>(wt_app, config, index),
         wt_app_(wt_app)
         {
-            interprocess().subscribe<groups::post_process_event,
-                LoggerEvent>(
-                    [this](const LoggerEvent& event)
+            interprocess().subscribe<netsim::groups::post_process_event,
+                netsim::protobuf::LoggerEvent>(
+                    [this](const netsim::protobuf::LoggerEvent& event)
                     {
                         wt_app_->post_to_wt(
                             [=]() { wt_app_->handle_new_log(event); });
                     });
 
-            interprocess().subscribe<groups::post_process_event,
+            interprocess().subscribe<netsim::groups::post_process_event,
                 iBellhopResponse>(
                     [this](const iBellhopResponse& resp)
                     {
@@ -160,34 +160,34 @@ NetsimCommsThread(LiaisonNetsim* wt_app, const goby::apps::zeromq::protobuf::Lia
                     });
 
 	    
-            interprocess().subscribe<groups::configuration,
-                NetSimManagerConfig>(
-                    [this](const NetSimManagerConfig& manager_cfg)
+            interprocess().subscribe<netsim::groups::configuration,
+                netsim::protobuf::NetSimManagerConfig>(
+                    [this](const netsim::protobuf::NetSimManagerConfig& manager_cfg)
                     {
                         wt_app_->post_to_wt(
                             [=]() { wt_app_->handle_manager_cfg(manager_cfg); });
                     });
 
-            interprocess().subscribe<groups::env_nav_update,
-                EnvironmentNavUpdate>(
-                    [this](const EnvironmentNavUpdate& update)
+            interprocess().subscribe<netsim::groups::env_nav_update,
+                netsim::protobuf::EnvironmentNavUpdate>(
+                    [this](const netsim::protobuf::EnvironmentNavUpdate& update)
                     {
                         wt_app_->post_to_wt(
                             [=]() { wt_app_->handle_updated_nav(update); });
                     });
 
-            interprocess().subscribe<groups::receive_stats,
-                ReceiveStats>(
-                    [this](const ReceiveStats& stats)
+            interprocess().subscribe<netsim::groups::receive_stats,
+                netsim::protobuf::ReceiveStats>(
+                    [this](const netsim::protobuf::ReceiveStats& stats)
                     {
                         wt_app_->post_to_wt(
                             [=]() { wt_app_->handle_receive_stats(stats); });
                     });
 
 	    
-	    ConfigRequest req;
-	    req.set_subsystem(ConfigRequest::MANAGER);
-	    interprocess().publish<groups::config_request>(req);
+	    netsim::protobuf::ConfigRequest req;
+	    req.set_subsystem(netsim::protobuf::ConfigRequest::MANAGER);
+	    interprocess().publish<netsim::groups::config_request>(req);
 	    
         }
     ~NetsimCommsThread()

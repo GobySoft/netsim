@@ -22,20 +22,20 @@ public:
         {
 	    glog.is(DEBUG1) && glog << "Environment id: " << environment_id_ << std::endl;
 
-            goby().interprocess().subscribe<groups::env_impulse_req, EnvironmentImpulseRequest>(
-                [this](const EnvironmentImpulseRequest& i) { this->goby_to_moos(i); }
+            goby().interprocess().subscribe<netsim::groups::env_impulse_req, netsim::protobuf::EnvironmentImpulseRequest>(
+                [this](const netsim::protobuf::EnvironmentImpulseRequest& i) { this->goby_to_moos(i); }
                 );
 
-            goby().interprocess().subscribe<groups::env_nav_update, EnvironmentNavUpdate>(
-                [this](const EnvironmentNavUpdate& n) { this->goby_to_moos(n); }
+            goby().interprocess().subscribe<netsim::groups::env_nav_update, netsim::protobuf::EnvironmentNavUpdate>(
+                [this](const netsim::protobuf::EnvironmentNavUpdate& n) { this->goby_to_moos(n); }
                 );
 
-            goby().interprocess().subscribe<groups::env_bellhop_req, EnvironmentiBellhopRequest>(
-                [this](const EnvironmentiBellhopRequest& n) { this->goby_to_moos(n); }
+            goby().interprocess().subscribe<netsim::groups::env_bellhop_req, netsim::protobuf::EnvironmentiBellhopRequest>(
+                [this](const netsim::protobuf::EnvironmentiBellhopRequest& n) { this->goby_to_moos(n); }
                 );
 
-            goby().interprocess().subscribe<groups::env_performance_req, EnvironmentObjFuncRequest>(
-                [this](const EnvironmentObjFuncRequest& i) { this->goby_to_moos(i); }
+            goby().interprocess().subscribe<netsim::groups::env_performance_req, netsim::protobuf::EnvironmentObjFuncRequest>(
+                [this](const netsim::protobuf::EnvironmentObjFuncRequest& i) { this->goby_to_moos(i); }
                 );
 
 	    
@@ -46,7 +46,7 @@ public:
 	    
 	    {
 		goby::moos::protobuf::TranslatorEntry imp_resp_entry;
-		imp_resp_entry.set_protobuf_name(ImpulseResponse::descriptor()->full_name());
+		imp_resp_entry.set_protobuf_name(netsim::protobuf::ImpulseResponse::descriptor()->full_name());
 		auto& create = *imp_resp_entry.add_create();
 		create.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
 		create.set_moos_var(imp_resp_var_);
@@ -55,7 +55,7 @@ public:
 
 	    {
 		goby::moos::protobuf::TranslatorEntry imp_req_entry;
-		imp_req_entry.set_protobuf_name(ImpulseRequest::descriptor()->full_name());
+		imp_req_entry.set_protobuf_name(netsim::protobuf::ImpulseRequest::descriptor()->full_name());
 		auto& publish = *imp_req_entry.add_publish();
 		publish.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
 		publish.set_moos_var(imp_req_var_);
@@ -64,7 +64,7 @@ public:
 
 	    {
 		goby::moos::protobuf::TranslatorEntry nav_update_entry;
-		nav_update_entry.set_protobuf_name(NavUpdate::descriptor()->full_name());
+		nav_update_entry.set_protobuf_name(netsim::protobuf::NavUpdate::descriptor()->full_name());
 		auto& publish = *nav_update_entry.add_publish();
 		publish.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
 		publish.set_moos_var(nav_update_var_);
@@ -91,7 +91,7 @@ public:
 	    // HS 2020-05-08 >>>>>>>
 	    {
 		goby::moos::protobuf::TranslatorEntry perf_resp_entry;
-		perf_resp_entry.set_protobuf_name(ObjFuncResponse::descriptor()->full_name());
+		perf_resp_entry.set_protobuf_name(netsim::protobuf::ObjFuncResponse::descriptor()->full_name());
 		auto& create = *perf_resp_entry.add_create();
 		create.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
 		create.set_moos_var(perf_resp_var_);
@@ -100,7 +100,7 @@ public:
 
 	    {
 		goby::moos::protobuf::TranslatorEntry perf_req_entry;
-		perf_req_entry.set_protobuf_name(ObjFuncRequest::descriptor()->full_name());
+		perf_req_entry.set_protobuf_name(netsim::protobuf::ObjFuncRequest::descriptor()->full_name());
 		auto& publish = *perf_req_entry.add_publish();
 		publish.set_technique(goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
 		publish.set_moos_var(perf_req_var_);
@@ -118,24 +118,24 @@ private:
             {
                 // publish IMPULSE_RESPONSE
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
-                auto imp_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "ImpulseResponse");
-                goby().interprocess().publish<groups::impulse_response>(std::dynamic_pointer_cast<ImpulseResponse>(imp_resp_pb));
+                auto imp_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "netsim::protobuf::ImpulseResponse");
+                goby().interprocess().publish<netsim::groups::impulse_response>(std::dynamic_pointer_cast<netsim::protobuf::ImpulseResponse>(imp_resp_pb));
             }
             else if(moos_msg.GetKey() == bellhop_resp_var_)
             {
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
                 auto bellhop_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "iBellhopResponse");
-                goby().interprocess().publish<groups::bellhop_response>(std::dynamic_pointer_cast<iBellhopResponse>(bellhop_resp_pb));
+                goby().interprocess().publish<netsim::groups::bellhop_response>(std::dynamic_pointer_cast<iBellhopResponse>(bellhop_resp_pb));
             }
             else if(moos_msg.GetKey() == perf_resp_var_)
             {
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
-                auto perf_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "ObjFuncResponse");
-                goby().interprocess().publish<groups::performance_response>(std::dynamic_pointer_cast<ObjFuncResponse>(perf_resp_pb));
+                auto perf_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "netsim::protobuf::ObjFuncResponse");
+                goby().interprocess().publish<netsim::groups::performance_response>(std::dynamic_pointer_cast<netsim::protobuf::ObjFuncResponse>(perf_resp_pb));
             }
         }
 
-    void goby_to_moos(const EnvironmentImpulseRequest& req)
+    void goby_to_moos(const netsim::protobuf::EnvironmentImpulseRequest& req)
         {
 	    if(req.environment_id() == environment_id_)
 	    {	       
@@ -145,7 +145,7 @@ private:
 	    }
         }
 
-    void goby_to_moos(const EnvironmentNavUpdate& update)
+    void goby_to_moos(const netsim::protobuf::EnvironmentNavUpdate& update)
         {
 	    if(update.environment_id() == environment_id_)
 	    {
@@ -155,7 +155,7 @@ private:
 	    }
         }
 
-    void goby_to_moos(const EnvironmentiBellhopRequest& req)
+    void goby_to_moos(const netsim::protobuf::EnvironmentiBellhopRequest& req)
         {
 	    if(req.environment_id() == environment_id_)
 	    {
@@ -165,7 +165,7 @@ private:
 	    }
         }
 
-    void goby_to_moos(const EnvironmentObjFuncRequest& req)
+    void goby_to_moos(const netsim::protobuf::EnvironmentObjFuncRequest& req)
         {
 	    if(req.environment_id() == environment_id_)
 	    {	       

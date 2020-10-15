@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     CConvolve convolve;   
 //    double timestamp;
 
-    ImpulseResponse impulse_response;
+    netsim::protobuf::ImpulseResponse impulse_response;
 //    impulse_response.set_source("src");
 //    impulse_response.set_source("dst");
 //    {
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     int trail_frames = std::max(100,int(max_delay/frame_time)+10);
     std::cout << "trail_frames= " << trail_frames<< std::endl;
     
-    ArrayGain array_gain;
+    netsim::protobuf::ArrayGain array_gain;
     
     double ping_time;
     std::vector<float> full_replica;

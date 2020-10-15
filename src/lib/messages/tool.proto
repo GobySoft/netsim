@@ -3,7 +3,6 @@ syntax="proto2";
 import "goby/acomms/protobuf/mm_driver.proto";
 import "goby/acomms/protobuf/modem_message.proto";
 
-
 package netsim.protobuf;
 
 message ToolReceiveStats

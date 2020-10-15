@@ -10,18 +10,18 @@
 #include "netsim/messages/groups.h"
 #include <jack/types.h>
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 class ProcessorThreadBase : public ThreadBase
 {
   public:
-    ProcessorThreadBase(const NetSimCoreConfig& config, int index)
+    ProcessorThreadBase(const netsim::protobuf::NetSimCoreConfig& config, int index)
         : ThreadBase(config,
                      config.processor().impulse_response_update_hertz() * boost::units::si::hertz,
                      index)
     {
         // update buffer (audio block) size
-        interthread().subscribe<groups::buffer_size_change, jack_nframes_t>(
+        interthread().subscribe<netsim::groups::buffer_size_change, jack_nframes_t>(
             [this](const jack_nframes_t& buffer_size) { this->update_buffer_size(buffer_size); });
 
         // subscribe to all the detectors except our own id, since we ignore our transmissions
