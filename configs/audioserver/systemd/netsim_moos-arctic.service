@@ -10,7 +10,7 @@ Environment="PATH=/opt/lamss/bin:/opt/lamss-shared/bin:/opt/goby3/bin:/opt/netsi
 WorkingDirectory=/opt/missions-lamss/topside/net_sim
 
 # sleep for waiting for netsim_moos-atlantic
-ExecStartPre=/bin/bash -c "sleep 2 && cd /opt/missions-lamss && ./cruise_config.sh arctic"
+ExecStartPre=/bin/bash -c "sleep 2 && cd /opt/missions-lamss && ./cruise_config.sh icex20"
 ExecStart=/opt/missions-lamss/topside/net_sim/simulation_launch.sh screen quiet
 
 [Install]
