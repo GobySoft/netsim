@@ -190,3 +190,16 @@ message TransmitGroupVelocity
     required double group_velocity = 6;
     required double group_velocity_std = 7;
 }
+
+enum ModemPerformanceMetric
+    {
+     SNR = 1;
+     MPP = 2;
+     MAE = 3;
+    }
+
+message TimeSeries
+{
+    optional double time = 1 ;
+    required bytes values = 2;
+}
