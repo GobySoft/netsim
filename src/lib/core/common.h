@@ -5,20 +5,22 @@
 
 #include <vector>
 
+namespace netsim
+{
 
 typedef float sample_t;
 
 struct AudioBuffer
 {
-AudioBuffer(size_t size) : samples(size, 0) {}    
+    AudioBuffer(size_t size) : samples(size, 0) {}    
 
     template<typename It>
-      AudioBuffer(It begin, It end) : samples(begin, end) {}
+    AudioBuffer(It begin, It end) : samples(begin, end) {}
 
     double buffer_start_time{0};
     jack_nframes_t jack_frame_time{0};
     
-    std::vector<sample_t> samples;
+    std::vector<netsim::sample_t> samples;
 };
 
 struct TaggedAudioBuffer
@@ -31,14 +33,7 @@ struct TaggedAudioBuffer
     int packet_id { -1 };
 };
 
-
-
-
-
-
-
-
-
+}
 
 #endif
 

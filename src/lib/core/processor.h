@@ -12,6 +12,9 @@
 
 using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
+namespace netsim
+{
+
 class ProcessorThreadBase : public ThreadBase
 {
   public:
@@ -38,10 +41,10 @@ class ProcessorThreadBase : public ThreadBase
             if (i != ThreadBase::index())
             {
                 auto detector_audio_callback =
-                    [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) {
+                    [this, i](std::shared_ptr<const netsim::TaggedAudioBuffer> buffer) {
                         this->detector_audio(buffer, i);
                     };
-                interthread().subscribe_dynamic<TaggedAudioBuffer>(detector_audio_callback,
+                interthread().subscribe_dynamic<netsim::TaggedAudioBuffer>(detector_audio_callback,
                                                                    detector_audio_groups_[i]);
             }
         }
@@ -50,7 +53,7 @@ class ProcessorThreadBase : public ThreadBase
     static std::atomic<int> ready;
 
   protected:
-    virtual void detector_audio(std::shared_ptr<const TaggedAudioBuffer> buffer,
+    virtual void detector_audio(std::shared_ptr<const netsim::TaggedAudioBuffer> buffer,
                                 int modem_index) = 0;
 
     virtual void update_buffer_size(const jack_nframes_t& buffer_size) = 0;
@@ -66,7 +69,8 @@ class ProcessorThreadBase : public ThreadBase
     // indexed on tx modem id
     std::vector<goby::middleware::DynamicGroup> audio_out_groups_;
 };
+}
 
-std::atomic<int> ProcessorThreadBase::ready{0};
+std::atomic<int> netsim::ProcessorThreadBase::ready{0};
 
 #endif

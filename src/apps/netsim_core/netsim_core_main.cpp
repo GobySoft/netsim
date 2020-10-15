@@ -39,7 +39,7 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
             (*processor_load_ptr)(this, i);
         }
 
-        while (ProcessorThreadBase::ready < cfg().number_of_modems()) usleep(10000);
+        while (netsim::ProcessorThreadBase::ready < cfg().number_of_modems()) usleep(10000);
 
         for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
         {
