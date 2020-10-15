@@ -118,7 +118,7 @@ private:
             {
                 // publish IMPULSE_RESPONSE
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
-                auto imp_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "netsim::protobuf::ImpulseResponse");
+                auto imp_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "netsim.protobuf.ImpulseResponse");
                 goby().interprocess().publish<netsim::groups::impulse_response>(std::dynamic_pointer_cast<netsim::protobuf::ImpulseResponse>(imp_resp_pb));
             }
             else if(moos_msg.GetKey() == bellhop_resp_var_)
@@ -130,7 +130,7 @@ private:
             else if(moos_msg.GetKey() == perf_resp_var_)
             {
                 std::map<std::string, CMOOSMsg> moos_msgs = {{ moos_msg.GetKey(), moos_msg }};
-                auto perf_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "netsim::protobuf::ObjFuncResponse");
+                auto perf_resp_pb = translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(moos_msgs, "netsim.protobuf.ObjFuncResponse");
                 goby().interprocess().publish<netsim::groups::performance_response>(std::dynamic_pointer_cast<netsim::protobuf::ObjFuncResponse>(perf_resp_pb));
             }
         }
