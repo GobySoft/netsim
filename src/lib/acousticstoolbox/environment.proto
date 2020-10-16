@@ -1,177 +1,302 @@
-syntax="proto2";
+syntax = "proto2";
 
 import "goby/protobuf/option_extensions.proto";
 
-package bellhop.protobuf;
+package netsim.bellhop.protobuf;
 
 message Environment
 {
-  //
-  // PARAMETERS THAT BECOME THE BELLHOP ENV FILE
-  //
-  
-  optional string title = 1 [(goby.field).description="Title of this environmental file for your use", default="Environmental File"];
-  optional uint32 freq = 2 [(goby.field).description="Hertz", default=25000];
-  optional Output output = 3 [(goby.field).description="Parameters governing the output of BELLHOP"];
-  optional Surface surface = 4 [(goby.field).description="Parameters that model the sea surface"];
-  repeated WaterColumn water_column = 5 [(goby.field).description="Parameters that model the water column"];
-  optional Bottom bottom = 6 [(goby.field).description="Parameters that model the sea floor"];
-  optional Sources sources = 7 [(goby.field).description="Parameters that determine acoustic \"source(s)\" in the ray trace"];
-  optional Receivers receivers = 8 [(goby.field).description="Parameters that determine the acoustic \"receiver(s)\" in the ray trace"];
-  optional Beams beams = 9 [(goby.field).description="Parameters that govern the beams used in the ray trace"];
+    //
+    // PARAMETERS THAT BECOME THE BELLHOP ENV FILE
+    //
 
-  message Output
-  {
-    enum OutputType 
+    optional string title = 1 [
+        (goby.field).description =
+            "Title of this environmental file for your use",
+        default = "Environmental File"
+    ];
+    optional uint32 freq = 2
+        [(goby.field).description = "Hertz", default = 25000];
+    optional Output output = 3
+        [(goby.field).description =
+             "Parameters governing the output of BELLHOP"];
+    optional Surface surface = 4
+        [(goby.field).description = "Parameters that model the sea surface"];
+    repeated WaterColumn water_column = 5
+        [(goby.field).description = "Parameters that model the water column"];
+    optional Bottom bottom = 6
+        [(goby.field).description = "Parameters that model the sea floor"];
+    optional Sources sources = 7 [(goby.field).description =
+                                      "Parameters that determine acoustic "
+                                      "\"source(s)\" in the ray trace"];
+    optional Receivers receivers = 8
+        [(goby.field).description =
+             "Parameters that determine the acoustic \"receiver(s)\" in the "
+             "ray trace"];
+    optional Beams beams = 9
+        [(goby.field).description =
+             "Parameters that govern the beams used in the ray trace"];
+
+    message Output
     {
-      ARRIVAL_TIMES = 1;
-      EIGENRAYS = 2;
-      RAYS = 3;
-      COHERENT_PRESSURE = 4;
-      INCOHERENT_PRESSURE = 5;
-      SEMICOHERENT_PRESSURE = 6;
-    }    
-    optional OutputType type = 1 [(goby.field).description="Type of ray trace to perform and file to output(ARR, RAY, or SHD)", default=INCOHERENT_PRESSURE]; 
-  }
-
-
-  message Medium
-  {
-    enum MediumType
-    {
-      VACUUM = 1;
-      RIGID = 2;
-      HALF_SPACE = 3;
-      REFLECTION_COEFFICIENT = 4;
+        enum OutputType
+        {
+            ARRIVAL_TIMES = 1;
+            EIGENRAYS = 2;
+            RAYS = 3;
+            COHERENT_PRESSURE = 4;
+            INCOHERENT_PRESSURE = 5;
+            SEMICOHERENT_PRESSURE = 6;
+        }
+        optional OutputType type = 1 [
+            (goby.field).description =
+                "Type of ray trace to perform and file to output(ARR, RAY, or "
+                "SHD)",
+            default = INCOHERENT_PRESSURE
+        ];
     }
-    optional MediumType type = 1 [(goby.field).description="The type of the medium"];
-    optional Attenuation attenuation = 2 [(goby.field).description="Attenuation parameters of the medium; only used for type == HALF_SPACE"];
-    optional double cp = 3 [(goby.field).description="The compressional speed (m/s) of the medium; only used for type == HALF_SPACE"]; 
-    optional double cs = 4 [(goby.field).description="The shear speed (m/s) of the medium; only used for type == HALF_SPACE"]; 
-    optional double density = 5 [(goby.field).description="Density in g/cm^3; only used for type == HALF_SPACE"]; 
-    optional double depth = 6 [(goby.field).description="The depth of this medium interface (0 = surface)"];
-    repeated RCSample rc_sample = 7 [(goby.field).description="rc table vs angle"];
 
-message RCSample
-     {
-      optional double angle = 1 [(goby.field).description="Grazing angle"];
-      optional double rc = 2 [(goby.field).description="Reflection Coefficient in dB"];
-      optional double phase = 3 [(goby.field).description="Phase angle in degrees"];
-     }
-
-message Attenuation
+    message Medium
     {
-      enum Units
-      {
-        DB_PER_M_KHZ = 1;
-        PARAMETER_LOSS = 2;
-        DB_PER_M = 3;
-        NEPERS_PER_M = 4;
-        Q_FACTOR = 5;
-        DB_PER_WAVELENGTH = 6;
-      }
-      optional Units units = 1 [(goby.field).description="Must use same units for surface and bottom attenuation"];
-      optional double value = 2;
+        enum MediumType
+        {
+            VACUUM = 1;
+            RIGID = 2;
+            HALF_SPACE = 3;
+            REFLECTION_COEFFICIENT = 4;
+        }
+        optional MediumType type = 1
+            [(goby.field).description = "The type of the medium"];
+        optional Attenuation attenuation = 2
+            [(goby.field).description =
+                 "Attenuation parameters of the medium; only used for type == "
+                 "HALF_SPACE"];
+        optional double cp = 3 [(goby.field).description =
+                                    "The compressional speed (m/s) of the "
+                                    "medium; only used for type == HALF_SPACE"];
+        optional double cs = 4 [(goby.field).description =
+                                    "The shear speed (m/s) of the medium; only "
+                                    "used for type == HALF_SPACE"];
+        optional double density = 5
+            [(goby.field).description =
+                 "Density in g/cm^3; only used for type == HALF_SPACE"];
+        optional double depth = 6
+            [(goby.field).description =
+                 "The depth of this medium interface (0 = surface)"];
+        repeated RCSample rc_sample = 7
+            [(goby.field).description = "rc table vs angle"];
+
+        message RCSample
+        {
+            optional double angle = 1
+                [(goby.field).description = "Grazing angle"];
+            optional double rc = 2
+                [(goby.field).description = "Reflection Coefficient in dB"];
+            optional double phase = 3
+                [(goby.field).description = "Phase angle in degrees"];
+        }
+
+        message Attenuation
+        {
+            enum Units
+            {
+                DB_PER_M_KHZ = 1;
+                PARAMETER_LOSS = 2;
+                DB_PER_M = 3;
+                NEPERS_PER_M = 4;
+                Q_FACTOR = 5;
+                DB_PER_WAVELENGTH = 6;
+            }
+            optional Units units = 1
+                [(goby.field).description =
+                     "Must use same units for surface and bottom attenuation"];
+            optional double value = 2;
+        }
     }
-  }
-  
-  message Surface
-  {
-    optional Medium medium = 1;
-  }
-  
-  message WaterColumn
-  {
-    enum SSPInterpolation
+
+    message Surface
     {
-      CUBIC_SPLINE = 1;
-      C_LINEAR = 2;
-      N2_LINEAR = 3;
+        optional Medium medium = 1;
     }
-    optional SSPInterpolation interpolation_type = 1 [(goby.field).description="The method used to interpolate the discrete sound speed profile (SSP) points", default=CUBIC_SPLINE];
-    repeated double eof_coef = 2 [(goby.field).description="EOF coefficient"];
-    optional bool use_attenuation = 3 [(goby.field).description="Enable Thorpe volume attenuation", default=true];
-    repeated SSPSample sample = 4;
-    message SSPSample
-     {
-      optional double depth = 1 [(goby.field).description="The depth of this sample (positive, measured from the surface)"];
-      optional double cp = 2 [(goby.field).description="The compressional speed at this point"];
-      repeated double eof = 3 [(goby.field).description="EOF at this depth"];
-     }
-    optional double range = 5 [(goby.field).description="Range of range dependent SVP", default=0];	
-    optional double bathymetry = 6 [(goby.field).description="Bathymetry for range dependent SVP", default=0];	
-  }
 
-  message Bottom
-  {
-    optional Medium medium = 1;
-  }
-  
-
-  message Sources
-  {
-    optional uint32 number_in_depth = 1 [(goby.field).description="The number of sources vertically; sources are all assumed to be at range == 0"];
-    optional SourcePosition first = 2 [(goby.field).description="The position of the shallowest source"];
-    optional SourcePosition last = 3 [(goby.field).description="The position of the deepest source"];
-    
-    message SourcePosition
+    message WaterColumn
     {
-      optional double depth = 1;
-    }    
-  }  
-
-  message Receivers
-  {
-    optional uint32 number_in_depth = 1 [(goby.field).description="The number of receivers vertically"];
-    optional uint32 number_in_range = 2 [(goby.field).description="The number of receivers horizontally"];
-
-    optional ReceiverPosition first = 3 [(goby.field).description="The position of the shallowest source at the closest range"];
-    optional ReceiverPosition last = 4 [(goby.field).description="The position of the deepest source at the furthest range"]; 
-    message ReceiverPosition
-    {
-      optional double depth = 1;
-      optional double range = 2;
-    }    
-  }
-
-  message Beams
-  {
-    enum ApproximationType
-    {
-      GEOMETRIC = 1;
-      CARTESIAN = 2;
-      RAY_CENTERED = 3;
-      GAUSSIAN = 4;
+        enum SSPInterpolation
+        {
+            CUBIC_SPLINE = 1;
+            C_LINEAR = 2;
+            N2_LINEAR = 3;
+        }
+        optional SSPInterpolation interpolation_type = 1 [
+            (goby.field).description =
+                "The method used to interpolate the discrete sound speed "
+                "profile (SSP) points",
+            default = CUBIC_SPLINE
+        ];
+        repeated double eof_coef = 2
+            [(goby.field).description = "EOF coefficient"];
+        optional bool use_attenuation = 3 [
+            (goby.field).description = "Enable Thorpe volume attenuation",
+            default = true
+        ];
+        repeated SSPSample sample = 4;
+        message SSPSample
+        {
+            optional double depth = 1
+                [(goby.field).description =
+                     "The depth of this sample (positive, measured from the "
+                     "surface)"];
+            optional double cp = 2
+                [(goby.field).description =
+                     "The compressional speed at this point"];
+            repeated double eof = 3
+                [(goby.field).description = "EOF at this depth"];
+        }
+        optional double range = 5 [
+            (goby.field).description = "Range of range dependent SVP",
+            default = 0
+        ];
+        optional double bathymetry = 6 [
+            (goby.field).description = "Bathymetry for range dependent SVP",
+            default = 0
+        ];
     }
-    optional ApproximationType approximation_type = 1 [(goby.field).description="The method used to approximate the finite element shape used in the ray trace"];
-    optional int32 theta_min = 2 [(goby.field).description="The smallest ray angle used in the ray trace. theta=0 is horizontal.", default=-90];
-    optional int32 theta_max = 3 [(goby.field).description="The largest ray angle. theta=0 is horizontal", default=90];
-    optional uint32 number = 4 [(goby.field).description="The number of rays used", default=0];
-  }
 
-  //
-  // PARAMETERS THAT GOVERN CREATION OF THE BELLHOP ENV FILE (in iBellhop)
-  //
-  
-  optional AdaptiveInfo adaptive_info = 100 [(goby.field).description="Not used in the BELLHOP ENV file, but used by iBellhop to adaptively populate certain fields of this message"];
+    message Bottom
+    {
+        optional Medium medium = 1;
+    }
 
+    message Sources
+    {
+        optional uint32 number_in_depth = 1
+            [(goby.field).description =
+                 "The number of sources vertically; sources are all assumed to "
+                 "be at range == 0"];
+        optional SourcePosition first = 2
+            [(goby.field).description =
+                 "The position of the shallowest source"];
+        optional SourcePosition last = 3
+            [(goby.field).description = "The position of the deepest source"];
 
-  message AdaptiveInfo
-  {
-    optional string contact = 1 [(goby.field).description="The name of a contact (NAME= field in NODE_REPORT) used to find  the `source` position in the ray trace."];
-    optional string ownship = 2 [(goby.field).description="The name of our vehicle (NAME= field in NODE_REPORT). If omitted, the Community name is used. This is used to find the `receiver` position(s) in the ray trace"];
-    
-    optional bool read_shd = 3 [(goby.field).description="Read the generated SHD file (if applicable) and parse it into a list of TL values. Currently used for the BHV_AcommsDepth", default=false];
-    
-    optional bool full_shd_matrix = 10 [(goby.field).description="Add entire matrix of SHD file output as serialized_tl_matrix in response.", default=false];
+        message SourcePosition
+        {
+            optional double depth = 1;
+        }
+    }
 
-    optional bool auto_receiver_ranges = 4 [(goby.field).description="If true, the `receiver.first.range` and `receiver.last.range` will be set automatically based on the current trajectory of the `ownship` and `contact` based on the lastest NODE_REPORT. The calculated window will be the predicted position from now until `look_ahead_seconds` in the future.", default=false];
+    message Receivers
+    {
+        optional uint32 number_in_depth = 1
+            [(goby.field).description = "The number of receivers vertically"];
+        optional uint32 number_in_range = 2
+            [(goby.field).description = "The number of receivers horizontally"];
 
-    optional int32 auto_receiver_ranges_delta = 7 [(goby.field).description="Delta in meters between receivers when using auto_receiver_ranges==true", default=1];
+        optional ReceiverPosition first = 3
+            [(goby.field).description =
+                 "The position of the shallowest source at the closest range"];
+        optional ReceiverPosition last = 4
+            [(goby.field).description =
+                 "The position of the deepest source at the furthest range"];
+        message ReceiverPosition
+        {
+            optional double depth = 1;
+            optional double range = 2;
+        }
+    }
 
-    optional uint32 look_ahead_seconds = 5 [(goby.field).description="The number of seconds to look ahead for when calculated receiver ranges using `auto_receiver_ranges`", default=60];
+    message Beams
+    {
+        enum ApproximationType
+        {
+            GEOMETRIC = 1;
+            CARTESIAN = 2;
+            RAY_CENTERED = 3;
+            GAUSSIAN = 4;
+        }
+        optional ApproximationType approximation_type = 1
+            [(goby.field).description =
+                 "The method used to approximate the finite element shape used "
+                 "in the ray trace"];
+        optional int32 theta_min = 2 [
+            (goby.field).description =
+                "The smallest ray angle used in the ray trace. theta=0 is "
+                "horizontal.",
+            default = -90
+        ];
+        optional int32 theta_max = 3 [
+            (goby.field).description =
+                "The largest ray angle. theta=0 is horizontal",
+            default = 90
+        ];
+        optional uint32 number = 4
+            [(goby.field).description = "The number of rays used", default = 0];
+    }
 
-    optional bool auto_source_depth = 6 [(goby.field).description="If true, set `source.first.depth` based on the position of `contact`", default=false];
+    //
+    // PARAMETERS THAT GOVERN CREATION OF THE BELLHOP ENV FILE (in iBellhop)
+    //
 
-  }
+    optional AdaptiveInfo adaptive_info = 100
+        [(goby.field).description =
+             "Not used in the BELLHOP ENV file, but used by iBellhop to "
+             "adaptively populate certain fields of this message"];
+
+    message AdaptiveInfo
+    {
+        optional string contact = 1
+            [(goby.field).description =
+                 "The name of a contact (NAME= field in NODE_REPORT) used to "
+                 "find  the `source` position in the ray trace."];
+        optional string ownship = 2
+            [(goby.field).description =
+                 "The name of our vehicle (NAME= field in NODE_REPORT). If "
+                 "omitted, the Community name is used. This is used to find "
+                 "the `receiver` position(s) in the ray trace"];
+
+        optional bool read_shd = 3 [
+            (goby.field).description =
+                "Read the generated SHD file (if applicable) and parse it into "
+                "a list of TL values. Currently used for the BHV_AcommsDepth",
+            default = false
+        ];
+
+        optional bool full_shd_matrix = 10 [
+            (goby.field).description =
+                "Add entire matrix of SHD file output as serialized_tl_matrix "
+                "in response.",
+            default = false
+        ];
+
+        optional bool auto_receiver_ranges = 4 [
+            (goby.field).description =
+                "If true, the `receiver.first.range` and `receiver.last.range` "
+                "will be set automatically based on the current trajectory of "
+                "the `ownship` and `contact` based on the lastest NODE_REPORT. "
+                "The calculated window will be the predicted position from now "
+                "until `look_ahead_seconds` in the future.",
+            default = false
+        ];
+
+        optional int32 auto_receiver_ranges_delta = 7 [
+            (goby.field).description =
+                "Delta in meters between receivers when using "
+                "auto_receiver_ranges==true",
+            default = 1
+        ];
+
+        optional uint32 look_ahead_seconds = 5 [
+            (goby.field).description =
+                "The number of seconds to look ahead for when calculated "
+                "receiver ranges using `auto_receiver_ranges`",
+            default = 60
+        ];
+
+        optional bool auto_source_depth = 6 [
+            (goby.field).description =
+                "If true, set `source.first.depth` based on the position of "
+                "`contact`",
+            default = false
+        ];
+    }
 }

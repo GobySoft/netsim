@@ -40,7 +40,7 @@ const double CiBellhop::pi = 3.14159;
 
 using goby::util::as;
 
-iBellhopConfig CiBellhop::cfg_;
+netsim::protobuf::iBellhopConfig CiBellhop::cfg_;
 CiBellhop* CiBellhop::inst_ = 0;
 
 CiBellhop* CiBellhop::get_instance()
@@ -91,7 +91,7 @@ CiBellhop::CiBellhop()
     // Publish initial water column svp in SVP_RESPONSE
 
   std::string serialized_svp_response;
-  SVP::Response svp_response;
+  netsim::SVP::protobuf::Response svp_response;
   svp_response.set_request_id(0);
   svp_response.mutable_water_column()->CopyFrom(cfg_.initial_env().water_column());
   for(int j = 0, m = cfg_.initial_env().water_column_size(); j < m; j++)
@@ -111,19 +111,19 @@ CiBellhop::~CiBellhop()
 // "contact=TGT_1,look_ahead_seconds=60,read_shd=false,env.output.type=arrival_times"
 void CiBellhop::handle_request(const CMOOSMsg& msg)
 {
-    iBellhopRequest request;
+    netsim::protobuf::iBellhopRequest request;
     parse_for_moos(msg.GetString(), &request);
     goby::glog << group("request") << request.ShortDebugString() << std::endl;
 
-    bellhop::protobuf::Environment env = cfg_.initial_env();
-    bellhop::protobuf::Environment request_env = request.env();
+    netsim::bellhop::protobuf::Environment env = cfg_.initial_env();
+    netsim::bellhop::protobuf::Environment request_env = request.env();
     
 
-    if(request.water_column_action() == iBellhopRequest::OVERWRITE)
+    if(request.water_column_action() == netsim::protobuf::iBellhopRequest::OVERWRITE)
       {
         env.clear_water_column();
       }
-    else if(request.water_column_action() == iBellhopRequest::MERGE_SAMPLES)
+    else if(request.water_column_action() == netsim::protobuf::iBellhopRequest::MERGE_SAMPLES)
     {
         if(request_env.water_column_size() && env.water_column_size())
         {
@@ -134,7 +134,7 @@ void CiBellhop::handle_request(const CMOOSMsg& msg)
     
     env.MergeFrom(request_env);
 
-    iBellhopResponse response;
+    netsim::protobuf::iBellhopResponse response;
     response.set_requestor(msg.GetSource());
 
     if(request.has_request_number())
@@ -184,7 +184,7 @@ void CiBellhop::handle_eof_update(const CMOOSMsg& msg)
   parse_for_moos(msg.GetString(), &env_msg);
   goby::glog << group("ssp") <<  msg.GetString() << std::endl;
 
-  bellhop::protobuf::Environment::WaterColumn* water_column = cfg_.mutable_initial_env()->mutable_water_column(0); 
+  netsim::bellhop::protobuf::Environment::WaterColumn* water_column = cfg_.mutable_initial_env()->mutable_water_column(0); 
 
   for(int i = 0, n = env_msg.eof_coef_size(); i < n; ++i)
     {
@@ -224,7 +224,7 @@ void CiBellhop::handle_ssp_update(const CMOOSMsg& msg)
             double cp = as<double>(speeds[i]);
             
             
-            bellhop::protobuf::Environment::WaterColumn::SSPSample* ssp =
+            netsim::bellhop::protobuf::Environment::WaterColumn::SSPSample* ssp =
                 find_sample(cfg_.mutable_initial_env(), depth);
             ssp->set_cp(cp);
             ssp->set_depth(depth);
@@ -264,7 +264,7 @@ void CiBellhop::handle_ssp_request(const CMOOSMsg& msg)
   publish(std::string("SSP_INFO_RESPONSE"), ssp_resp);
 }
 
-bellhop::protobuf::Environment::WaterColumn::SSPSample* CiBellhop::find_sample(bellhop::protobuf::Environment* env, double depth)
+netsim::bellhop::protobuf::Environment::WaterColumn::SSPSample* CiBellhop::find_sample(netsim::bellhop::protobuf::Environment* env, double depth)
 {
 
     for(int i = 0, n = env->water_column(0).sample_size(); i < n; ++i)
@@ -277,7 +277,7 @@ bellhop::protobuf::Environment::WaterColumn::SSPSample* CiBellhop::find_sample(b
     
 }
 
-double CiBellhop::get_ssp_value(bellhop::protobuf::Environment* env, double depth)
+double CiBellhop::get_ssp_value(netsim::bellhop::protobuf::Environment* env, double depth)
 {
 
   int m_coef = env->water_column(0).eof_coef_size();
@@ -314,7 +314,7 @@ double CiBellhop::get_ssp_value(bellhop::protobuf::Environment* env, double dept
   
 }
 
-bellhop::protobuf::Environment::WaterColumn::SSPSample* CiBellhop::get_sample(bellhop::protobuf::Environment* env, int i)
+netsim::bellhop::protobuf::Environment::WaterColumn::SSPSample* CiBellhop::get_sample(netsim::bellhop::protobuf::Environment* env, int i)
 {
   return env->mutable_water_column(0)->mutable_sample(i);
 }
@@ -342,7 +342,7 @@ void CiBellhop::handle_node_report(const CMOOSMsg& msg)
 
 }
 
-bool CiBellhop::update_positions(bellhop::protobuf::Environment& env)
+bool CiBellhop::update_positions(netsim::bellhop::protobuf::Environment& env)
 {
     // do we need to do anything?
     if(!env.adaptive_info().auto_receiver_ranges() &&
@@ -443,7 +443,7 @@ bool CiBellhop::update_positions(bellhop::protobuf::Environment& env)
     return true;
 }
 
-void CiBellhop::calculate_env(bellhop::protobuf::Environment& env, const std::string& requestor, std::string* output_file)
+void CiBellhop::calculate_env(netsim::bellhop::protobuf::Environment& env, const std::string& requestor, std::string* output_file)
 {
     const std::string& other_name = env.adaptive_info().contact();
     const std::string& self_name = env.adaptive_info().ownship();
@@ -473,7 +473,7 @@ void CiBellhop::calculate_env(bellhop::protobuf::Environment& env, const std::st
 
     try 
       {
-	bellhop::Environment::output_env(&env_out_, 
+	netsim::bellhop::Environment::output_env(&env_out_, 
 					 &ssp_out_,
 					 &bty_out_,
 					 &trc_out_,
@@ -503,22 +503,22 @@ void CiBellhop::calculate_env(bellhop::protobuf::Environment& env, const std::st
     // notify others of location of generated file
     switch(env.output().type())
     {
-        case bellhop::protobuf::Environment::Output::ARRIVAL_TIMES:
+        case netsim::bellhop::protobuf::Environment::Output::ARRIVAL_TIMES:
             *output_file = file.substr(0,file.size()-4) + ".arr";
             publish(std::string(boost::to_upper_copy(other_name) + "_ARR_FILE"),
                     *output_file);
             break;
             
-        case bellhop::protobuf::Environment::Output::EIGENRAYS:
-        case bellhop::protobuf::Environment::Output::RAYS:
+        case netsim::bellhop::protobuf::Environment::Output::EIGENRAYS:
+        case netsim::bellhop::protobuf::Environment::Output::RAYS:
             *output_file = file.substr(0,file.size()-4) + ".ray";
             publish(std::string(boost::to_upper_copy(other_name) + "_RAY_FILE"),
                     *output_file);
             break;
             
-        case bellhop::protobuf::Environment::Output::COHERENT_PRESSURE:
-        case bellhop::protobuf::Environment::Output::INCOHERENT_PRESSURE:
-        case bellhop::protobuf::Environment::Output::SEMICOHERENT_PRESSURE:
+        case netsim::bellhop::protobuf::Environment::Output::COHERENT_PRESSURE:
+        case netsim::bellhop::protobuf::Environment::Output::INCOHERENT_PRESSURE:
+        case netsim::bellhop::protobuf::Environment::Output::SEMICOHERENT_PRESSURE:
         {
             *output_file = file.substr(0,file.size()-4) + ".shd";
             publish(std::string(boost::to_upper_copy(other_name) + "_SHD_FILE"),
@@ -533,13 +533,13 @@ void CiBellhop::calculate_env(bellhop::protobuf::Environment& env, const std::st
 
 }
 
-void CiBellhop::read_shd(bellhop::protobuf::Environment& env,
-                         iBellhopResponse* response,
+void CiBellhop::read_shd(netsim::bellhop::protobuf::Environment& env,
+                         netsim::protobuf::iBellhopResponse* response,
                          bool full_shd_matrix)
 {
 //    const std::string& other_name = env.adaptive_info().contact();
-    iBellhopResponse::TLAveragedInRange* avg_tl = response->mutable_avg_tl();
-    //    iBellhopResponse::TLvsRangeDepth* tl_matrix = response->mutable_tl_matrix();
+    netsim::protobuf::iBellhopResponse::TLAveragedInRange* avg_tl = response->mutable_avg_tl();
+    //    netsim::protobuf::iBellhopResponse::TLvsRangeDepth* tl_matrix = response->mutable_tl_matrix();
 
     
     std::string to_asc_command = "cd " + cfg_.output_env_dir() + "; toasc.exe 1> /dev/null";
@@ -570,7 +570,7 @@ void CiBellhop::read_shd(bellhop::protobuf::Environment& env,
         asc_file >> unused2;
         asc_file >> unused2;
 
-        bellhop::TLMatrix tl_matrix_obj;
+        netsim::bellhop::TLMatrix tl_matrix_obj;
         
         std::vector<float>& depths = tl_matrix_obj.depths;
         for(int i = 0; i < num_depths; ++i)
@@ -624,7 +624,7 @@ void CiBellhop::read_shd(bellhop::protobuf::Environment& env,
             {
 	      avg_intensity += pow(10.0, TL_matrix[i][j]/10);
             }
-            iBellhopResponse::TLAveragedInRange::TLSample* sample = avg_tl->add_sample();
+            netsim::protobuf::iBellhopResponse::TLAveragedInRange::TLSample* sample = avg_tl->add_sample();
             sample->set_depth(depths[i]);
             sample->set_tl(10*log10(avg_intensity / num_ranges));
 	  }            

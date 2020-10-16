@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    bellhop::protobuf::Environment env;
+    netsim::bellhop::protobuf::Environment env;
     google::protobuf::io::IstreamInputStream is(&fin);
     
     google::protobuf::TextFormat::Parser parser;

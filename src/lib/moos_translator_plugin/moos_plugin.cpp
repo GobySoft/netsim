@@ -91,7 +91,7 @@ class NetSimCoreTranslation : public goby::moos::Translator
 
         {
             goby::moos::protobuf::TranslatorEntry bellhop_resp_entry;
-            bellhop_resp_entry.set_protobuf_name(iBellhopResponse::descriptor()->full_name());
+            bellhop_resp_entry.set_protobuf_name(netsim::protobuf::iBellhopResponse::descriptor()->full_name());
             auto& create = *bellhop_resp_entry.add_create();
             create.set_technique(
                 goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
@@ -101,7 +101,7 @@ class NetSimCoreTranslation : public goby::moos::Translator
 
         {
             goby::moos::protobuf::TranslatorEntry bellhop_req_entry;
-            bellhop_req_entry.set_protobuf_name(iBellhopRequest::descriptor()->full_name());
+            bellhop_req_entry.set_protobuf_name(netsim::protobuf::iBellhopRequest::descriptor()->full_name());
             auto& publish = *bellhop_req_entry.add_publish();
             publish.set_technique(
                 goby::moos::protobuf::TranslatorEntry::TECHNIQUE_PREFIXED_PROTOBUF_TEXT_FORMAT);
@@ -151,9 +151,9 @@ class NetSimCoreTranslation : public goby::moos::Translator
             std::map<std::string, CMOOSMsg> moos_msgs = {{moos_msg.GetKey(), moos_msg}};
             auto bellhop_resp_pb =
                 translator_.moos_to_protobuf<std::shared_ptr<google::protobuf::Message>>(
-                    moos_msgs, "iBellhopResponse");
+                    moos_msgs, "netsim.protobuf.iBellhopResponse");
             goby().interprocess().publish<netsim::groups::bellhop_response>(
-                std::dynamic_pointer_cast<iBellhopResponse>(bellhop_resp_pb));
+                std::dynamic_pointer_cast<netsim::protobuf::iBellhopResponse>(bellhop_resp_pb));
         }
         else if (moos_msg.GetKey() == perf_resp_var_)
         {

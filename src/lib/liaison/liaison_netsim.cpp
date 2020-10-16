@@ -100,7 +100,7 @@ netsim::LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::Liaison
     
     tl_request_->clicked().connect([this](const WMouseEvent& ev)
 				   {
-				       iBellhopRequest req;
+				       netsim::protobuf::iBellhopRequest req;
 
 				       static std::atomic<int> id(2<<16);
 				       req.set_request_number(id);				       
@@ -120,7 +120,7 @@ netsim::LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::Liaison
 				       // TODO - fix me
 				       env.set_freq(4000);
 				       auto& output = *env.mutable_output();
-				       output.set_type(bellhop::protobuf::Environment::Output::INCOHERENT_PRESSURE);
+				       output.set_type(netsim::bellhop::protobuf::Environment::Output::INCOHERENT_PRESSURE);
 				       auto& rx = *env.mutable_receivers();
 				       auto& tx = *env.mutable_sources();
 
@@ -140,7 +140,7 @@ netsim::LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::Liaison
 
 
 				       auto beams = *env.mutable_beams();
-				       beams.set_approximation_type(bellhop::protobuf::Environment::Beams::GAUSSIAN);
+				       beams.set_approximation_type(netsim::bellhop::protobuf::Environment::Beams::GAUSSIAN);
 				       beams.set_theta_min(-60);
 				       beams.set_theta_max(60);
 				       beams.set_number(1000);				       
@@ -193,7 +193,7 @@ void netsim::LiaisonNetsim::handle_new_log(const netsim::protobuf::LoggerEvent& 
     }
 }
 
-void netsim::LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
+void netsim::LiaisonNetsim::handle_bellhop_resp(const netsim::protobuf::iBellhopResponse& resp)
 {
     if(resp.success())
     {

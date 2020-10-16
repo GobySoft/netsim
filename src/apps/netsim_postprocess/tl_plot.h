@@ -20,8 +20,8 @@ TLPlotThread(const NetSimPostprocessConfig& config)
 	using goby::glog;
 
         interprocess().subscribe<netsim::groups::bellhop_response,
-            iBellhopResponse>(
-                [this](const iBellhopResponse& resp)
+            netsim::protobuf::iBellhopResponse>(
+                [this](const netsim::protobuf::iBellhopResponse& resp)
                 {
 		    if(resp.requestor().find("goby::moos::Translator") != std::string::npos)
 		    {

@@ -4,7 +4,7 @@ import "netsim/acousticstoolbox/environment.proto";
 
 //Messages for range-dependent Sound Velocity Profile extraction
 
-package SVP;
+package netsim.SVP.protobuf;
  
 message Request
 { 
@@ -21,7 +21,7 @@ required double delta_depth = 8;
 message Response
 {
 required int32 request_id = 1;
-repeated bellhop.protobuf.Environment.WaterColumn water_column = 2;
+repeated netsim.bellhop.protobuf.Environment.WaterColumn water_column = 2;
 }
 
 message BathyRequest

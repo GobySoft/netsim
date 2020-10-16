@@ -26,7 +26,7 @@ private:
 
     void handle_impulse_request(const netsim::protobuf::ImpulseRequest& req);
     void handle_performance_request(const netsim::protobuf::ObjFuncRequest& req);
-    void handle_bellhop_request(const iBellhopRequest& req);
+    void handle_bellhop_request(const netsim::protobuf::iBellhopRequest& req);
 
     void write_gps_out(const netsim::protobuf::NavUpdate& nav_update);
     
@@ -72,8 +72,8 @@ NetSimManager::NetSimManager() :
 	});
 
 
-    interprocess().subscribe<netsim::groups::bellhop_request, iBellhopRequest>(
-	[this](const iBellhopRequest& req)
+    interprocess().subscribe<netsim::groups::bellhop_request, netsim::protobuf::iBellhopRequest>(
+	[this](const netsim::protobuf::iBellhopRequest& req)
 	{ handle_bellhop_request(req);} );
     
     for(const auto& gps_out : cfg().gps_out())
@@ -214,9 +214,9 @@ void NetSimManager::handle_performance_request(const netsim::protobuf::ObjFuncRe
 }
 
 
-void NetSimManager::handle_bellhop_request(const iBellhopRequest& req)
+void NetSimManager::handle_bellhop_request(const netsim::protobuf::iBellhopRequest& req)
 {
-    glog.is(DEBUG1) && glog << "Received iBellhopRequest: " << req.ShortDebugString() << std::endl;
+    glog.is(DEBUG1) && glog << "Received netsim::protobuf::iBellhopRequest: " << req.ShortDebugString() << std::endl;
 
     int source = goby::util::as<int>(req.env().adaptive_info().ownship());
 

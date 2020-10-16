@@ -5,6 +5,8 @@ import "goby/protobuf/option_extensions.proto";
 
 import "netsim/acousticstoolbox/environment.proto";
 
+package netsim.protobuf;
+
 message iBellhopConfig
 {
   optional goby.moos.protobuf.GobyMOOSAppConfig common = 1 [(goby.field).description="Configuration common to all Goby MOOS applications"]; // see tes_moos_app.proto

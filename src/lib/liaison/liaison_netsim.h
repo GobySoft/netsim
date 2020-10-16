@@ -62,7 +62,7 @@ class LiaisonNetsim
 
     void handle_new_log(const netsim::protobuf::LoggerEvent& event);
     void handle_manager_cfg(const netsim::protobuf::NetSimManagerConfig& cfg);
-    void handle_bellhop_resp(const iBellhopResponse& resp);
+    void handle_bellhop_resp(const netsim::protobuf::iBellhopResponse& resp);
 
     void handle_updated_nav(const netsim::protobuf::EnvironmentNavUpdate& update)
     {
@@ -119,7 +119,7 @@ class LiaisonNetsim
 
     std::string tl_image_path_;
 
-    iBellhopResponse tl_bellhop_resp_;
+    netsim::protobuf::iBellhopResponse tl_bellhop_resp_;
 
     std::vector<Wt::WPen> rx_pens_{Wt::WPen(Wt::white),  Wt::WPen(Wt::white), Wt::WPen(Wt::yellow),
                                    Wt::WPen(Wt::yellow), Wt::WPen(Wt::gray),  Wt::WPen(Wt::gray)};
@@ -151,8 +151,8 @@ class NetsimCommsThread : public goby::zeromq::LiaisonCommsThread<LiaisonNetsim>
                 wt_app_->post_to_wt([=]() { wt_app_->handle_new_log(event); });
             });
 
-        interprocess().subscribe<netsim::groups::post_process_event, iBellhopResponse>(
-            [this](const iBellhopResponse& resp) {
+        interprocess().subscribe<netsim::groups::post_process_event, netsim::protobuf::iBellhopResponse>(
+            [this](const netsim::protobuf::iBellhopResponse& resp) {
                 wt_app_->post_to_wt([=]() { wt_app_->handle_bellhop_resp(resp); });
             });
 

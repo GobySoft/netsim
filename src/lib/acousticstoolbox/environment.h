@@ -20,37 +20,33 @@
 
 #include <boost/serialization/vector.hpp>
 
+namespace netsim
+{
 namespace bellhop
 {
-    class Environment
+class Environment
+{
+  public:
+    static void output_env(std::ostream* os, std::ostream* ssp, std::ostream* bty,
+                           std::ostream* trc, std::ostream* brc, const protobuf::Environment& env);
+};
+
+struct TLMatrix
+{
+    std::vector<float> depths;
+    std::vector<float> ranges;
+    // tl[depth][range]
+    std::vector<std::vector<float>> tl;
+
+    template <class Archive> void serialize(Archive& ar, const unsigned int version)
     {
-      public:
-        static void output_env(std::ostream* os, 
-			       std::ostream* ssp, 
-			       std::ostream* bty, 
-			       std::ostream* trc, 
-			       std::ostream* brc, 
-			       const protobuf::Environment& env);
+        ar& depths;
+        ar& ranges;
+        ar& tl;
+    }
+};
 
-    };
-
-    struct TLMatrix
-    {
-        std::vector<float> depths;
-        std::vector<float> ranges;
-        // tl[depth][range]
-        std::vector< std::vector<float> > tl;
-
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version)
-            {
-                ar & depths;
-                ar & ranges;
-                ar & tl;
-            }
-    };
-    
-    
-}
+} // namespace bellhop
+} // namespace netsim
 
 #endif

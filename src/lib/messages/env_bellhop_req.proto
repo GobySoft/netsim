@@ -7,7 +7,7 @@ package netsim.protobuf;
 message EnvironmentiBellhopRequest
 {
     required int32 environment_id = 1;
-    required iBellhopRequest req = 2;
+    required netsim.protobuf.iBellhopRequest req = 2;
 }
 
 
