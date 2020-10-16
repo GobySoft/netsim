@@ -14,7 +14,7 @@
 using goby::glog;
 using namespace Wt;
 
-LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& cfg)
+netsim::LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& cfg)
     : goby::zeromq::LiaisonContainerWithComms<LiaisonNetsim, NetsimCommsThread>(cfg),
     netsim_cfg_(cfg.GetExtension(netsim::protobuf::netsim_config)),
     timeseries_panel_(new WPanel(this)),
@@ -25,7 +25,7 @@ LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& 
     spect_image_(new WImage(spect_box_)),
     tl_panel_(new WPanel(this)),
     tl_box_(new WContainerWidget(this)),
-    tl_plot_(new TLPaintedWidget(this, tl_box_)),
+    tl_plot_(new netsim::TLPaintedWidget(this, tl_box_)),
     tl_table_(new WTable(tl_box_)),
     tl_tx_txt_(new WText("Transmitter: ")),
     tl_tx_(new WComboBox),
@@ -152,7 +152,7 @@ LiaisonNetsim::LiaisonNetsim(const goby::apps::zeromq::protobuf::LiaisonConfig& 
     set_name("Netsim");
 }
 
-void LiaisonNetsim::handle_new_log(const netsim::protobuf::LoggerEvent& event)
+void netsim::LiaisonNetsim::handle_new_log(const netsim::protobuf::LoggerEvent& event)
 {
     if(event.event() == netsim::protobuf::LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET)
     {
@@ -193,7 +193,7 @@ void LiaisonNetsim::handle_new_log(const netsim::protobuf::LoggerEvent& event)
     }
 }
 
-void LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
+void netsim::LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
 {
     if(resp.success())
     {
@@ -211,7 +211,7 @@ void LiaisonNetsim::handle_bellhop_resp(const iBellhopResponse& resp)
     receive_stats_.clear();    	      
 }
 
-void LiaisonNetsim::handle_manager_cfg(const netsim::protobuf::NetSimManagerConfig& cfg)
+void netsim::LiaisonNetsim::handle_manager_cfg(const netsim::protobuf::NetSimManagerConfig& cfg)
 {
     manager_cfg_ = cfg;
     
@@ -231,7 +231,7 @@ void LiaisonNetsim::handle_manager_cfg(const netsim::protobuf::NetSimManagerConf
 }
 
 
-void TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
+void netsim::TLPaintedWidget::paintEvent(Wt::WPaintDevice *paintDevice)
 {
     Wt::WPainter painter(paintDevice);
 
