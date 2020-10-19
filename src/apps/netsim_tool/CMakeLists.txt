@@ -14,3 +14,6 @@ target_link_libraries(netsim_tool
   netsim_tcp
   )
 
+if(export_goby_interfaces)
+  generate_interfaces(netsim_tool)
+endif()

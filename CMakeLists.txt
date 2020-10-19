@@ -35,6 +35,7 @@ find_package(MOOS 10 REQUIRED)
 
 find_package(Boost REQUIRED serialization)
 
+
 # create variables for various directories
 get_filename_component(project_SRC_DIR src ABSOLUTE)
 get_filename_component(project_BUILD_DIR ${CMAKE_BINARY_DIR} ABSOLUTE)
@@ -45,6 +46,15 @@ get_filename_component(project_LIB_DIR ${project_BUILD_DIR}/lib ABSOLUTE)
 get_filename_component(project_BIN_DIR ${project_BUILD_DIR}/bin ABSOLUTE)
 get_filename_component(project_INC_DIR ${project_BUILD_DIR}/include ABSOLUTE)
 get_filename_component(project_SHARE_DIR ${project_BUILD_DIR}/share ABSOLUTE)
+
+
+option(export_goby_interfaces OFF "Build Goby Publish/Subscribe interface files (YML) from code")
+
+if(export_goby_interfaces)
+  include(GobyClangTool)
+  set(YML_OUT_DIR ${project_SHARE_DIR}/interfaces)
+endif()
+
 
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${project_LIB_DIR} CACHE PATH 
@@ -58,6 +68,11 @@ include_directories(${project_INC_DIR})
 protobuf_include_dirs(${project_INC_DIR})
 
 add_subdirectory(src)
+
+if(export_goby_interfaces)
+  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} netsim_udp_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} netsim_core_interfaces.pdf "") 
+endif()
 
 ## configure to build/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR}/lib

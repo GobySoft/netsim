@@ -4,3 +4,7 @@ add_executable(netsim_core
 
 # -rdynamic is required so that the shared libraries can access the interthread static objects correctly 
 target_link_libraries(netsim_core "-rdynamic" goby goby_zeromq jack netsim_messages)
+
+if(export_goby_interfaces)
+  generate_interfaces(netsim_core)
+endif()
