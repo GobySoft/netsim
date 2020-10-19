@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     CConvolve convolve;   
     double timestamp;
 
-    ImpulseResponse impulse_response;
+    netsim::protobuf::ImpulseResponse impulse_response;
   //   impulse_response.set_source("src");
   //   impulse_response.set_source("dst");
   //   {
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     google::protobuf::TextFormat::ParseFromString(imp_rep_str, &impulse_response);
 	    
 
-    ArrayGain array_gain;
+    netsim::protobuf::ArrayGain array_gain;
     
     double ping_time;
     std::vector<float> full_replica;

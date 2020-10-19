@@ -12,6 +12,10 @@ else()
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
+# versions
+set(NETSIM_VERSION "0.0.0")
+set(NETSIM_SOVERSION "0")
+
 find_package(ProtobufLocal REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
@@ -27,18 +31,9 @@ message("Using Goby in ${GOBY_INCLUDE_DIR}")
 include_directories("${GOBY_INCLUDE_DIR}")
 protobuf_include_dirs("${GOBY_INCLUDE_DIR}")
 
-find_package(IvP REQUIRED)
-include_directories(${IVP_INCLUDE_DIRS})
-
-find_package(LAMSS REQUIRED)
-include_directories(${LAMSS_INCLUDE_DIRS})
-include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
-protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_lamss_protobuf)
-
-include_directories(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
-protobuf_include_dirs(${LAMSS_INCLUDE_DIRS}/lamss/lib_bellhop)
-
 find_package(MOOS 10 REQUIRED)
+
+find_package(Boost REQUIRED serialization)
 
 # create variables for various directories
 get_filename_component(project_SRC_DIR src ABSOLUTE)
@@ -65,11 +60,14 @@ protobuf_include_dirs(${project_INC_DIR})
 add_subdirectory(src)
 
 ## configure to build/include
-file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR} 
-  src/messages/*.proto
-  src/messages/*.h
+file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR}/lib
+  src/lib/messages/*.proto
+  src/lib/messages/*.h
+  src/lib/tcp/*.h
+  src/lib/acousticstoolbox/*.h
+  src/lib/core/*.h
   )
 foreach(I ${INCLUDE_FILES})
-  configure_file(${project_SRC_DIR}/${I} ${project_INC_DIR}/${I} @ONLY)
+  configure_file(${project_SRC_DIR}/lib/${I} ${project_INC_DIR}/netsim/${I} @ONLY)
 endforeach()
 

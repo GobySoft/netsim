@@ -1,0 +1,14 @@
+syntax="proto2";
+
+import "netsim/acousticstoolbox/iBellhop_messages.proto";
+
+package netsim.protobuf;
+
+message EnvironmentiBellhopRequest
+{
+    required int32 environment_id = 1;
+    required netsim.protobuf.iBellhopRequest req = 2;
+}
+
+
+

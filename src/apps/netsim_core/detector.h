@@ -7,26 +7,26 @@
 
 #include "goby/zeromq/application/multi_thread.h"
 
-#include "config.pb.h"
+#include "netsim/messages/core_config.pb.h"
 #include "jack_thread.h"
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 class DetectorThread : public ThreadBase
 {
 public:
 
-DetectorThread(const NetSimCoreConfig& config, int index)
+DetectorThread(const netsim::protobuf::NetSimCoreConfig& config, int index)
     : ThreadBase(config, 0, index),
 	audio_in_group_(std::string("audio_in_") + std::to_string(ThreadBase::index())),
 	detector_audio_group_(std::string("detector_audio_tx_") + std::to_string(ThreadBase::index()))
     {
 	using goby::glog; using namespace goby::util::logger;	
 
-	auto audio_in_callback = [this](std::shared_ptr<const AudioBuffer> buffer) { this->audio_in(buffer); };
+	auto audio_in_callback = [this](std::shared_ptr<const netsim::AudioBuffer> buffer) { this->audio_in(buffer); };
 
-	interthread().subscribe_dynamic<AudioBuffer>(audio_in_callback, audio_in_group_);
-	interthread().subscribe<groups::buffer_size_change, jack_nframes_t>(
+	interthread().subscribe_dynamic<netsim::AudioBuffer>(audio_in_callback, audio_in_group_);
+	interthread().subscribe<netsim::groups::buffer_size_change, jack_nframes_t>(
 	    [this](const jack_nframes_t& buffer_size)
 	    {
 		size_t new_prebuffer_size = (cfg().sampling_freq()*cfg().detector().packet_begin_prebuffer_seconds())/buffer_size;
@@ -39,7 +39,7 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 	++ready;
     }
 
-    void audio_in(std::shared_ptr<const AudioBuffer> buffer)
+    void audio_in(std::shared_ptr<const netsim::AudioBuffer> buffer)
     {
 	using goby::glog; using namespace goby::util::logger;
 	       
@@ -60,9 +60,9 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 
 		    if(cfg().continuous())
 		    {
-			std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+			std::shared_ptr<netsim::TaggedAudioBuffer> tagged_buffer(new netsim::TaggedAudioBuffer);
 			tagged_buffer->buffer = buffer;	    
-			tagged_buffer->marker = TaggedAudioBuffer::Marker::START;
+			tagged_buffer->marker = netsim::TaggedAudioBuffer::Marker::START;
 			tagged_buffer->packet_id = in_packet_id;
 			interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
 		    }
@@ -73,12 +73,12 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 			if(!first_buffer)
 			    break;
 			
-			std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(*first_buffer));
+			std::shared_ptr<netsim::AudioBuffer> subbuffer(new netsim::AudioBuffer(*first_buffer));
 
-			std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
+			std::shared_ptr<netsim::TaggedAudioBuffer> tagged_subbuffer(new netsim::TaggedAudioBuffer);
 			tagged_subbuffer->buffer = subbuffer;
 		    
-			tagged_subbuffer->marker = TaggedAudioBuffer::Marker::START;
+			tagged_subbuffer->marker = netsim::TaggedAudioBuffer::Marker::START;
 			tagged_subbuffer->packet_id = in_packet_id;
 		    
 			interthread().publish_dynamic(tagged_subbuffer, detector_audio_group_);
@@ -86,7 +86,7 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 
 			while(!prebuffer_.empty())
 			{
-			    std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+			    std::shared_ptr<netsim::TaggedAudioBuffer> tagged_buffer(new netsim::TaggedAudioBuffer);
 			    tagged_buffer->buffer = prebuffer_.front();
 			    tagged_buffer->packet_id = in_packet_id;
 			    interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
@@ -104,7 +104,7 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 	    if(cfg().continuous() && !in_packet_)
 	    {
 		// send whole buffer
-		std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+		std::shared_ptr<netsim::TaggedAudioBuffer> tagged_buffer(new netsim::TaggedAudioBuffer);
 		tagged_buffer->buffer = buffer;	    
 		tagged_buffer->packet_id = in_packet_id;
 		interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
@@ -126,12 +126,12 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 		    // end of the silent period following packet
 		    in_packet_ = false;
 		    frames_since_silence = 0;
-		    std::shared_ptr<AudioBuffer> subbuffer(new AudioBuffer(*buffer));
+		    std::shared_ptr<netsim::AudioBuffer> subbuffer(new netsim::AudioBuffer(*buffer));
 		    subbuffer->buffer_start_time = buffer->buffer_start_time;
 
-		    std::shared_ptr<TaggedAudioBuffer> tagged_subbuffer(new TaggedAudioBuffer);
+		    std::shared_ptr<netsim::TaggedAudioBuffer> tagged_subbuffer(new netsim::TaggedAudioBuffer);
 		    tagged_subbuffer->buffer = subbuffer;		    
-		    tagged_subbuffer->marker = TaggedAudioBuffer::Marker::END;
+		    tagged_subbuffer->marker = netsim::TaggedAudioBuffer::Marker::END;
 		    tagged_subbuffer->packet_id = in_packet_id;
 		    
 		    interthread().publish_dynamic(tagged_subbuffer, detector_audio_group_);
@@ -143,10 +143,10 @@ DetectorThread(const NetSimCoreConfig& config, int index)
 	    if(in_packet_ || cfg().continuous())
 	    {
 		// send whole buffer
-		std::shared_ptr<TaggedAudioBuffer> tagged_buffer(new TaggedAudioBuffer);
+		std::shared_ptr<netsim::TaggedAudioBuffer> tagged_buffer(new netsim::TaggedAudioBuffer);
 		tagged_buffer->buffer = buffer;	    
 		if(in_packet_)
-		    tagged_buffer->marker = TaggedAudioBuffer::Marker::MIDDLE;	       
+		    tagged_buffer->marker = netsim::TaggedAudioBuffer::Marker::MIDDLE;	       
 		tagged_buffer->packet_id = in_packet_id;	       
 		interthread().publish_dynamic(tagged_buffer, detector_audio_group_);
 	    }
@@ -162,7 +162,7 @@ private:
     int in_packet_id{-1};
     jack_nframes_t frames_since_silence{0};
 
-    boost::circular_buffer<std::shared_ptr<const AudioBuffer>> prebuffer_{1};
+    boost::circular_buffer<std::shared_ptr<const netsim::AudioBuffer>> prebuffer_{1};
 };
 
 std::atomic<int> DetectorThread::ready{0};

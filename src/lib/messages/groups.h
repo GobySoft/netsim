@@ -3,6 +3,8 @@
 
 #include "goby/middleware/group.h"
 
+namespace netsim
+{
 namespace groups
 {
 // published by netsim_core
@@ -48,7 +50,7 @@ constexpr goby::middleware::Group raw_out{"tool::raw_out"};
 
 } // namespace tool
 
-
 } // namespace groups
+} // namespace netsim
 
 #endif

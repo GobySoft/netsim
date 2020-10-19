@@ -1,0 +1,24 @@
+//.moos for acomms_depth
+
+////////////////////////////////////////
+// global variables anyone can use them
+
+ServerHost = localhost
+ServerPort = 9001
+Community  = micromodem_gateway
+
+////////////////////////////////////////
+ProcessConfig = acomms_depth_disp
+{
+    AppTick    	= 10
+    CommsTick  	= 10
+    Port       	= COM6
+    BaudRate   	= 4800
+    Verbose    	= true
+    Streaming  	= false
+    MOOSComms  	= true
+    SerialComms = false
+   
+    SUBSCRIBE = NODE_REPORT @ 0
+}
+

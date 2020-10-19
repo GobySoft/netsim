@@ -1,6 +1,8 @@
 import "goby/middleware/protobuf/app_config.proto";
 import "goby/zeromq/protobuf/interprocess_config.proto";
 
+package netsim.protobuf;
+
 message JackConfig
 {
     optional string capture_port_prefix = 1 [default = "system:capture_"];

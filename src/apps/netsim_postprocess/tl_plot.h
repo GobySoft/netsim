@@ -6,7 +6,7 @@
 #include "goby/zeromq/application/multi_thread.h"
 
 #include "config.pb.h"
-#include "iBellhop_messages.pb.h"
+#include "netsim/acousticstoolbox/iBellhop_messages.pb.h"
 
 using ThreadBase = goby::middleware::SimpleThread<NetSimPostprocessConfig>;
 
@@ -19,9 +19,9 @@ TLPlotThread(const NetSimPostprocessConfig& config)
     {
 	using goby::glog;
 
-        interprocess().subscribe<groups::bellhop_response,
-            iBellhopResponse>(
-                [this](const iBellhopResponse& resp)
+        interprocess().subscribe<netsim::groups::bellhop_response,
+            netsim::protobuf::iBellhopResponse>(
+                [this](const netsim::protobuf::iBellhopResponse& resp)
                 {
 		    if(resp.requestor().find("goby::moos::Translator") != std::string::npos)
 		    {
@@ -35,7 +35,7 @@ TLPlotThread(const NetSimPostprocessConfig& config)
 			    glog.is_debug1() && glog << "Octave complete" << std::endl;
 			}
 			
-			interprocess().publish<groups::post_process_event>(resp);
+			interprocess().publish<netsim::groups::post_process_event>(resp);
 		    }
                 });
     }

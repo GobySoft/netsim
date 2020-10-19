@@ -3,18 +3,18 @@
 #include "goby/zeromq/application/multi_thread.h"
 #include "goby/middleware/io/line_based/serial.h"
 
-#include "messages/groups.h"
-#include "messages/config_request.pb.h"
-#include "lamss/lib_netsim/tcp_server.h"
-#include "lamss/lib_lamss_protobuf/modem_sim.pb.h"
-#include "lamss/lib_bellhop/iBellhop_messages.pb.h"
-#include "messages/manager_config.pb.h"
-#include "messages/env_bellhop_req.pb.h"
+#include "netsim/messages/groups.h"
+#include "netsim/messages/config_request.pb.h"
+#include "netsim/tcp/tcp_server.h"
+#include "netsim/messages/netsim.pb.h"
+#include "netsim/acousticstoolbox/iBellhop_messages.pb.h"
+#include "netsim/messages/manager_config.pb.h"
+#include "netsim/messages/env_bellhop_req.pb.h"
 
 using namespace goby::util::logger;
 using goby::glog;
 
-class NetSimManager : public goby::zeromq::MultiThreadApplication<NetSimManagerConfig>
+class NetSimManager : public goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimManagerConfig>
 {
 public:
     NetSimManager();
@@ -22,19 +22,19 @@ public:
 private:
     void loop() override;
     void process_configuration();
-    void process_request(const NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep);
+    void process_request(const netsim::protobuf::NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep);
 
-    void handle_impulse_request(const ImpulseRequest& req);
-    void handle_performance_request(const ObjFuncRequest& req);
-    void handle_bellhop_request(const iBellhopRequest& req);
+    void handle_impulse_request(const netsim::protobuf::ImpulseRequest& req);
+    void handle_performance_request(const netsim::protobuf::ObjFuncRequest& req);
+    void handle_bellhop_request(const netsim::protobuf::iBellhopRequest& req);
 
-    void write_gps_out(const NavUpdate& nav_update);
+    void write_gps_out(const netsim::protobuf::NavUpdate& nav_update);
     
 private:
     // maps modem_tcp_port to configuration
-    std::map<int, NetSimManagerConfig::SimEnvironmentPair> env_cfg_;
+    std::map<int, netsim::protobuf::NetSimManagerConfig::SimEnvironmentPair> env_cfg_;
     // maps environment ID to bounds
-    std::map<int, NetSimManagerConfig::EnvironmentBounds> env_bounds_;
+    std::map<int, netsim::protobuf::NetSimManagerConfig::EnvironmentBounds> env_bounds_;
 
     boost::asio::io_service io_;
     netsim::tcp_server server_{io_, short(61999)};
@@ -48,38 +48,38 @@ int main(int argc, char* argv[])
 
 
 NetSimManager::NetSimManager() :
-    goby::zeromq::MultiThreadApplication<NetSimManagerConfig>(10*boost::units::si::hertz)
+    goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimManagerConfig>(10*boost::units::si::hertz)
 {
     process_configuration();
 
-    server_.read_callback<NetSimManagerRequest>(
-	[this](const NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep)
+    server_.read_callback<netsim::protobuf::NetSimManagerRequest>(
+	[this](const netsim::protobuf::NetSimManagerRequest& r, const boost::asio::ip::tcp::endpoint& ep)
 	{ process_request(r, ep); });
 
-    interprocess().subscribe<groups::impulse_request, ImpulseRequest>(
-	[this](const ImpulseRequest& req)
+    interprocess().subscribe<netsim::groups::impulse_request, netsim::protobuf::ImpulseRequest>(
+	[this](const netsim::protobuf::ImpulseRequest& req)
 	{ handle_impulse_request(req); });
 
-    interprocess().subscribe<groups::performance_request, ObjFuncRequest>(
-	[this](const ObjFuncRequest& req)
+    interprocess().subscribe<netsim::groups::performance_request, netsim::protobuf::ObjFuncRequest>(
+	[this](const netsim::protobuf::ObjFuncRequest& req)
 	{ handle_performance_request(req); });
 
-    interprocess().subscribe<groups::config_request, ConfigRequest>(
-	[this](const ConfigRequest& req)
+    interprocess().subscribe<netsim::groups::config_request, netsim::protobuf::ConfigRequest>(
+	[this](const netsim::protobuf::ConfigRequest& req)
 	{
-	    if(req.subsystem() == ConfigRequest::MANAGER)
-		interprocess().publish<groups::configuration>(cfg());
+	    if(req.subsystem() == netsim::protobuf::ConfigRequest::MANAGER)
+		interprocess().publish<netsim::groups::configuration>(cfg());
 	});
 
 
-    interprocess().subscribe<groups::bellhop_request, iBellhopRequest>(
-	[this](const iBellhopRequest& req)
+    interprocess().subscribe<netsim::groups::bellhop_request, netsim::protobuf::iBellhopRequest>(
+	[this](const netsim::protobuf::iBellhopRequest& req)
 	{ handle_bellhop_request(req);} );
     
     for(const auto& gps_out : cfg().gps_out())
     {
 	// use modem_tcp_port as thread index
-	launch_thread<goby::middleware::io::SerialThreadLineBased<groups::gps_line_in, groups::gps_line_out, goby::middleware::io::PubSubLayer::INTERTHREAD, goby::middleware::io::PubSubLayer::INTERTHREAD>>(static_cast<int>(gps_out.modem_tcp_port()), gps_out.serial());
+	launch_thread<goby::middleware::io::SerialThreadLineBased<netsim::groups::gps_line_in, netsim::groups::gps_line_out, goby::middleware::io::PubSubLayer::INTERTHREAD, goby::middleware::io::PubSubLayer::INTERTHREAD>>(static_cast<int>(gps_out.modem_tcp_port()), gps_out.serial());
     }
 }
 
@@ -110,21 +110,21 @@ void NetSimManager::process_configuration()
     }
 }
 
-void NetSimManager::process_request(const NetSimManagerRequest& req, const boost::asio::ip::tcp::endpoint& ep)
+void NetSimManager::process_request(const netsim::protobuf::NetSimManagerRequest& req, const boost::asio::ip::tcp::endpoint& ep)
 {
     glog.is(DEBUG1) && glog << "Received request from: " << ep << ": " << req.ShortDebugString() << std::endl;
 
-    NetSimManagerResponse resp;
+    netsim::protobuf::NetSimManagerResponse resp;
     resp.set_request_id(req.id());
 
-    NetSimManagerResponse::Status status = NetSimManagerResponse::UPDATE_ACCEPTED;
+    netsim::protobuf::NetSimManagerResponse::Status status = netsim::protobuf::NetSimManagerResponse::UPDATE_ACCEPTED;
 
     for(const auto& nav : req.nav())
     {
 	auto env_cfg_it = env_cfg_.find(nav.modem_tcp_port());
 	if(env_cfg_it == env_cfg_.end())
 	{
-	    status = NetSimManagerResponse::UPDATE_FAILED_INVALID_MODEM_TCP_PORT;
+	    status = netsim::protobuf::NetSimManagerResponse::UPDATE_FAILED_INVALID_MODEM_TCP_PORT;
 	    break;
 	}
 	const auto& env_cfg = env_cfg_it->second;
@@ -132,7 +132,7 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
 	// check source address
 	if(ep.address().to_string() != env_cfg.endpoint_ip_address())
 	{
-	    status = NetSimManagerResponse::UPDATE_FAILED_INVALID_SOURCE_ADDRESS;
+	    status = netsim::protobuf::NetSimManagerResponse::UPDATE_FAILED_INVALID_SOURCE_ADDRESS;
 	    break;
 	}		    
 
@@ -142,29 +142,29 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
 	   nav.lon() < bound.lon_min() || nav.lon() > bound.lon_max() ||
 	   nav.depth() < bound.depth_min() || nav.depth() > bound.depth_max())
 	{
-	    status = NetSimManagerResponse::UPDATE_FAILED_OUT_OF_DEFINED_REGION;
+	    status = netsim::protobuf::NetSimManagerResponse::UPDATE_FAILED_OUT_OF_DEFINED_REGION;
 	    break;
 	}
 	
-	EnvironmentNavUpdate env_nav_update;
+	netsim::protobuf::EnvironmentNavUpdate env_nav_update;
 	env_nav_update.set_environment_id(env_cfg.environment_id());
 	*env_nav_update.mutable_nav() = nav;
 
 	if(env_nav_update.IsInitialized())
 	{
-	    interprocess().publish<groups::env_nav_update>(env_nav_update);
+	    interprocess().publish<netsim::groups::env_nav_update>(env_nav_update);
 	    write_gps_out(env_nav_update.nav());
 	}
 	else
 	{
-	    glog.is(WARN) && glog << "Uninitialized EnvironmentNavUpdate: " << env_nav_update.DebugString() << std::endl;
+	    glog.is(WARN) && glog << "Uninitialized netsim::protobuf::EnvironmentNavUpdate: " << env_nav_update.DebugString() << std::endl;
 	}
     }
 
 
     for(const auto& stat : req.stats())	
     {
-	interprocess().publish<groups::receive_stats>(stat);
+	interprocess().publish<netsim::groups::receive_stats>(stat);
     }
 
     
@@ -173,9 +173,9 @@ void NetSimManager::process_request(const NetSimManagerRequest& req, const boost
     server_.write(resp, ep);
 }
 
-void NetSimManager::handle_impulse_request(const ImpulseRequest& req)
+void NetSimManager::handle_impulse_request(const netsim::protobuf::ImpulseRequest& req)
 {
-    glog.is(DEBUG1) && glog << "Received ImpulseRequest: " << req.ShortDebugString() << std::endl;
+    glog.is(DEBUG1) && glog << "Received netsim::protobuf::ImpulseRequest: " << req.ShortDebugString() << std::endl;
 
     int source = goby::util::as<int>(req.source());
 
@@ -187,15 +187,15 @@ void NetSimManager::handle_impulse_request(const ImpulseRequest& req)
     }
     const auto& env_cfg = env_cfg_it->second;
 
-    EnvironmentImpulseRequest env_req;
+    netsim::protobuf::EnvironmentImpulseRequest env_req;
     env_req.set_environment_id(env_cfg.environment_id());
     *env_req.mutable_req() = req;
-    interprocess().publish<groups::env_impulse_req>(env_req);
+    interprocess().publish<netsim::groups::env_impulse_req>(env_req);
 }
 
-void NetSimManager::handle_performance_request(const ObjFuncRequest& req)
+void NetSimManager::handle_performance_request(const netsim::protobuf::ObjFuncRequest& req)
 {
-    glog.is(DEBUG1) && glog << "Received ObjFuncRequest: " << req.ShortDebugString() << std::endl;
+    glog.is(DEBUG1) && glog << "Received netsim::protobuf::ObjFuncRequest: " << req.ShortDebugString() << std::endl;
 
     int source = goby::util::as<int>(req.contact());
 
@@ -207,16 +207,16 @@ void NetSimManager::handle_performance_request(const ObjFuncRequest& req)
     }
     const auto& env_cfg = env_cfg_it->second;
 
-    EnvironmentObjFuncRequest env_req;
+    netsim::protobuf::EnvironmentObjFuncRequest env_req;
     env_req.set_environment_id(env_cfg.environment_id());
     *env_req.mutable_req() = req;
-    interprocess().publish<groups::env_performance_req>(env_req);
+    interprocess().publish<netsim::groups::env_performance_req>(env_req);
 }
 
 
-void NetSimManager::handle_bellhop_request(const iBellhopRequest& req)
+void NetSimManager::handle_bellhop_request(const netsim::protobuf::iBellhopRequest& req)
 {
-    glog.is(DEBUG1) && glog << "Received iBellhopRequest: " << req.ShortDebugString() << std::endl;
+    glog.is(DEBUG1) && glog << "Received netsim::protobuf::iBellhopRequest: " << req.ShortDebugString() << std::endl;
 
     int source = goby::util::as<int>(req.env().adaptive_info().ownship());
 
@@ -228,13 +228,13 @@ void NetSimManager::handle_bellhop_request(const iBellhopRequest& req)
     }
     const auto& env_cfg = env_cfg_it->second;
 
-    EnvironmentiBellhopRequest env_req;
+    netsim::protobuf::EnvironmentiBellhopRequest env_req;
     env_req.set_environment_id(env_cfg.environment_id());
     *env_req.mutable_req() = req;
-    interprocess().publish<groups::env_bellhop_req>(env_req);
+    interprocess().publish<netsim::groups::env_bellhop_req>(env_req);
 }
 
-void NetSimManager::write_gps_out(const NavUpdate& nav_update)
+void NetSimManager::write_gps_out(const netsim::protobuf::NavUpdate& nav_update)
 {
     auto io_msg = std::make_shared<goby::middleware::protobuf::IOData>();
     io_msg->set_index(nav_update.modem_tcp_port());
@@ -295,5 +295,5 @@ void NetSimManager::write_gps_out(const NavUpdate& nav_update)
 
     io_msg->set_data(gprmc.message_cr_nl());
 
-    interthread().publish<groups::gps_line_out>(io_msg);
+    interthread().publish<netsim::groups::gps_line_out>(io_msg);
 }

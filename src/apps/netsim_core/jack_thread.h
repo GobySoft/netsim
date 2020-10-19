@@ -10,13 +10,13 @@
 
 #include "goby/middleware/marshalling/protobuf.h"
 
-#include "common.h"
+#include "netsim/core/common.h"
 #include "goby/zeromq/application/multi_thread.h"
 #include "goby/time/legacy.h"
-#include "config.pb.h"
-#include "messages/groups.h"
+#include "netsim/messages/core_config.pb.h"
+#include "netsim/messages/groups.h"
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimCoreConfig>;
+using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 int jack_process(jack_nframes_t nframes, void* arg);
 void jack_shutdown (void *arg);
@@ -27,7 +27,7 @@ class JackThread : public ThreadBase
 {
 public:
     
-JackThread(const NetSimCoreConfig& config, int index)
+JackThread(const netsim::protobuf::NetSimCoreConfig& config, int index)
     : ThreadBase(config, ThreadBase::loop_max_frequency(), index),
 	input_port_(nullptr),
 	output_port_(config.number_of_modems(), nullptr),
@@ -40,8 +40,8 @@ JackThread(const NetSimCoreConfig& config, int index)
 	for(int i = 0, n = cfg().number_of_modems(); i < n; ++i)
 	{
 	    audio_out_groups_.push_back(goby::middleware::DynamicGroup(std::string("audio_out_from_") + std::to_string(ThreadBase::index()) + "_to_" + std::to_string(i)));
-	    auto audio_out_callback = [this, i](std::shared_ptr<const TaggedAudioBuffer> buffer) {this->audio_out(buffer, i); };
-	    interthread().subscribe_dynamic<TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[i]);
+	    auto audio_out_callback = [this, i](std::shared_ptr<const netsim::TaggedAudioBuffer> buffer) {this->audio_out(buffer, i); };
+	    interthread().subscribe_dynamic<netsim::TaggedAudioBuffer>(audio_out_callback, audio_out_groups_[i]);
 	}
 
 	std::string client_name = "netsim_core_thread_" + std::to_string(ThreadBase::index());
@@ -178,16 +178,16 @@ JackThread(const NetSimCoreConfig& config, int index)
     int jack_process (jack_nframes_t nframes)
     {
 	using goby::glog; using namespace goby::util::logger;
-	double buffer_start_time = goby::common::goby_time<double>();
+	double buffer_start_time = goby::time::SystemClock::now<goby::time::SITime>().value();
 
-	std::shared_ptr<AudioBuffer> rx_buffer(new AudioBuffer(buffer_size_));
+	std::shared_ptr<netsim::AudioBuffer> rx_buffer(new netsim::AudioBuffer(buffer_size_));
 	rx_buffer->jack_frame_time = jack_last_frame_time(client_);
 	rx_buffer->buffer_start_time = buffer_start_time;
 	    
 	if(input_port_ != nullptr) // could be briefly empty while we initialize all the threads
 	{
-	    sample_t* in = (sample_t*)jack_port_get_buffer (input_port_, nframes);
-	    sample_t* sample = in;
+	    netsim::sample_t* in = (netsim::sample_t*)jack_port_get_buffer (input_port_, nframes);
+	    netsim::sample_t* sample = in;
 	    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 	    {
 		(*rx_buffer).samples[frame] = *sample;
@@ -218,7 +218,7 @@ JackThread(const NetSimCoreConfig& config, int index)
 			glog.is(WARN) && glog << "Wrong frame received for port " << output_port_i << ". Expected frame time: " << expected_jack_frame_time << ", received: " << actual_jack_frame_time << ", offset: " << static_cast<int>(expected_jack_frame_time)-static_cast<int>(actual_jack_frame_time) << std::endl;
 		    }
 
-		    sample_t* sample = (sample_t*)jack_port_get_buffer (output_port_[output_port_i],
+		    netsim::sample_t* sample = (netsim::sample_t*)jack_port_get_buffer (output_port_[output_port_i],
 									nframes);
 		    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 			*(sample++) = tx_buffer->buffer->samples[frame];
@@ -259,8 +259,8 @@ JackThread(const NetSimCoreConfig& config, int index)
 			new_packet_[output_port_i] = false;
 		    }	       
 		    
-		    sample_t* out = (sample_t*)jack_port_get_buffer (output_port_[output_port_i], nframes);		
-		    sample_t* sample = out;
+		    netsim::sample_t* out = (netsim::sample_t*)jack_port_get_buffer (output_port_[output_port_i], nframes);		
+		    netsim::sample_t* sample = out;
 		    for(jack_nframes_t frame = 0; frame < nframes; ++frame)
 		    {
 			auto& audio_out_index = audio_out_index_[output_port_i];
@@ -279,7 +279,7 @@ JackThread(const NetSimCoreConfig& config, int index)
 				if(audio_out_buffer_[output_port_i].empty())
 				{
 				    // hopefully we only run out when we're at the end of the packet
-				    if(tx_buffer->marker != TaggedAudioBuffer::Marker::END)
+				    if(tx_buffer->marker != netsim::TaggedAudioBuffer::Marker::END)
 					glog.is(WARN) && glog << "Missing playback buffer for modem: " << output_port_i << std::endl;
 				    tx_buffer = empty_buffer_;
 				}
@@ -313,18 +313,18 @@ JackThread(const NetSimCoreConfig& config, int index)
     {
 	using goby::glog; using namespace goby::util::logger;
 	buffer_size_ = nframes;
-	empty_buffer_.reset(new TaggedAudioBuffer);
-	empty_buffer_->buffer = std::shared_ptr<AudioBuffer>(new AudioBuffer(buffer_size_));
+	empty_buffer_.reset(new netsim::TaggedAudioBuffer);
+	empty_buffer_->buffer = std::shared_ptr<netsim::AudioBuffer>(new netsim::AudioBuffer(buffer_size_));
 	glog.is(DEBUG1) && glog << "New buffer size: " << nframes << std::endl;
 
 	// only one Jack thread needs to publish this change
 	if(ThreadBase::index() == 0)
-	    interthread().publish<groups::buffer_size_change>(buffer_size_);
+	    interthread().publish<netsim::groups::buffer_size_change>(buffer_size_);
 
 	return 0;
     }
 
-    void audio_out(std::shared_ptr<const TaggedAudioBuffer> buffer, int modem_index)
+    void audio_out(std::shared_ptr<const netsim::TaggedAudioBuffer> buffer, int modem_index)
     {
 	
 	std::unique_lock<std::mutex> lock(audio_out_mutex_);
@@ -338,7 +338,7 @@ JackThread(const NetSimCoreConfig& config, int index)
 	}
 	else
 	{
-	    if(buffer->marker == TaggedAudioBuffer::Marker::START)
+	    if(buffer->marker == netsim::TaggedAudioBuffer::Marker::START)
 	    {
 		audio_out_buffer_[modem_index].clear();
 		new_packet_[modem_index] = true;
@@ -351,7 +351,7 @@ JackThread(const NetSimCoreConfig& config, int index)
     {
 	using goby::glog; using namespace goby::util::logger;
       
-	std::shared_ptr<AudioBuffer> temp_buffer;
+	std::shared_ptr<netsim::AudioBuffer> temp_buffer;
 	// grab a element to publish while locked
 	{
 	    std::unique_lock<std::mutex> lock(audio_in_mutex_);
@@ -388,23 +388,23 @@ private:
 
     jack_client_t *client_;
 
-    const std::string port_type_{std::to_string(sizeof(sample_t)*8) + " bit float mono audio"};
+    const std::string port_type_{std::to_string(sizeof(netsim::sample_t)*8) + " bit float mono audio"};
 
     jack_nframes_t buffer_size_{0};
 
     std::mutex audio_in_mutex_;
     std::condition_variable audio_in_cv_;
-    std::deque<std::shared_ptr<AudioBuffer>> audio_in_buffer_;
+    std::deque<std::shared_ptr<netsim::AudioBuffer>> audio_in_buffer_;
 
     std::mutex audio_out_mutex_;
-    std::map<int, std::deque<std::shared_ptr<const TaggedAudioBuffer>>> audio_out_buffer_;
+    std::map<int, std::deque<std::shared_ptr<const netsim::TaggedAudioBuffer>>> audio_out_buffer_;
 
-    // maps modem index to the current sample within the latest AudioBuffer
-    std::map<int, decltype(AudioBuffer::samples)::size_type> audio_out_index_;
+    // maps modem index to the current sample within the latest netsim::AudioBuffer
+    std::map<int, decltype(netsim::AudioBuffer::samples)::size_type> audio_out_index_;
     // maps modem index to boolean indicating new packet start
     std::map<int, bool> new_packet_;
     
-    std::shared_ptr<TaggedAudioBuffer> empty_buffer_{0};
+    std::shared_ptr<netsim::TaggedAudioBuffer> empty_buffer_{0};
 };
 
 

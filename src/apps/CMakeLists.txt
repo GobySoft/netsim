@@ -4,3 +4,4 @@ add_subdirectory(netsim_tool)
 add_subdirectory(netsim_postprocess)
 add_subdirectory(netsim_udp)
 
+add_subdirectory(iBellhop)

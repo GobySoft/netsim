@@ -1,6 +1,8 @@
+syntax="proto2";
+
 import "goby/zeromq/protobuf/liaison_config.proto";
 
-package protobuf;
+package netsim.protobuf;
 
 extend goby.apps.zeromq.protobuf.LiaisonConfig
 {
