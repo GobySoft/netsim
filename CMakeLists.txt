@@ -2,19 +2,15 @@ project(modemsim C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
-cmake_minimum_required(VERSION 3.3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 
 # require C++14
-if(CMAKE_VERSION VERSION_LESS 3.1)
-  add_definitions(-std=c++14)
-else()
-  set(CMAKE_CXX_STANDARD 14)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # versions
-set(NETSIM_VERSION "0.0.0")
-set(NETSIM_SOVERSION "0")
+set(PROJECT_VERSION "1.0.0")
+set(PROJECT_SOVERSION "1")
 
 find_package(ProtobufLocal REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
@@ -35,6 +31,7 @@ find_package(MOOS 10 REQUIRED)
 
 find_package(Boost REQUIRED serialization)
 
+
 # create variables for various directories
 get_filename_component(project_SRC_DIR src ABSOLUTE)
 get_filename_component(project_BUILD_DIR ${CMAKE_BINARY_DIR} ABSOLUTE)
@@ -45,6 +42,15 @@ get_filename_component(project_LIB_DIR ${project_BUILD_DIR}/lib ABSOLUTE)
 get_filename_component(project_BIN_DIR ${project_BUILD_DIR}/bin ABSOLUTE)
 get_filename_component(project_INC_DIR ${project_BUILD_DIR}/include ABSOLUTE)
 get_filename_component(project_SHARE_DIR ${project_BUILD_DIR}/share ABSOLUTE)
+
+
+option(export_goby_interfaces OFF "Build Goby Publish/Subscribe interface files (YML) from code")
+
+if(export_goby_interfaces)
+  include(GobyClangTool)
+  set(YML_OUT_DIR ${project_SHARE_DIR}/interfaces)
+endif()
+
 
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${project_LIB_DIR} CACHE PATH 
@@ -57,7 +63,50 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${project_LIB_DIR} CACHE PATH
 include_directories(${project_INC_DIR})
 protobuf_include_dirs(${project_INC_DIR})
 
+
+## set instructions for `make install`
+
+# override library version for debian sbuild cross-builds
+if(CMAKE_CROSSCOMPILING)
+  if (EXISTS "/etc/debian_version")
+    set(CMAKE_INSTALL_LIBDIR "lib/${CMAKE_LIBRARY_ARCHITECTURE}")
+  endif()
+endif()
+
+include(GNUInstallDirs)
+# include
+install(DIRECTORY ${project_INC_DIR}/ DESTINATION include
+  FILES_MATCHING REGEX .*\\.h|.*\\.proto)
+
+# bin
+macro(project_install_bin target_bin)
+  install(TARGETS ${target_bin} DESTINATION bin)
+endmacro()
+
+# lib
+macro(project_install_lib target_lib)
+  set_property(TARGET ${target_lib} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+    $<BUILD_INTERFACE:${project_INC_DIR}>
+    $<INSTALL_INTERFACE:include>  # <prefix>/include
+    )
+
+  set_target_properties(${target_lib} PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_SOVERSION}")
+  
+  install(TARGETS ${target_lib} EXPORT netsim-config
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib) 
+  list(APPEND PROJECT_LIBRARY_LIST ${target_lib})
+  set(PROJECT_LIBRARY_LIST ${PROJECT_LIBRARY_LIST} CACHE INTERNAL "project_library_list")
+endmacro()
+
+unset(PROJECT_LIBRARY_LIST CACHE)
+
 add_subdirectory(src)
+
+if(export_goby_interfaces)
+  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} netsim_udp_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} netsim_core_interfaces.pdf "") 
+endif()
 
 ## configure to build/include
 file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR}/lib
@@ -71,3 +120,9 @@ foreach(I ${INCLUDE_FILES})
   configure_file(${project_SRC_DIR}/lib/${I} ${project_INC_DIR}/netsim/${I} @ONLY)
 endforeach()
 
+
+# configuration export - installed version
+install(EXPORT netsim-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/netsim)
+# configuration export - local build version
+export(TARGETS ${PROJECT_LIBRARY_LIST} FILE ${CMAKE_BINARY_DIR}/netsim-config.cmake)
+ 

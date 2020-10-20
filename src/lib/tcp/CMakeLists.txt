@@ -11,11 +11,4 @@ set_property(TARGET netsim_tcp APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
   $<INSTALL_INTERFACE:include>  # <prefix>/include
 )
 
-set_target_properties(netsim_tcp PROPERTIES VERSION "${NETSIM_VERSION}" SOVERSION "${NETSIM_SOVERSION}")
-
-install(TARGETS netsim_tcp EXPORT netsim-config
-   LIBRARY DESTINATION lib
-   ARCHIVE DESTINATION lib) 
-
-list(APPEND NETSIM_LIBRARY_LIST netsim_tcp)
-set(NETSIM_LIBRARY_LIST ${NETSIM_LIBRARY_LIST} CACHE INTERNAL "NETSIM_LIBRARY_LIST")
+project_install_lib(netsim_tcp)

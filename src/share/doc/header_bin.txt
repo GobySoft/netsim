@@ -1,8 +1,3 @@
-// Copyright 2020:
-//   GobySoft, LLC (2017-)
-//   Massachusetts Institute of Technology (2017-)
-// File authors:
-//   Toby Schneider <toby@gobysoft.org>
 //
 //
 // This file is part of the NETSIM Binaries.
@@ -20,9 +15,3 @@
 // You should have received a copy of the GNU General Public License
 // along with NETSIM.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "iBellhop.h"
- 
-int main(int argc, char * argv[])
-{
-    goby::moos::run<CiBellhop>(argc, argv);
-}

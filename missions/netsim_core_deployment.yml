@@ -1,0 +1,8 @@
+deployment: netsim_udp_deployment
+platforms:
+  - name: netsim_platform
+    interfaces:
+     - netsim_core_interface.yml
+     - netsim_manager_interface.yml
+     - netsim_moos_plugin_interface.yml
+     - netsim_postprocess_interface.yml

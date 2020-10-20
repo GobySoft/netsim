@@ -6,3 +6,8 @@ add_executable(netsim_postprocess
 
 target_link_libraries(netsim_postprocess goby goby_zeromq netsim_messages)
 
+if(export_goby_interfaces)
+  generate_interfaces(netsim_postprocess)
+endif()
+
+project_install_bin(netsim_postprocess)
