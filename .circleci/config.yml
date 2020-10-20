@@ -77,10 +77,10 @@ job-template-amd64: &job-template-amd64
   steps:
     - checkout
     - run: &run-add-continuous-packages
-        name: Use continuous build package sources.list (if not a tagged release)
+        name: Add continuous build package sources.list (if not a tagged release)
         command: |
           [ -z "${CIRCLE_TAG}" ] &&
-          echo "deb http://packages.gobysoft.org/ubuntu/continuous/ ${DISTRO_RELEASE_CODENAME}/" > /etc/apt/sources.list.d/gobysoft_release.list ||
+          echo "deb http://packages.gobysoft.org/ubuntu/continuous/ ${DISTRO_RELEASE_CODENAME}/" >> /etc/apt/sources.list.d/gobysoft_continuous.list ||
           true
     - run: &run-update-apt
         name: Update apt packages
