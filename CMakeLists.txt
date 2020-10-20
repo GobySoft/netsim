@@ -79,26 +79,26 @@ endif()
 
 include(GNUInstallDirs)
 # include
-install(DIRECTORY ${project_INC_DIR}/ DESTINATION include
+install(DIRECTORY ${project_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING REGEX .*\\.h|.*\\.proto)
 
 # bin
 macro(project_install_bin target_bin)
-  install(TARGETS ${target_bin} DESTINATION bin)
+  install(TARGETS ${target_bin} DESTINATION ${CMAKE_INSTALL_BINDIR})
 endmacro()
 
 # lib
 macro(project_install_lib target_lib)
   set_property(TARGET ${target_lib} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
     $<BUILD_INTERFACE:${project_INC_DIR}>
-    $<INSTALL_INTERFACE:include>  # <prefix>/include
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  # <prefix>/include
     )
 
   set_target_properties(${target_lib} PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_SOVERSION}")
   
   install(TARGETS ${target_lib} EXPORT netsim-config
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib) 
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}) 
   list(APPEND PROJECT_LIBRARY_LIST ${target_lib})
   set(PROJECT_LIBRARY_LIST ${PROJECT_LIBRARY_LIST} CACHE INTERNAL "project_library_list")
 endmacro()
