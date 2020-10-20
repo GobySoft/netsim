@@ -46,7 +46,7 @@ void netsim::tcp_client::connect(const std::string& server, unsigned short port)
 
     boost::asio::async_connect(
         *socket(), endpoints,
-#ifdef USE_BOOST_IO_SERVICE
+#if BOOST_VERSION < 106600
         [this](const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator i)
 #else
         [this](const boost::system::error_code& error, boost::asio::ip::tcp::endpoint i)
