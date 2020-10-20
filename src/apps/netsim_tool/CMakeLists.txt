@@ -17,3 +17,5 @@ target_link_libraries(netsim_tool
 if(export_goby_interfaces)
   generate_interfaces(netsim_tool)
 endif()
+
+project_install_bin(netsim_tool)

@@ -10,3 +10,5 @@ target_link_libraries(iBellhop
   ${Boost_LIBRARIES}
   ${PROTOBUF_LIBRARIES}
 )
+
+project_install_bin(iBellhop)

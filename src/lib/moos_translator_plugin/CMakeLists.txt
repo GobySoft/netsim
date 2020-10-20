@@ -7,3 +7,5 @@ configure_file(netsim_goby_moos_gateway.in ${project_BIN_DIR}/netsim_goby_moos_g
 if(export_goby_interfaces)
   generate_interfaces(netsim_moos_plugin)
 endif()
+
+project_install_lib(netsim_moos_plugin)

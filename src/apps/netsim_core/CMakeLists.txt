@@ -8,3 +8,5 @@ target_link_libraries(netsim_core "-rdynamic" goby goby_zeromq jack netsim_messa
 if(export_goby_interfaces)
   generate_interfaces(netsim_core)
 endif()
+
+project_install_bin(netsim_core)
