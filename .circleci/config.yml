@@ -301,7 +301,9 @@ jobs:
       - run:
           name: Add changelog entry 
           command: |
-            cd .. &&
+            cd /root &&
+            rm -rf debian &&
+            git clone https://github.com/GobySoft/netsim-debian debian &&
             export NEWVERSION="$(echo /root/src/*.orig.tar.xz | sed 's/.*_\(.*\)\.orig\.tar\.xz/\1/')"
             COMMENT="Autobuild for version ${NEWVERSION}" &&
             dch --newversion=${NEWVERSION}-0~DISTRORELEASEVERSION.1 -D DISTRORELEASECODENAME "${COMMENT}" &&
