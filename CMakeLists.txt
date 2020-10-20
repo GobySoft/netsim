@@ -9,7 +9,11 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # versions
-set(PROJECT_VERSION "1.0.0")
+set(PROJECT_VERSION_MAJOR "1")
+set(PROJECT_VERSION_MINOR "0")
+set(PROJECT_VERSION_PATCH "0")
+set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+
 set(PROJECT_SOVERSION "1")
 
 find_package(ProtobufLocal REQUIRED)
@@ -48,7 +52,7 @@ option(export_goby_interfaces OFF "Build Goby Publish/Subscribe interface files 
 
 if(export_goby_interfaces)
   include(GobyClangTool)
-  set(YML_OUT_DIR ${project_SHARE_DIR}/interfaces)
+  set(YML_OUT_DIR ${project_SHARE_DIR}/netsim/interfaces)
 endif()
 
 
@@ -99,13 +103,15 @@ macro(project_install_lib target_lib)
   set(PROJECT_LIBRARY_LIST ${PROJECT_LIBRARY_LIST} CACHE INTERNAL "project_library_list")
 endmacro()
 
+install(DIRECTORY ${project_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share)
+
 unset(PROJECT_LIBRARY_LIST CACHE)
 
 add_subdirectory(src)
 
 if(export_goby_interfaces)
-  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} netsim_udp_interfaces.pdf "") 
-  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} netsim_core_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_udp_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_core_interfaces.pdf "") 
 endif()
 
 ## configure to build/include
