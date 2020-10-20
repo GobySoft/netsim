@@ -180,13 +180,13 @@ filter-template-master-only: &filter-template-master-only
       only: /.*/
     branches:
       only:
-        - "3.0"
+        - "master"
 
 filter-template-non-master: &filter-template-non-master
   filters:
     branches:
       ignore:
-        - "3.0"
+        - "master"
         
 ## Begin actual config
 version: 2
