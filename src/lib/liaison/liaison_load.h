@@ -1,4 +1,4 @@
-// Copyright 2018-2019:
+// Copyright 2018-2020:
 //   GobySoft, LLC (2017-)
 //   Massachusetts Institute of Technology (2017-)
 // File authors:
