@@ -1,17 +1,24 @@
-// copyright 2010 t. schneider tes@mit.edu
+// Copyright 2020:
+//   GobySoft, LLC (2017-)
+//   Massachusetts Institute of Technology (2017-)
+// File authors:
+//   Toby Schneider <toby@gobysoft.org>
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+//
+// This file is part of the NETSIM Libraries.
+//
+// The NETSIM Libraries are free software: you can redistribute them and/or modify
+// them under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 2.1 of the License, or
 // (at your option) any later version.
 //
-// This software is distributed in the hope that it will be useful,
+// The NETSIM Libraries are distributed in the hope that they will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// GNU Lesser General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this software.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU Lesser General Public License
+// along with NETSIM.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <fstream>
 #include <iostream>
