@@ -46,7 +46,7 @@ get_filename_component(project_LIB_DIR ${project_BUILD_DIR}/lib ABSOLUTE)
 get_filename_component(project_BIN_DIR ${project_BUILD_DIR}/bin ABSOLUTE)
 get_filename_component(project_INC_DIR ${project_BUILD_DIR}/include ABSOLUTE)
 get_filename_component(project_SHARE_DIR ${project_BUILD_DIR}/share ABSOLUTE)
-
+file(MAKE_DIRECTORY ${project_SHARE_DIR})
 
 option(export_goby_interfaces OFF "Build Goby Publish/Subscribe interface files (YML) from code")
 
