@@ -64,7 +64,7 @@ function(PROTOBUF_INCLUDE_DIRS)
   endif()  
 
   foreach(DIR ${ARGN})
-    set(ALL_PROTOBUF_INCLUDE_DIRS "${ALL_PROTOBUF_INCLUDE_DIRS};-I${DIR}" PARENT_SCOPE)
+    set(ALL_PROTOBUF_INCLUDE_DIRS "-I${DIR};${ALL_PROTOBUF_INCLUDE_DIRS}" PARENT_SCOPE)
   endforeach()
 endfunction()
 
@@ -129,7 +129,6 @@ find_path(PROTOBUF_INCLUDE_DIR google/protobuf/service.h)
 
 # so that we can use Google's included descriptor.proto
 list(APPEND ALL_PROTOBUF_INCLUDE_DIRS "-I${PROTOBUF_INCLUDE_DIR}")
-
 
 # Google's provided vcproj files generate libraries with a "lib"
 # prefix on Windows
