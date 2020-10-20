@@ -126,6 +126,7 @@ job-template-deb-amd64: &job-template-deb-amd64
     - run: &run-patch-version
         name: Patch the version patch number automatically in CMakeLists.txt
         command: |
+          mkdir -p ${CIRCLE_WORKING_DIRECTORY}/debian/patches
           export NEWVERSION="$(echo ../*.orig.tar.xz | sed 's/.*_\(.*\)\.orig\.tar\.xz/\1/')"
           quilt new 01-patch-version
           quilt add CMakeLists.txt
