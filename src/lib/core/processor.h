@@ -27,7 +27,7 @@
 
 #include "goby/zeromq/application/multi_thread.h"
 
-#include "common.h"
+#include "netsim/core/common.h"
 #include "netsim/messages/core_config.pb.h"
 #include "netsim/messages/groups.h"
 #include <jack/types.h>
@@ -63,26 +63,14 @@ template <int to_index> class ProcessorThreadBase : public ThreadBase
                     };
                 switch (i)
                 {
-                    case 0:
-                        interthread()
-                            .template subscribe<netsim::groups::DetectorAudio<0>::group,
-                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
-                        break;
-                    case 1:
-                        interthread()
-                            .template subscribe<netsim::groups::DetectorAudio<1>::group,
-                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
-                        break;
-                    case 2:
-                        interthread()
-                            .template subscribe<netsim::groups::DetectorAudio<2>::group,
-                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
-                        break;
-                    case 3:
-                        interthread()
-                            .template subscribe<netsim::groups::DetectorAudio<3>::group,
-                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
-                        break;
+#define NETSIM_PROCESSOR_SUBSCRIBE_DETECTOR_AUDIO(z, n, _)                           \
+    case n:                                                                          \
+        interthread()                                                                \
+            .template subscribe<netsim::groups::DetectorAudio<n>::group,             \
+                                netsim::TaggedAudioBuffer>(detector_audio_callback); \
+        break;
+                    BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, NETSIM_PROCESSOR_SUBSCRIBE_DETECTOR_AUDIO,
+                                    nil)
                 }
             }
         }
@@ -99,22 +87,12 @@ template <int to_index> class ProcessorThreadBase : public ThreadBase
     {
         switch (tx_modem_id)
         {
-            case 0:
-                this->interthread().template publish<netsim::groups::AudioOut<0, to_index>::group>(
-                    buffer);
-                break;
-            case 1:
-                this->interthread().template publish<netsim::groups::AudioOut<1, to_index>::group>(
-                    buffer);
-                break;
-            case 2:
-                this->interthread().template publish<netsim::groups::AudioOut<2, to_index>::group>(
-                    buffer);
-                break;
-            case 3:
-                this->interthread().template publish<netsim::groups::AudioOut<3, to_index>::group>(
-                    buffer);
-                break;
+#define NETSIM_PROCESSOR_PUBLISH_AUDIO_BUFFER(z, n, _)                                      \
+    case n:                                                                                 \
+        this->interthread().template publish<netsim::groups::AudioOut<n, to_index>::group>( \
+            buffer);                                                                        \
+        break;
+            BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, NETSIM_PROCESSOR_PUBLISH_AUDIO_BUFFER, nil)
         }
     }
 

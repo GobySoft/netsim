@@ -27,35 +27,43 @@
 
 #include <vector>
 
+#include <boost/preprocessor/repetition/repeat.hpp>
+
+// clang-format off
+#define NETSIM_MAX_MODEMS @NETSIM_MAX_MODEMS@
+// clang-format on
+
 namespace netsim
 {
-
 typedef float sample_t;
 
 struct AudioBuffer
 {
-    AudioBuffer(size_t size) : samples(size, 0) {}    
+    AudioBuffer(size_t size) : samples(size, 0) {}
 
-    template<typename It>
-    AudioBuffer(It begin, It end) : samples(begin, end) {}
+    template <typename It> AudioBuffer(It begin, It end) : samples(begin, end) {}
 
     double buffer_start_time{0};
     jack_nframes_t jack_frame_time{0};
-    
+
     std::vector<netsim::sample_t> samples;
 };
 
 struct TaggedAudioBuffer
 {
     std::shared_ptr<const AudioBuffer> buffer;
-    
+
     enum class Marker
-    { NONE, START, END, MIDDLE };
+    {
+        NONE,
+        START,
+        END,
+        MIDDLE
+    };
     Marker marker{Marker::NONE};
-    int packet_id { -1 };
+    int packet_id{-1};
 };
 
-}
+} // namespace netsim
 
 #endif
-

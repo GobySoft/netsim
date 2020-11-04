@@ -81,26 +81,13 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
             };
             switch (i)
             {
-                case 0:
-                    interthread()
-                        .template subscribe<netsim::groups::AudioOut<from_index, 0>::group,
-                                            netsim::TaggedAudioBuffer>(audio_out_callback);
-                    break;
-                case 1:
-                    interthread()
-                        .template subscribe<netsim::groups::AudioOut<from_index, 1>::group,
-                                            netsim::TaggedAudioBuffer>(audio_out_callback);
-                    break;
-                case 2:
-                    interthread()
-                        .template subscribe<netsim::groups::AudioOut<from_index, 2>::group,
-                                            netsim::TaggedAudioBuffer>(audio_out_callback);
-                    break;
-                case 3:
-                    interthread()
-                        .template subscribe<netsim::groups::AudioOut<from_index, 3>::group,
-                                            netsim::TaggedAudioBuffer>(audio_out_callback);
-                    break;
+#define NETSIM_JACK_THREAD_SUBSCRIBE_AUDIO_OUT(z, n, _)                         \
+    case n:                                                                     \
+        interthread()                                                           \
+            .template subscribe<netsim::groups::AudioOut<from_index, n>::group, \
+                                netsim::TaggedAudioBuffer>(audio_out_callback); \
+        break;
+                BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, NETSIM_JACK_THREAD_SUBSCRIBE_AUDIO_OUT, nil)
             }
         }
 

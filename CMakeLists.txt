@@ -55,6 +55,7 @@ if(export_goby_interfaces)
   set(YML_OUT_DIR ${project_SHARE_DIR}/netsim/interfaces)
 endif()
 
+set(NETSIM_MAX_MODEMS 16 CACHE STRING "Maximum number of modems to support")
 
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${project_LIB_DIR} CACHE PATH 

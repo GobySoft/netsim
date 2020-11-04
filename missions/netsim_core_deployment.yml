@@ -9,7 +9,7 @@ platforms:
      - file: netsim_moos_plugin_interface.yml
        application: goby_moos_gateway
      - file: netsim_postprocess_interface.yml
-     - file: netsim_liaison_interface.yml
+     - file: netsim_liaison_interface.yml      
        application: goby_liaison
      - file: /home/toby/goby3/build/share/goby/interfaces/goby_liaison_interface.yml
      - file: /home/toby/goby3/build/share/goby/interfaces/goby_moos_gateway_interface.yml

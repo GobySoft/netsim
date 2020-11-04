@@ -20,6 +20,8 @@
 // You should have received a copy of the GNU General Public License
 // along with NETSIM.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <boost/preprocessor/repetition/repeat.hpp>
+
 #include "goby/middleware/marshalling/protobuf.h"
 
 #include "goby/zeromq/application/multi_thread.h"
@@ -42,6 +44,10 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
   public:
     NetSimCore()
     {
+        if (cfg().number_of_modems() > NETSIM_MAX_MODEMS)
+            glog.is(DIE) && glog << "NETSIM_MAX_MODEMS set to " << NETSIM_MAX_MODEMS
+                                 << " at compile time. Increase to use more modems" << std::endl;
+
         typedef void (*processor_load_func)(
             goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig> * handler,
             int output_index);
@@ -68,26 +74,25 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
 
         while (netsim::processor_ready < cfg().number_of_modems()) usleep(10000);
 
-        //        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
-        //        {
-        // each thread handles the traffic from a given modem
-        launch_thread<DetectorThread<0>>();
-        launch_thread<DetectorThread<1>>();
-        launch_thread<DetectorThread<2>>();
-        launch_thread<DetectorThread<3>>();
-        //        }
+        switch (cfg().number_of_modems())
+        {
+#define LAUNCH_DETECTOR_THREAD(z, n, _) \
+    case NETSIM_MAX_MODEMS - n: launch_thread<DetectorThread<NETSIM_MAX_MODEMS - 1 - n>>();
+            BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, LAUNCH_DETECTOR_THREAD, nil)
+            break;
+
+            default: break;
+        }
 
         while (detector_ready < cfg().number_of_modems()) usleep(10000);
 
-        //        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
-        //        {
-        // each thread handles all traffic originating from a given modem
-        // and to all dest modems
-        launch_thread<JackThread<0>>();
-        launch_thread<JackThread<1>>();
-        launch_thread<JackThread<2>>();
-        launch_thread<JackThread<3>>();
-        //        }
+        switch (cfg().number_of_modems())
+        {
+#define LAUNCH_JACK_THREAD(z, n, _) \
+    case NETSIM_MAX_MODEMS - n: launch_thread<JackThread<NETSIM_MAX_MODEMS - 1 - n>>();
+            BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, LAUNCH_JACK_THREAD, nil)
+            break;
+        }
 
         if (cfg().logger().run_logger())
             launch_thread<LoggerThread>();
