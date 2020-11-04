@@ -6,3 +6,5 @@ platforms:
      - netsim_manager_interface.yml
      - netsim_moos_plugin_interface.yml
      - netsim_postprocess_interface.yml
+     - netsim_liaison_interface.yml
+     
