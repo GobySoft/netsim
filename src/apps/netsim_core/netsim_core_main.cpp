@@ -24,22 +24,27 @@
 
 #include "goby/zeromq/application/multi_thread.h"
 
-#include "netsim/messages/core_config.pb.h"
 #include "detector.h"
 #include "jack_thread.h"
 #include "logger.h"
-#include "netsim/messages/groups.h"
 #include "netsim/core/processor.h"
+#include "netsim/messages/core_config.pb.h"
+#include "netsim/messages/groups.h"
 
 using namespace goby::util::logger;
 using goby::glog;
+
+std::atomic<int> detector_ready{0};
+std::atomic<int> netsim::processor_ready{0};
 
 class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig>
 {
   public:
     NetSimCore()
     {
-        typedef void (*processor_load_func)(goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig>* handler, int output_index);
+        typedef void (*processor_load_func)(
+            goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig> * handler,
+            int output_index);
         processor_load_func processor_load_ptr = (processor_load_func)dlsym(
             NetSimCore::processor_library_handle_, "netsim_launch_processor_thread");
 
@@ -61,22 +66,28 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
             (*processor_load_ptr)(this, i);
         }
 
-        while (netsim::ProcessorThreadBase::ready < cfg().number_of_modems()) usleep(10000);
+        while (netsim::processor_ready < cfg().number_of_modems()) usleep(10000);
 
-        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
-        {
-            // each thread handles the traffic from a given modem
-            launch_thread<DetectorThread>(i);
-        }
+        //        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+        //        {
+        // each thread handles the traffic from a given modem
+        launch_thread<DetectorThread<0>>();
+        launch_thread<DetectorThread<1>>();
+        launch_thread<DetectorThread<2>>();
+        launch_thread<DetectorThread<3>>();
+        //        }
 
-        while (DetectorThread::ready < cfg().number_of_modems()) usleep(10000);
+        while (detector_ready < cfg().number_of_modems()) usleep(10000);
 
-        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
-        {
-            // each thread handles all traffic originating from a given modem
-            // and to all dest modems
-            launch_thread<JackThread>(i);
-        }
+        //        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+        //        {
+        // each thread handles all traffic originating from a given modem
+        // and to all dest modems
+        launch_thread<JackThread<0>>();
+        launch_thread<JackThread<1>>();
+        launch_thread<JackThread<2>>();
+        launch_thread<JackThread<3>>();
+        //        }
 
         if (cfg().logger().run_logger())
             launch_thread<LoggerThread>();

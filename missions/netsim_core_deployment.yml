@@ -2,9 +2,17 @@ deployment: netsim_udp_deployment
 platforms:
   - name: netsim_platform
     interfaces:
-     - netsim_core_interface.yml
-     - netsim_manager_interface.yml
-     - netsim_moos_plugin_interface.yml
-     - netsim_postprocess_interface.yml
-     - netsim_liaison_interface.yml
-     
+     - file: netsim_core_interface.yml
+     - file: /home/toby/lamss/share/interfaces/lamss_netsim_processor_plugin_interface.yml
+       application: netsim_core
+     - file: netsim_manager_interface.yml
+     - file: netsim_moos_plugin_interface.yml
+       application: goby_moos_gateway
+     - file: netsim_postprocess_interface.yml
+     - file: netsim_liaison_interface.yml
+       application: goby_liaison
+     - file: /home/toby/goby3/build/share/goby/interfaces/goby_liaison_interface.yml
+     - file: /home/toby/goby3/build/share/goby/interfaces/goby_moos_gateway_interface.yml
+
+
+       

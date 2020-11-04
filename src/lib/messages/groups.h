@@ -35,6 +35,29 @@ constexpr goby::middleware::Group impulse_request{"impulse_request"};
 constexpr goby::middleware::Group buffer_size_change{"buffer_size_change"};
 constexpr goby::middleware::Group logger_event{"logger_event"};
 
+template <int from_index> struct AudioIn
+{
+    static_assert(from_index < 100, "Max supported modems is 100");
+    constexpr static goby::middleware::Group group{"ain", from_index};
+};
+template <int from_index> constexpr goby::middleware::Group AudioIn<from_index>::group;
+
+template <int from_index, int to_index> struct AudioOut
+{
+    static_assert(from_index < 100 && to_index < 100, "Max supported modems is 100");
+    constexpr static goby::middleware::Group group{"aout", from_index + to_index};
+};
+template <int from_index, int to_index>
+constexpr goby::middleware::Group AudioOut<from_index, to_index>::group;
+
+
+template <int from_index> struct DetectorAudio
+{
+    static_assert(from_index < 100, "Max supported modems is 100");
+    constexpr static goby::middleware::Group group{"detector_audio_from", from_index};
+};
+template <int from_index> constexpr goby::middleware::Group DetectorAudio<from_index>::group;
+
 // published by netsim_postprocess
 constexpr goby::middleware::Group post_process_event{"post_process_event"};
 

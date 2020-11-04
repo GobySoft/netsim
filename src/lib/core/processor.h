@@ -36,43 +36,57 @@ using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreCo
 
 namespace netsim
 {
+extern std::atomic<int> processor_ready;
 
-class ProcessorThreadBase : public ThreadBase
+template <int to_index> class ProcessorThreadBase : public ThreadBase
 {
   public:
-    ProcessorThreadBase(const netsim::protobuf::NetSimCoreConfig& config, int index)
+    ProcessorThreadBase(const netsim::protobuf::NetSimCoreConfig& config)
         : ThreadBase(config,
-                     config.processor().impulse_response_update_hertz() * boost::units::si::hertz,
-                     index)
+                     config.processor().impulse_response_update_hertz() * boost::units::si::hertz)
     {
         // update buffer (audio block) size
-        interthread().subscribe<netsim::groups::buffer_size_change, jack_nframes_t>(
+        interthread().template subscribe<netsim::groups::buffer_size_change, jack_nframes_t>(
             [this](const jack_nframes_t& buffer_size) { this->update_buffer_size(buffer_size); });
 
         // subscribe to all the detectors except our own id, since we ignore our transmissions
         for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
         {
-            auto detector_group_name = std::string("detector_audio_tx_") + std::to_string(i);
-            detector_audio_groups_.push_back(goby::middleware::DynamicGroup(detector_group_name));
-
-            auto audio_out_group_name = std::string("audio_out_from_") + std::to_string(i) +
-                                        std::string("_to_") + std::to_string(ThreadBase::index());
-            audio_out_groups_.push_back(goby::middleware::DynamicGroup(audio_out_group_name));
+            audio_out_groups_.push_back(goby::middleware::DynamicGroup("aout", i + to_index));
 
             // don't subscribe to our own audio
-            if (i != ThreadBase::index())
+            if (i != to_index)
             {
                 auto detector_audio_callback =
                     [this, i](std::shared_ptr<const netsim::TaggedAudioBuffer> buffer) {
                         this->detector_audio(buffer, i);
                     };
-                interthread().subscribe_dynamic<netsim::TaggedAudioBuffer>(detector_audio_callback,
-                                                                   detector_audio_groups_[i]);
+                switch (i)
+                {
+                    case 0:
+                        interthread()
+                            .template subscribe<netsim::groups::DetectorAudio<0>::group,
+                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
+                        break;
+                    case 1:
+                        interthread()
+                            .template subscribe<netsim::groups::DetectorAudio<1>::group,
+                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
+                        break;
+                    case 2:
+                        interthread()
+                            .template subscribe<netsim::groups::DetectorAudio<2>::group,
+                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
+                        break;
+                    case 3:
+                        interthread()
+                            .template subscribe<netsim::groups::DetectorAudio<3>::group,
+                                                netsim::TaggedAudioBuffer>(detector_audio_callback);
+                        break;
+                }
             }
         }
     }
-
-    static std::atomic<int> ready;
 
   protected:
     virtual void detector_audio(std::shared_ptr<const netsim::TaggedAudioBuffer> buffer,
@@ -80,19 +94,34 @@ class ProcessorThreadBase : public ThreadBase
 
     virtual void update_buffer_size(const jack_nframes_t& buffer_size) = 0;
 
-    goby::middleware::DynamicGroup& audio_out_group(int tx_modem_id)
+    void publish_audio_buffer(std::shared_ptr<const netsim::TaggedAudioBuffer> buffer,
+                              int tx_modem_id)
     {
-        return audio_out_groups_[tx_modem_id];
+        switch (tx_modem_id)
+        {
+            case 0:
+                this->interthread().template publish<netsim::groups::AudioOut<0, to_index>::group>(
+                    buffer);
+                break;
+            case 1:
+                this->interthread().template publish<netsim::groups::AudioOut<1, to_index>::group>(
+                    buffer);
+                break;
+            case 2:
+                this->interthread().template publish<netsim::groups::AudioOut<2, to_index>::group>(
+                    buffer);
+                break;
+            case 3:
+                this->interthread().template publish<netsim::groups::AudioOut<3, to_index>::group>(
+                    buffer);
+                break;
+        }
     }
 
   private:
     // indexed on tx modem id
-    std::vector<goby::middleware::DynamicGroup> detector_audio_groups_;
-    // indexed on tx modem id
     std::vector<goby::middleware::DynamicGroup> audio_out_groups_;
 };
-}
-
-std::atomic<int> netsim::ProcessorThreadBase::ready{0};
+} // namespace netsim
 
 #endif
