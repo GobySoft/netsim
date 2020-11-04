@@ -54,36 +54,6 @@ message ImpulseRequest
     optional double request_time = 11;
 }
 
-message TransmitResponse
-{
-    required string source = 1;
-    required string receiver = 2;
-    required double pingtime = 3;
-    optional double timestamp = 4;
-    optional string file = 5;  // augments replica_path with contact names
-    optional int32 channels = 6;
-    optional int32 samples = 7;
-}
-
-message TransmitRequest
-{
-    required string source = 1;
-    required string receiver = 2;
-    required double pingtime = 3;
-    required string replica_path = 4;  // Must have extension .dat
-}
-
-message ArrayGain
-{
-    repeated BeamGain beam_gain = 1;
-    message BeamGain
-    {
-        required double elevation = 1
-            [(goby.field).description = "Arrival beam elevation in degrees"];
-        required double gain_db = 2 [(goby.field).description = "dB"];
-    }
-}
-
 message ObjFuncRequest
 {
     option (dccl.msg).unit_system = "si";
@@ -180,28 +150,4 @@ message EnvironmentObjFuncRequest
 {
     required int32 environment_id = 1;
     required ObjFuncRequest req = 2;
-}
-
-message TransmitGroupVelocity
-{
-    required double timestamp = 1;
-    required string source = 2;
-    required string receiver = 3;
-    required double range = 4;
-    required double delay = 5;
-    required double group_velocity = 6;
-    required double group_velocity_std = 7;
-}
-
-enum ModemPerformanceMetric
-    {
-     SNR = 1;
-     MPP = 2;
-     MAE = 3;
-    }
-
-message TimeSeries
-{
-    optional double time = 1 ;
-    required bytes values = 2;
 }

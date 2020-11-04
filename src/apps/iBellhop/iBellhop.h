@@ -36,19 +36,11 @@
 #include "goby/moos/moos_protobuf_helpers.h"
 #include "netsim/acousticstoolbox/environment.h"
 #include "netsim/acousticstoolbox/iBellhop_messages.pb.h"
-#include "netsim/acousticstoolbox/lamss_environment_update.pb.h"
 #include "netsim/acousticstoolbox/svp_request_response.pb.h"
 #include <boost/date_time.hpp>
 
-class CiBellhop :
-#if GOBY_VERSION_MAJOR < 2
-    public TesMoosApp
+class CiBellhop :    public goby::moos::GobyMOOSApp
 {
-    typedef TesMoosApp goby::moos::GobyMOOSApp;
-#else
-    public goby::moos::GobyMOOSApp
-{
-#endif
   public:
     static CiBellhop* get_instance();
 
@@ -72,7 +64,6 @@ class CiBellhop :
     void loop() {}
 
     void handle_ssp_update(const CMOOSMsg& msg);
-    void handle_eof_update(const CMOOSMsg& msg);
     void handle_ssp_request(const CMOOSMsg& msg);
 
     // finds an existing sample for a given depth; failing that, add a new sample for this depth
