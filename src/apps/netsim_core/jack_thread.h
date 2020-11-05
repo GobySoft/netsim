@@ -56,7 +56,7 @@ class JackThreadBase
     virtual int jack_buffer_size_change(jack_nframes_t nframes) = 0;
 };
 
-template <int from_index> class JackThread : public ThreadBase, public JackThreadBase
+template <int jack_modem_index> class JackThread : public ThreadBase, public JackThreadBase
 {
   public:
     JackThread(const netsim::protobuf::NetSimCoreConfig& config)
@@ -64,7 +64,7 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
           input_port_(nullptr),
           output_port_(config.number_of_modems(), nullptr),
           fs_(config.sampling_freq()),
-          audio_in_group_(std::string("audio_in_") + std::to_string(from_index))
+          audio_in_group_(std::string("audio_in_") + std::to_string(jack_modem_index))
     {
         using goby::glog;
         using namespace goby::util::logger;
@@ -73,7 +73,7 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
         for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
         {
             // audio_out_groups_.push_back(goby::middleware::DynamicGroup(
-            //     std::string("audio_out_from_") + std::to_string(from_index) + "_to_" +
+            //     std::string("audio_out_from_") + std::to_string(jack_modem_index) + "_to_" +
             //     std::to_string(i)));
             auto audio_out_callback = [this,
                                        i](std::shared_ptr<const netsim::TaggedAudioBuffer> buffer) {
@@ -84,14 +84,14 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
 #define NETSIM_JACK_THREAD_SUBSCRIBE_AUDIO_OUT(z, n, _)                         \
     case n:                                                                     \
         interthread()                                                           \
-            .template subscribe<netsim::groups::AudioOut<from_index, n>::group, \
+            .template subscribe<netsim::groups::AudioOut<jack_modem_index, n>::group, \
                                 netsim::TaggedAudioBuffer>(audio_out_callback); \
         break;
                 BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, NETSIM_JACK_THREAD_SUBSCRIBE_AUDIO_OUT, nil)
             }
         }
 
-        std::string client_name = "netsim_core_thread_" + std::to_string(from_index);
+        std::string client_name = "netsim_core_thread_" + std::to_string(jack_modem_index);
         const char* server_name = nullptr;
         jack_options_t options = JackNullOption;
         jack_status_t status;
@@ -150,7 +150,7 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
 
         std::string capture_port_name =
             cfg().jack().capture_port_prefix() +
-            std::to_string(from_index + cfg().jack().port_name_starting_index());
+            std::to_string(jack_modem_index + cfg().jack().port_name_starting_index());
 
         j = 0;
         bool found_name = false;
@@ -163,7 +163,7 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
         if (!found_name)
             glog.is(DIE) && glog << "No capture port with name: " << capture_port_name << std::endl;
 
-        std::string input_port_name = std::string("input_") + std::to_string(from_index);
+        std::string input_port_name = std::string("input_") + std::to_string(jack_modem_index);
         input_port_ = jack_port_register(client_, input_port_name.c_str(), port_type_.c_str(),
                                          JackPortIsInput, 0);
         if (!input_port_)
@@ -377,7 +377,7 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
     {
         using goby::glog;
         using namespace goby::util::logger;
-        glog.is(WARN) && glog << "Jack Thread " << from_index
+        glog.is(WARN) && glog << "Jack Thread " << jack_modem_index
                               << ": Jack buffer xrun (underflow or overflow)" << std::endl;
         return 0;
     }
@@ -398,12 +398,12 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
 
     // only one Jack thread needs to publish this change
     template <typename Enable = void>
-    auto publish_buffer_size_change() -> std::enable_if_t<from_index == 0, Enable>
+    auto publish_buffer_size_change() -> std::enable_if_t<jack_modem_index == 0, Enable>
     {
         interthread().template publish<netsim::groups::buffer_size_change>(buffer_size_);
     }
     template <typename Enable = void>
-    auto publish_buffer_size_change() -> std::enable_if_t<from_index != 0, Enable>
+    auto publish_buffer_size_change() -> std::enable_if_t<jack_modem_index != 0, Enable>
     {
     }
 
@@ -452,7 +452,7 @@ template <int from_index> class JackThread : public ThreadBase, public JackThrea
         }
 
         // actually publish it while unlocked
-        interthread().template publish<netsim::groups::AudioIn<from_index>::group>(temp_buffer);
+        interthread().template publish<netsim::groups::AudioIn<jack_modem_index>::group>(temp_buffer);
 
         // lock again and pop the front of the buffer
         {

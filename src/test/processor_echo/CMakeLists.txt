@@ -1,0 +1,6 @@
+add_library(netsim_processor_echo_plugin SHARED processor.cpp)
+target_link_libraries(netsim_processor_echo_plugin netsim_messages)
+
+if(export_goby_interfaces)
+  generate_interfaces(netsim_processor_echo_plugin)
+endif()
