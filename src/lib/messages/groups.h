@@ -26,6 +26,8 @@
 
 #include "goby/middleware/group.h"
 
+#include "netsim/core/common.h"
+
 namespace netsim
 {
 namespace groups
@@ -45,7 +47,7 @@ template <int from_index> constexpr goby::middleware::Group AudioIn<from_index>:
 template <int from_index, int to_index> struct AudioOut
 {
     static_assert(from_index < 16 && to_index < 16, "Max supported modems is 16");
-    constexpr static goby::middleware::Group group{"aout", from_index*16 + to_index};
+    constexpr static goby::middleware::Group group{"aout", from_index*NETSIM_MAX_MODEMS + to_index};
 };
 template <int from_index, int to_index>
 constexpr goby::middleware::Group AudioOut<from_index, to_index>::group;

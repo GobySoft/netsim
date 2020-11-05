@@ -20,7 +20,6 @@
 // You should have received a copy of the GNU General Public License
 // along with NETSIM.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <boost/preprocessor/repetition/repeat.hpp>
 
 #include "goby/middleware/marshalling/protobuf.h"
 
