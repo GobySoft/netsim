@@ -76,7 +76,6 @@ CiBellhop::CiBellhop()
     goby::glog.add_group("response", Colors::magenta, "iBellhopResponse");
     
     subscribe("AVG_SS_VEC", &CiBellhop::handle_ssp_update, this);
-    subscribe("LAMSS_ENVIRONMENT_UPDATE_IN", &CiBellhop::handle_eof_update, this);
     subscribe("SSP_INFO_REQUEST", &CiBellhop::handle_ssp_request, this);
     
     subscribe(cfg_.moos_var_request(), &CiBellhop::handle_request, this);
@@ -174,27 +173,6 @@ send_response:
 
     goby::glog << group("response") << response.ShortDebugString() << std::endl;
 }
-
-
-void CiBellhop::handle_eof_update(const CMOOSMsg& msg)
-{
-   
-  LAMSS_ENVIRONMENT_UPDATE env_msg;
-  parse_for_moos(msg.GetString(), &env_msg);
-  goby::glog << group("ssp") <<  msg.GetString() << std::endl;
-
-  netsim::bellhop::protobuf::Environment::WaterColumn* water_column = cfg_.mutable_initial_env()->mutable_water_column(0); 
-
-  for(int i = 0, n = env_msg.eof_coef_size(); i < n; ++i)
-    {
-      int num = env_msg.eof_coef(i).num();
-      // Note: EOF numbering in update msg starts at 1.
-      if (num <= water_column->eof_coef_size() && num > 0)
-	water_column->set_eof_coef(num-1,env_msg.eof_coef(i).coef());
-    }
- 
-}
-
 
 void CiBellhop::handle_ssp_update(const CMOOSMsg& msg)
 {
