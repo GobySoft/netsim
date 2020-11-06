@@ -6,6 +6,33 @@ This is handled via a set of threads that communicate using the Goby3 interthrea
 
 For detail on the specific publish/subscribe interfaces, see the [Architecture](page10_architecture.md) page.
 
+## Configuration
+
+Configuration is given as a Protobuf TextFormat file for the netsim::protobuf::NetSimCoreConfig message.
+
+All available configuration values can be obtained by the `-e` flag to `netsim_core`.
+
+For example,
+```
+NETSIM_PROCESSOR_LIBRARY=$HOME/netsim/build/lib/libnetsim_processor_echo_plugin.so \
+$HOME/netsim/build/bin/netsim_core -e
+```
+
+yields
+
+```
+app { ... } # standard Goby3 app configuration
+interprocess { ... } # standard Goby3 interprocess configuration (for connecting to gobyd)
+number_of_modems:   # how many modems are connected
+sampling_freq: 96000  # Hertz
+node_name: ""  # name for mapping JACK index to string names used by netsim_manager. Must be one entry per modem, and the order listed corresponds to index 0, 1, 2, etc.
+jack { ... } # see below
+detector { ... } # see below
+logger { ... } # see below
+[netsim.processor_echo] { ... } # see below
+```
+
+
 ## Threads
 
 - JackThread (Jack Interface)
@@ -59,13 +86,42 @@ detector {
 - packet_end_silent_seconds: How many seconds without a sample above the `detection_threshold` to consider the packet to be over.
 - packet_begin_prebuffer_seconds: How many seconds before the detection to include in the packet published to the processor threads.
 
-
-
-
 ### ProcessorThreadBase
 
+The processor thread must be implemented for a specific propagation modeling framework by subclassing ProcessorThreadBase.
+
+The ProcessorThreadBase is indexed on the **receiving** modem id ("to_index"), which is different than the DetectorThread and JackThread.
+
+The ProcessorThreadBase subscribes to data from each DetectorThread, and when received, calls the virtual method 
+`ProcessorThreadBase::detector_audio`. The processor thread implementation then processes this data (delay, convolution, etc.) and writes frames back by calling `ProcessorThreadBase::publish_audio_buffer`.
+
+Additionally the virtual method `ProcessorThreadBase::update_buffer_size` is called whenever the `jackd` buffer size changes (which is at least once on startup).
+
+A trivial example implementation that copies back all data it receives (without processing) is given in `netsim/src/test/processor_echo`. For the example, no configuration is used but a stub configuration message is defined:
+```
+[netsim.processor_echo] {
+  example_cfg_value: 1 
+}
+```
+
+A complete implementation for the LAMSS Virtual Ocean Simulator is provided at:
+
+- <https://github.mit.edu/lamss/lamss/tree/master/src/lib/lib_netsim_processor>
+
+### LoggerThread
+
+The logger thread can write audio files (for all incoming and outgoing postprocessed packets) in binary format if desired.
 
 
+#### Configuration
+
+Should be self evident:
+```
+logger {
+  run_logger: true
+  log_directory: "."
+}
+```
 
 ## Data flow example
 
