@@ -41,9 +41,9 @@ extern std::atomic<int> processor_ready;
 template <int to_index> class ProcessorThreadBase : public ThreadBase
 {
   public:
-    ProcessorThreadBase(const netsim::protobuf::NetSimCoreConfig& config)
-        : ThreadBase(config,
-                     config.processor().impulse_response_update_hertz() * boost::units::si::hertz)
+    ProcessorThreadBase(const netsim::protobuf::NetSimCoreConfig& config,
+                        boost::units::quantity<boost::units::si::frequency> loop_freq)
+        : ThreadBase(config, loop_freq)
     {
         // update buffer (audio block) size
         interthread().template subscribe<netsim::groups::buffer_size_change, jack_nframes_t>(

@@ -11,11 +11,7 @@ message JackConfig
     optional int32 max_buffer_size = 4 [default = 100];
     optional int32 min_playback_buffer_size = 5 [default = 10];
 
-// number of buffers delayed TX from RX
-// TODO - remove if possible
-    optional int32 expected_number_buffer_delay = 6 [ default = 2 ];
-
-// end to end delay, subtracted from playback start for discrete mode
+    // end to end delay, subtracted from playback start for discrete mode
     optional double calibration_seconds = 10 [default = 0];
 }
 
@@ -23,31 +19,13 @@ message DetectorConfig
 {
     optional float detection_threshold = 1 [default = 0.1];
     optional float packet_end_silent_seconds = 3 [default = 0.2];
-    optional float packet_begin_prebuffer_seconds = 4 [default = 0.2];    
+    optional float packet_begin_prebuffer_seconds = 4 [default = 0.2];
 }
 
 message LoggerConfig
 {
     optional bool run_logger = 1 [default = true];
     optional string log_directory = 2 [default = "."];
-}
-
-message ProcessorConfig
-{
-    optional double source_calibration_db = 1 [default = 180]; // Source calibration dB(muPa/V)
-    optional double receiver_calibration_db = 2 [default = 60]; // receiver calibration dB(V/muPa)
-    optional double noise_level = 3 [default = 40]; // dB(muPa/sqrt(Hz))
-    
-    optional double surface_rms_roughness = 4  [default = 0]; // Surface RMS roughness (m)
-    optional double surface_roughness_loss = 5 [default = 0]; // coherence loss in dB per bounce
-    optional double bottom_roughness_loss = 6 [default = 0]; // coherence loss in dB per bounce
-    optional double acomms_frequency = 7 [default = 25000];
-
-    optional bool test_mode = 8 [default = false];    
-    optional double test_mode_delay_sec = 9 [ default = 1];
-
-    optional float impulse_response_update_hertz = 10 [default = 0.1];
-    
 }
 
 message NetSimCoreConfig
@@ -60,14 +38,16 @@ message NetSimCoreConfig
 
     // list of node names in order of audio port numbers
     // must correspond to number_of_modems
-    repeated string node_name = 12; 
-    
+    repeated string node_name = 12;
+
     optional JackConfig jack = 20;
     optional DetectorConfig detector = 30;
 
     optional LoggerConfig logger = 40;
-
-    optional ProcessorConfig processor = 50;
-
+    
     optional bool continuous = 60 [default = false];
+
+    // 1000 = LAMSS Virtual Ocean plugin
+    // 1001 = ProcessorEcho plugin
+    extensions 1000 to max;
 }

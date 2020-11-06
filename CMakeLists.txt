@@ -48,7 +48,12 @@ get_filename_component(project_INC_DIR ${project_BUILD_DIR}/include ABSOLUTE)
 get_filename_component(project_SHARE_DIR ${project_BUILD_DIR}/share ABSOLUTE)
 file(MAKE_DIRECTORY ${project_SHARE_DIR})
 
+option(build_doc "Build documentation (requires Doxygen)" OFF)
 option(export_goby_interfaces OFF "Build Goby Publish/Subscribe interface files (YML) from code")
+
+if(build_doc)
+  set(export_goby_interfaces ON CACHE BOOL "Set export interfaces for documentation" FORCE)
+endif()
 
 if(export_goby_interfaces)
   include(GobyClangTool)
@@ -114,6 +119,7 @@ if(export_goby_interfaces)
   generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_udp_interfaces.pdf "") 
   generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_core_interfaces_no_disconnect.pdf "-no-disconnected;-splines=polyline") 
   generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_core_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${CMAKE_BINARY_DIR}/src/doc/figures/netsim_core_interfaces.svg "") 
 endif()
 
 ## configure to build/include

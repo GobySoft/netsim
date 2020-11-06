@@ -1,0 +1,71 @@
+digraph G {
+  // red = packet from modem 2
+  // pink = packet from modem 2 -> modem 1
+  // orange = package from modem 2 -> modem 0
+
+  // blue = packet from modem 0
+  // teal  = packet from modem 0 -> modem 1
+  // green = packet from modem 0 -> modem 2
+  
+  node [shape=box]
+  {node [shape=ellipse]; rank = same; audio_0; audio_1; audio_2;}
+
+  subgraph 0
+  {
+     audio_0 [label="Modem 1"];
+     jack_thread_0 [label="Jack Interface 1"];
+     detector_thread_0 [label="Detector 1"];
+     processor_thread_0 [label="Processor 1"];
+     audio_0 -> jack_thread_0 [color=blue, style=dashed];
+     jack_thread_0 -> detector_thread_0  [color=blue];
+     detector_thread_0 -> processor_thread_1 [color=aquamarine];
+     detector_thread_0 -> processor_thread_2 [color=green];
+     processor_thread_0 -> jack_thread_1
+     jack_thread_1 -> audio_0 [style=dashed]
+     processor_thread_0 -> jack_thread_2  [color=orange]
+     jack_thread_2 -> audio_0  [style=dashed, color=orange]
+  }
+  subgraph 1
+  {
+     audio_1 [label="Modem 2"];
+     jack_thread_1 [label="Jack Interface 2"];
+     detector_thread_1 [label="Detector 2"];
+     processor_thread_1 [label="Processor 2"];
+
+     audio_1 -> jack_thread_1 [style=dashed];
+
+
+     jack_thread_1 -> detector_thread_1 -> processor_thread_0
+                   detector_thread_1 -> processor_thread_2
+     processor_thread_1 -> jack_thread_0 [color=aquamarine]
+     jack_thread_0 -> audio_1 [color=aquamarine, style=dashed]
+     processor_thread_1 -> jack_thread_2 [color=pink]
+     jack_thread_2 -> audio_1 [color=pink, style=dashed]
+  } 
+  subgraph 2
+  {
+     audio_2 [label="Modem 3"];
+     jack_thread_2 [label="Jack Interface 3"];
+     detector_thread_2 [label="Detector 3"];
+     processor_thread_2 [label="Processor 3"];
+
+
+     audio_2 -> jack_thread_2 [color=red, style=dashed]
+     jack_thread_2 -> detector_thread_2  [color=red]
+     detector_thread_2 -> processor_thread_0 [color=orange]
+     detector_thread_2 -> processor_thread_1 [color=pink]
+     processor_thread_2 -> jack_thread_0  [color=green]
+     jack_thread_0 -> audio_2 [color=green, style=dashed]
+     processor_thread_2 -> jack_thread_1 
+     jack_thread_1 -> audio_2 [style=dashed]
+  }
+
+  {rank = same; jack_thread_0; jack_thread_1; jack_thread_2;}
+  {rank = same; detector_thread_0; detector_thread_1; detector_thread_2;}
+  {rank = same; processor_thread_0; processor_thread_1; processor_thread_2;}
+
+
+
+
+}
+
