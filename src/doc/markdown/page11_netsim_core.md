@@ -32,7 +32,6 @@ logger { ... } # see below
 [netsim.processor_echo] { ... } # see below
 ```
 
-
 ## Threads
 
 - JackThread (Jack Interface)

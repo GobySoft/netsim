@@ -137,9 +137,9 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
             glog.is(DIE) && glog << "cannot activate client" << std::endl;
 
         const char** capture_port_names =
-            jack_get_ports(client_, nullptr, nullptr, JackPortIsPhysical | JackPortIsOutput);
+            jack_get_ports(client_, nullptr, nullptr, JackPortIsOutput);
         if (capture_port_names == nullptr)
-            glog.is(DIE) && glog << "no physical capture ports" << std::endl;
+            glog.is(DIE) && glog << "no capture ports" << std::endl;
 
         int j = 0;
         while (capture_port_names[j])
@@ -151,17 +151,6 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         std::string capture_port_name =
             cfg().jack().capture_port_prefix() +
             std::to_string(jack_modem_index + cfg().jack().port_name_starting_index());
-
-        j = 0;
-        bool found_name = false;
-        while (capture_port_names[j])
-        {
-            if (std::string(capture_port_names[j++]) == capture_port_name)
-                found_name = true;
-        }
-
-        if (!found_name)
-            glog.is(DIE) && glog << "No capture port with name: " << capture_port_name << std::endl;
 
         std::string input_port_name = std::string("input_") + std::to_string(jack_modem_index);
         input_port_ = jack_port_register(client_, input_port_name.c_str(), port_type_.c_str(),
@@ -193,18 +182,6 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
                 cfg().jack().playback_port_prefix() +
                 std::to_string(i + cfg().jack().port_name_starting_index());
 
-            int j = 0;
-            bool found_name = false;
-            while (playback_port_names[j])
-            {
-                if (std::string(playback_port_names[j++]) == playback_port_name)
-                    found_name = true;
-            }
-
-            if (!found_name)
-                glog.is(DIE) && glog << "No playback port with name: " << playback_port_name
-                                     << std::endl;
-
             std::string output_port_name = std::string("output_") + std::to_string(i);
             output_port_[i] = jack_port_register(client_, output_port_name.c_str(),
                                                  port_type_.c_str(), JackPortIsOutput, 0);
@@ -213,7 +190,7 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
 
             if (jack_connect(client_, jack_port_name(output_port_[i]), playback_port_name.c_str()))
                 glog.is(DIE) && glog << "cannot connect output port: " << output_port_name
-                                     << " to playback port: " << playback_port_name << std::endl;
+                                     << " to playback port: " << playback_port_name << ", ensure playback port exists?" << std::endl;
         }
         free(playback_port_names);
     }
