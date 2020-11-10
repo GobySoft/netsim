@@ -30,7 +30,9 @@
 #include <boost/preprocessor/repetition/repeat.hpp>
 
 // clang-format off
+#ifndef NETSIM_MAX_MODEMS
 #define NETSIM_MAX_MODEMS @NETSIM_MAX_MODEMS@
+#endif
 // clang-format on
 
 namespace netsim

@@ -60,7 +60,7 @@ private:
     std::map<int, netsim::protobuf::NetSimManagerConfig::EnvironmentBounds> env_bounds_;
 
     boost::asio::io_service io_;
-    netsim::tcp_server server_{io_, short(61999)};
+    netsim::tcp_server server_;
 
 };
 
@@ -71,7 +71,8 @@ int main(int argc, char* argv[])
 
 
 NetSimManager::NetSimManager() :
-    goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimManagerConfig>(10*boost::units::si::hertz)
+    goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimManagerConfig>(10*boost::units::si::hertz),
+    server_(io_, cfg().manager_tcp_port())
 {
     process_configuration();
 

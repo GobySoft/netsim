@@ -7,5 +7,5 @@ add_library(netsim_processor_echo_plugin SHARED processor.cpp ${PROTO_SRCS} ${PR
 target_link_libraries(netsim_processor_echo_plugin netsim_messages)
 
 if(export_goby_interfaces)
-  generate_interfaces(netsim_processor_echo_plugin)
+  generate_interfaces_params(netsim_processor_echo_plugin "-extra-arg=-DNETSIM_MAX_MODEMS=${NETSIM_VISUALIZE_MAX_MODEMS}")
 endif()

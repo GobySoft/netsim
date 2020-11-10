@@ -116,9 +116,12 @@ unset(PROJECT_LIBRARY_LIST CACHE)
 add_subdirectory(src)
 
 if(export_goby_interfaces)
-  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_udp_interfaces.pdf "") 
-  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_core_interfaces_no_disconnect.pdf "-no-disconnected;-splines=polyline") 
-  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_core_interfaces.pdf "") 
+  # limit rendering a smaller number of modems to keep figures readable
+  set(NETSIM_VISUALIZE_MAX_MODEMS 3 CACHE STRING "Maximum number of modems to render in netsim_core interfaces file and resulting figures")
+
+  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/doc/netsim/netsim_udp_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/doc/netsim/netsim_core_interfaces_no_disconnect.pdf "-no-disconnected;-splines=polyline;") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/doc/netsim/netsim_core_interfaces.pdf "") 
   generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${CMAKE_BINARY_DIR}/src/doc/figures/netsim_core_interfaces.svg "") 
 endif()
 

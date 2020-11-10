@@ -5,7 +5,7 @@ unset(project_goby_interfaces_figures CACHE)
 
 # usage: goby_export_interface(target_name ${OUTPUT_DIR} YML)
 # sets YML to path to yml file
-function(GOBY_EXPORT_INTERFACE TARGET YML_OUT_DIR YML)
+function(GOBY_EXPORT_INTERFACE TARGET YML_OUT_DIR YML PARAMETERS)
   get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
 
   file(MAKE_DIRECTORY ${YML_OUT_DIR})
@@ -25,7 +25,7 @@ function(GOBY_EXPORT_INTERFACE TARGET YML_OUT_DIR YML)
   add_custom_command(
     OUTPUT "${YML_OUT_DIR}/${TARGET}_interface.yml"
     COMMAND goby_clang_tool
-    ARGS -gen -target ${TARGET} -outdir ${YML_OUT_DIR} -p ${CMAKE_BINARY_DIR} ${ABS_TARGET_SOURCES}
+    ARGS -gen -target ${TARGET} -outdir ${YML_OUT_DIR} -p ${CMAKE_BINARY_DIR} ${ABS_TARGET_SOURCES} ${PARAMETERS}
     COMMENT "Running goby_clang_tool on ${TARGET}"
     DEPENDS ${ABS_TARGET_SOURCES} ${TARGET}
     VERBATIM)
@@ -88,12 +88,16 @@ function(GOBY_VISUALIZE_INTERFACES TARGET_OUT YML_DIR DEPLOYMENT_YAML IMAGE_OUT 
 endfunction()
 
 
-macro(generate_interfaces target) 
-  goby_export_interface(${target} ${YML_OUT_DIR} ${target}_YML_OUT)
+macro(generate_interfaces_params target PARAMETERS) 
+  goby_export_interface(${target} ${YML_OUT_DIR} ${target}_YML_OUT "${PARAMETERS}")
   add_custom_target(${target}_interface ALL DEPENDS ${${target}_YML_OUT})
   set(project_goby_interfaces "${project_goby_interfaces};${target}_interface;${target}" CACHE INTERNAL "Goby Interface YMLS")
 endmacro()
     
+macro(generate_interfaces target) 
+  generate_interfaces_params(${target} "")
+endmacro()
+
 macro(generate_interfaces_figure INTERFACE_YML YML_OUT_DIR OUTPUT_IMAGE PARAMETERS) 
   get_filename_component(INTERFACE_YML_NAME_WE ${INTERFACE_YML} NAME_WE)
   set(CONFIGURED_INTERFACE_YML ${YML_OUT_DIR}/deployments/${INTERFACE_YML_NAME_WE}.yml)

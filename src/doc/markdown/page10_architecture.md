@@ -48,4 +48,6 @@ In this diagram, the LAMSS MOOS-IvP vehicle simulator is show, with only the com
 
 The *audioserver* core components are diagrammed in detail in the figure below. Note that the ProcessorThread shown is the *processor_echo* stub, thus not showing the publish/subscribe interfaces for the LAMSS Virtual Ocean processor plugin (which includes sending `impulse_response` and subscribing to `impulse_request`).
 
+Only three modems are shown here to keep the figure readable. Additional modems are supported by `netsim_core` in an analogous way.
+
 ![](../figures/netsim_core_interfaces.svg)

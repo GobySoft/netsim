@@ -46,7 +46,6 @@ You can pass command line parameters to CMake by setting the environmental varia
 For example:
 
  - To build with multiple cores:
-
 ```
 ./build.sh -j4
 # or equivalently
