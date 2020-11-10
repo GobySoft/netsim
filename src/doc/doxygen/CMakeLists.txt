@@ -19,7 +19,7 @@ add_custom_command(
 
 
 add_custom_target(netsim_doxygen ALL
-  DEPENDS ${CMAKE_BINARY_DIR}/src/doc/html/index.html ${CMAKE_BINARY_DIR}/src/doc/latex/refman.pdf
+  DEPENDS ${CMAKE_BINARY_DIR}/src/doc/html/index.html
   COMMENT "Running doxygen to generate documentation output to ${CMAKE_BINARY_DIR}/src/doc/html/index.html"
   VERBATIM )
 
