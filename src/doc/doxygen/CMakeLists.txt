@@ -17,7 +17,26 @@ add_custom_command(
   ${project_goby_interfaces_figures}
   )
 
+
 add_custom_target(netsim_doxygen ALL
-  DEPENDS ${CMAKE_BINARY_DIR}/src/doc/html/index.html 
+  DEPENDS ${CMAKE_BINARY_DIR}/src/doc/html/index.html ${CMAKE_BINARY_DIR}/src/doc/latex/refman.pdf
   COMMENT "Running doxygen to generate documentation output to ${CMAKE_BINARY_DIR}/src/doc/html/index.html"
   VERBATIM )
+
+find_package(LATEX QUIET)
+if(LATEX_FOUND)
+
+# run pdflatex twice (second pass correctly sets table of contents)
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/src/doc/latex/refman.pdf
+  COMMAND bash -c "for i in 1 2; do echo PDFLatex Run $i; ${PDFLATEX_COMPILER} -file-line-error -halt-on-error refman.tex >& /tmp/netsim-doc-pdflatex.log || cat /tmp/netsim-doc-pdflatex.log; done"
+  DEPENDS ${CMAKE_BINARY_DIR}/src/doc/latex/refman.tex
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/src/doc/latex
+  VERBATIM )
+
+
+  add_custom_target(netsim_doxygen_pdf ALL
+  DEPENDS ${CMAKE_BINARY_DIR}/src/doc/latex/refman.pdf
+  COMMENT "Running doxygen to generate PDF documentation output to ${CMAKE_BINARY_DIR}/src/doc/latex/refman.pdf"
+  VERBATIM )
+endif()

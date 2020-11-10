@@ -186,12 +186,14 @@ filter-template-master-only: &filter-template-master-only
     branches:
       only:
         - "master"
+        - "clang-viz"
 
 filter-template-non-master: &filter-template-non-master
   filters:
     branches:
       ignore:
         - "master"
+        - "clang-viz"
         
 ## Begin actual config
 version: 2
