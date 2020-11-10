@@ -23,9 +23,9 @@ add_custom_target(netsim_doxygen ALL
   COMMENT "Running doxygen to generate documentation output to ${CMAKE_BINARY_DIR}/src/doc/html/index.html"
   VERBATIM )
 
-find_package(LATEX QUIET)
-if(LATEX_FOUND)
-
+option(build_doc_pdf "Build PDF documentation (requires PDFLatex)" OFF)
+if(build_doc_pdf)
+  find_package(LATEX REQUIRED)
 # run pdflatex twice (second pass correctly sets table of contents)
 add_custom_command(
   OUTPUT ${CMAKE_BINARY_DIR}/src/doc/latex/refman.pdf
@@ -33,7 +33,6 @@ add_custom_command(
   DEPENDS ${CMAKE_BINARY_DIR}/src/doc/latex/refman.tex
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/src/doc/latex
   VERBATIM )
-
 
   add_custom_target(netsim_doxygen_pdf ALL
   DEPENDS ${CMAKE_BINARY_DIR}/src/doc/latex/refman.pdf
