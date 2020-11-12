@@ -2,7 +2,20 @@ deployment: netsim_udp_deployment
 platforms:
   - name: netsim_platform
     interfaces:
-     - netsim_core_interface.yml
-     - netsim_manager_interface.yml
-     - netsim_moos_plugin_interface.yml
-     - netsim_postprocess_interface.yml
+     - file: netsim_core_interface.yml
+     - file: netsim_processor_echo_plugin_interface.yml
+       application: netsim_core
+     - file: netsim_manager_interface.yml
+     - file: netsim_moos_plugin_interface.yml
+       application: goby_moos_gateway_atlantic
+     - file: netsim_moos_plugin_interface.yml
+       application: goby_moos_gateway_arctic
+     - file: netsim_postprocess_interface.yml
+     - file: netsim_liaison_interface.yml      
+       application: goby_liaison
+
+
+
+
+
+       

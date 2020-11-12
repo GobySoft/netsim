@@ -48,13 +48,21 @@ get_filename_component(project_INC_DIR ${project_BUILD_DIR}/include ABSOLUTE)
 get_filename_component(project_SHARE_DIR ${project_BUILD_DIR}/share ABSOLUTE)
 file(MAKE_DIRECTORY ${project_SHARE_DIR})
 
+option(build_doc "Build documentation (requires Doxygen)" OFF)
 option(export_goby_interfaces OFF "Build Goby Publish/Subscribe interface files (YML) from code")
+
+if(build_doc)
+  set(export_goby_interfaces ON CACHE BOOL "Set export interfaces for documentation" FORCE)
+endif()
 
 if(export_goby_interfaces)
   include(GobyClangTool)
   set(YML_OUT_DIR ${project_SHARE_DIR}/netsim/interfaces)
+    # limit rendering a smaller number of modems to keep figures readable
+  set(NETSIM_VISUALIZE_MAX_MODEMS 3 CACHE STRING "Maximum number of modems to render in netsim_core interfaces file and resulting figures")
 endif()
 
+set(NETSIM_MAX_MODEMS 16 CACHE STRING "Maximum number of modems to support")
 
 ## set the cmake defaults for libraries and binaries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${project_LIB_DIR} CACHE PATH 
@@ -110,8 +118,10 @@ unset(PROJECT_LIBRARY_LIST CACHE)
 add_subdirectory(src)
 
 if(export_goby_interfaces)
-  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_udp_interfaces.pdf "") 
-  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/netsim/doc/netsim_core_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_udp_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/doc/netsim/netsim_udp_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/doc/netsim/netsim_core_interfaces_no_disconnect.pdf "-no-disconnected;-splines=polyline;") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${project_SHARE_DIR}/doc/netsim/netsim_core_interfaces.pdf "") 
+  generate_interfaces_figure(missions/netsim_core_deployment.yml ${YML_OUT_DIR} ${CMAKE_BINARY_DIR}/src/doc/figures/netsim_core_interfaces.svg "") 
 endif()
 
 ## configure to build/include

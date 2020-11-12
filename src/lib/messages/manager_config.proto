@@ -1,5 +1,6 @@
 syntax="proto2";
 
+import "goby/protobuf/option_extensions.proto";
 import "goby/middleware/protobuf/app_config.proto";
 import "goby/zeromq/protobuf/interprocess_config.proto";
 
@@ -14,32 +15,34 @@ message NetSimManagerConfig
 
     message SimEnvironmentPair
     {
-	required int32 modem_tcp_port = 1;
-	required string endpoint_ip_address = 2;
-	required int32 environment_id = 3;
+	required int32 modem_tcp_port = 1 [(goby.field).description="TCP port used for connecting to the modem data interface (62000, 62001, etc. on audioserver). This is used as a unique identifier for a given vehicle simulator"];
+	required string endpoint_ip_address = 2 [(goby.field).description="IP address for connecting remote endpoint"];
+	required int32 environment_id = 3 [(goby.field).description="unique id used to map to env_bounds{}"];
     }
 
-    repeated SimEnvironmentPair sim_env_pair = 3;
+    repeated SimEnvironmentPair sim_env_pair = 3 [(goby.field).description="repeated for each expected simulated vehicle"];
 
     message EnvironmentBounds
     {
-	required int32 environment_id = 1;
-	required double lat_min = 2;
-	required double lon_min = 3;
-	required double lat_max = 4;
-	required double lon_max = 5;
-	optional double depth_min = 6 [default = 0];
-	required double depth_max = 7;
+	required int32 environment_id = 1 [(goby.field).description="unique id for this environment"];
+	required double lat_min = 2 [(goby.field).description="minimum latitude in decimal degrees"];
+	required double lon_min = 3 [(goby.field).description="minimum longitude in decimal degrees"];
+	required double lat_max = 4 [(goby.field).description="maximum latitude in decimal degrees"];
+	required double lon_max = 5 [(goby.field).description="maximum longitude in decimal degrees"];
+	optional double depth_min = 6 [default = 0, (goby.field).description="minimum depth in meters"];
+	required double depth_max = 7 [(goby.field).description="maximum depth in meters"];
     }
     
-    repeated EnvironmentBounds env_bounds = 4;
+    repeated EnvironmentBounds env_bounds = 4 [(goby.field).description="validity bounding region of the ocean for each Virtual Ocean environment"];
 
+    optional uint32 manager_tcp_port = 5 [default = 61999, (goby.field).description="TCP port for netsim_manager Vehicle Simulator interface"];
+    
     // output
     message GPSSerialOutput
     {
-	required int32 modem_tcp_port = 1;
-	required goby.middleware.protobuf.SerialConfig serial = 2;
+	required int32 modem_tcp_port = 1 [(goby.field).description="Which vehicle to output, as referenced by its modem TCP port set in sim_env_pair{}"];
+	required goby.middleware.protobuf.SerialConfig serial = 2 [(goby.field).description="Output serial settings"];
     }
-    repeated GPSSerialOutput gps_out = 10;
+    repeated GPSSerialOutput gps_out = 10 [(goby.field).description="Set if a synthesized $GPRMC GPS message is desired for a given simulated vehicle"];
 
 }

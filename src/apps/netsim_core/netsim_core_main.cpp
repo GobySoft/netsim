@@ -20,26 +20,36 @@
 // You should have received a copy of the GNU General Public License
 // along with NETSIM.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #include "goby/middleware/marshalling/protobuf.h"
 
 #include "goby/zeromq/application/multi_thread.h"
 
-#include "netsim/messages/core_config.pb.h"
 #include "detector.h"
 #include "jack_thread.h"
 #include "logger.h"
-#include "netsim/messages/groups.h"
 #include "netsim/core/processor.h"
+#include "netsim/messages/core_config.pb.h"
+#include "netsim/messages/groups.h"
 
 using namespace goby::util::logger;
 using goby::glog;
+
+std::atomic<int> detector_ready{0};
+std::atomic<int> netsim::processor_ready{0};
 
 class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig>
 {
   public:
     NetSimCore()
     {
-        typedef void (*processor_load_func)(goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig>* handler, int output_index);
+        if (cfg().number_of_modems() > NETSIM_MAX_MODEMS)
+            glog.is(DIE) && glog << "NETSIM_MAX_MODEMS set to " << NETSIM_MAX_MODEMS
+                                 << " at compile time. Increase to use more modems" << std::endl;
+
+        typedef void (*processor_load_func)(
+            goby::zeromq::MultiThreadApplication<netsim::protobuf::NetSimCoreConfig> * handler,
+            int output_index);
         processor_load_func processor_load_ptr = (processor_load_func)dlsym(
             NetSimCore::processor_library_handle_, "netsim_launch_processor_thread");
 
@@ -61,21 +71,26 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
             (*processor_load_ptr)(this, i);
         }
 
-        while (netsim::ProcessorThreadBase::ready < cfg().number_of_modems()) usleep(10000);
+        while (netsim::processor_ready < cfg().number_of_modems()) usleep(10000);
 
-        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+        switch (cfg().number_of_modems())
         {
-            // each thread handles the traffic from a given modem
-            launch_thread<DetectorThread>(i);
+#define LAUNCH_DETECTOR_THREAD(z, n, _) \
+    case NETSIM_MAX_MODEMS - n: launch_thread<DetectorThread<NETSIM_MAX_MODEMS - 1 - n>>();
+            BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, LAUNCH_DETECTOR_THREAD, nil)
+            break;
+
+            default: break;
         }
 
-        while (DetectorThread::ready < cfg().number_of_modems()) usleep(10000);
+        while (detector_ready < cfg().number_of_modems()) usleep(10000);
 
-        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+        switch (cfg().number_of_modems())
         {
-            // each thread handles all traffic originating from a given modem
-            // and to all dest modems
-            launch_thread<JackThread>(i);
+#define LAUNCH_JACK_THREAD(z, n, _) \
+    case NETSIM_MAX_MODEMS - n: launch_thread<JackThread<NETSIM_MAX_MODEMS - 1 - n>>();
+            BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, LAUNCH_JACK_THREAD, nil)
+            break;
         }
 
         if (cfg().logger().run_logger())

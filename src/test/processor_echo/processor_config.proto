@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+import "netsim/messages/core_config.proto";
+
+package netsim;
+
+message ProcessorEchoConfig
+{
+    optional int32 example_cfg_value = 1 [default = 1];
+}
+
+extend .netsim.protobuf.NetSimCoreConfig
+{
+    optional ProcessorEchoConfig processor_echo = 1001;
+}

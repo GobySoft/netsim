@@ -12,17 +12,17 @@ environment-template-common: &environment-template-common
   
 environment-template-amd64: &environment-template-amd64
   TARGET_ARCH: "amd64"
-  DEB_BUILD_OPTIONS: "parallel=4"
+  DEB_BUILD_OPTIONS: "parallel=2"
   # one job only must do the source build for each distro
   DO_SOURCE_BUILD: "true"
 
 environment-template-arm64: &environment-template-arm64
   TARGET_ARCH: "arm64"
-  DEB_BUILD_OPTIONS: "parallel=4 nocheck"
+  DEB_BUILD_OPTIONS: "parallel=2 nocheck"
   
 environment-template-armhf: &environment-template-armhf
   TARGET_ARCH: "armhf"
-  DEB_BUILD_OPTIONS: "parallel=4 nocheck"
+  DEB_BUILD_OPTIONS: "parallel=2 nocheck"
   
 environment-template-stretch: &environment-template-stretch
   DISTRO_RELEASE_CODENAME: "stretch"
