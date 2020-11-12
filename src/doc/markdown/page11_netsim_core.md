@@ -63,7 +63,7 @@ jack {
  - `port_name_starting_index`: Starting value for the port index to be appended to `capture_port_prefix` and `playback_port_prefix`.
  - `max_buffer_size`: Maximum size of the buffer for captured data (before being published via Goby)
  - `min_playback_buffer_size`: Minimum size of the playback buffer, i.e. minimum number of frames required to have received from the ProcessorThreads before commencing playback. Increase this value to avoid buffer underruns, decreasing this value will decrease the minimum end-to-end latency of the system (useful for accurately simulating short range propagations).
- - `calibration_seconds`: Value to substract from playback start to compensate for the end-to-end latency of the netsim system. This is highly hardware and configuration dependent, so you will need to measure this for your own system to get accurate time-of-flights. The easiest way to do this is to use set your processor to return packets with zero artificial latency (buffer_start_time == captured buffer time) and measure the two way time of flight using the modem hardware ($CCMPC for the WHOI Micro-Modem).
+ - `calibration_seconds`: Value to subtract from playback start to compensate for the end-to-end latency of the netsim system. This is highly hardware and configuration dependent, so you will need to measure this for your own system to get accurate time-of-flights. The easiest way to do this is to use set your processor to return packets with zero artificial latency (buffer_start_time == captured buffer time) and measure the two way time of flight using the modem hardware ($CCMPC for the WHOI Micro-Modem).
 
 ### DetectorThread
 
@@ -99,7 +99,7 @@ Additionally the virtual method `ProcessorThreadBase::update_buffer_size` is cal
 A trivial example implementation that copies back all data it receives (without processing) is given in `netsim/src/test/processor_echo`. For the example, no configuration is used but a stub configuration message is defined:
 ```
 [netsim.processor_echo] {
-  example_cfg_value: 1 
+  example_cfg_value: 1
 }
 ```
 
