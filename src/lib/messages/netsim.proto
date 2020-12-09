@@ -7,8 +7,16 @@ package netsim.protobuf;
 
 message ImpulseResponse
 {
-    required string source = 1;
-    required string receiver = 2;
+   oneof src
+   {
+    string source = 1;
+    int32  source_id = 21;
+    }
+    oneof rcv
+    {
+    string receiver = 2;
+    int32  reciver_id = 22;
+    }
     optional int32 number_array_elements = 3 [default = 1];
     repeated RayTrace raytrace = 4;
     message RayTrace
@@ -44,8 +52,16 @@ message ImpulseResponse
 
 message ImpulseRequest
 {
-    required string source = 1;
-    required string receiver = 2;
+   oneof src
+   {
+    string source = 1;
+    int32  source_id = 21;
+    }
+    oneof rcv
+    {
+    string receiver = 2;
+    int32  reciver_id =22;
+    }
 
     optional double sampling_frequency = 6 [default = 12000];
     optional int32 nfft = 7 [default = 2048];
