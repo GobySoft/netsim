@@ -68,11 +68,11 @@ message ImpulseRequest
 
     optional int32 request_id = 10;
     optional double request_time = 11;
-}
+ }
 
 message ObjFuncRequest
 {
-//    option (dccl.msg).unit_system = "si";
+    option (dccl.msg).unit_system = "si";
 
 oneof cntct
     {
@@ -81,7 +81,7 @@ oneof cntct
     }
     optional int32 request_id = 2;
     optional double request_time = 3
-;//        [(dccl.field).units = {base_dimensions: "T"}];
+        [(dccl.field).units = {base_dimensions: "T"}];
 
     repeated Receiver receiver = 4;
     required string requestor = 5;
@@ -100,7 +100,7 @@ oneof cntct
 
 message ObjFuncResponse
 {
-//    option (dccl.msg).unit_system = "si";
+    option (dccl.msg).unit_system = "si";
 
 oneof cntct
     {
@@ -110,7 +110,7 @@ oneof cntct
     optional double contact_depth = 6;
     optional int32 request_id = 2;
     optional double request_time = 3
-;//        [(dccl.field).units = {base_dimensions: "T"}];
+        [(dccl.field).units = {base_dimensions: "T"}];
     repeated Receiver receiver = 4;
     required string requestor = 5;
     message Receiver
