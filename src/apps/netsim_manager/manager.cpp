@@ -25,6 +25,7 @@
 
 #include "goby/zeromq/application/multi_thread.h"
 #include "goby/middleware/io/line_based/serial.h"
+#include "goby/util/linebasedcomms/nmea_sentence.h"
 
 #include "netsim/messages/groups.h"
 #include "netsim/messages/config_request.pb.h"

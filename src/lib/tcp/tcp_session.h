@@ -37,7 +37,7 @@
 
 #include <dccl/binary.h>
 
-#include <goby/util/asio-compat.h>
+#include <goby/util/asio_compat.h>
 
 namespace netsim
 {
