@@ -24,6 +24,7 @@
 #include "goby/middleware/marshalling/protobuf.h"
 
 #include "goby/moos/middleware/moos_plugin_translator.h"
+#include "goby/zeromq/application/multi_thread.h"
 #include "goby/moos/moos_translator.h"
 
 #include "netsim/messages/env_bellhop_req.pb.h"
