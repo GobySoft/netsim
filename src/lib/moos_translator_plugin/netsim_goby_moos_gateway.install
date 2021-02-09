@@ -1,0 +1,3 @@
+#!/bin/bash
+
+GOBY_MOOS_GATEWAY_PLUGINS=libnetsim_moos_plugin.so exec goby_moos_gateway $@
