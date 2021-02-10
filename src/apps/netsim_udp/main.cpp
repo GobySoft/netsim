@@ -239,11 +239,19 @@ void NetSimUDP::process_performance_response(const netsim::protobuf::ObjFuncResp
    
   //  if (r.requestor() != "netsim_udp" )
   //    return;
-
-  int src_id = tcp_port_to_id_.at(r.contact());
+    
   goby::glog.is_debug1() && goby::glog << "Received performance response: "
 				       << r.ShortDebugString()
 				       << std::endl;
+
+  if(!tcp_port_to_id_.count(r.contact()))
+  {
+      glog.is_debug1() && glog << "Ignoring process_performance_response for unknown contact" << std::endl;
+      return;
+  }
+    
+  
+  int src_id = tcp_port_to_id_.at(r.contact());
  
   for (int i = 0; i < r.receiver_size(); i++) 
     {
@@ -275,6 +283,8 @@ double NetSimUDP::transmit_probability(int src_id, int dest_id)
 	  {
 	    return(perf_table[j].mpp_probab());
 	  }
+  return 0;
+  
 }
 
 void NetSimUDP::process_impulse_response(const netsim::protobuf::ImpulseResponse& r)
