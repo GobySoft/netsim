@@ -118,12 +118,13 @@ oneof cntct
         optional string node = 1;
         optional int32  node_id = 21;
         required double range = 2;
-        required double depth = 3;
-        required double metric_db = 4;
-        optional double snr = 5;
-        optional double mpp = 6;
-	optional double tl = 7;
-	optional double nl = 8;
+	optional double delay = 3;
+        required double depth = 4;
+        required double metric_db = 5;
+        optional double snr = 6;
+        optional double mpp = 7;
+	optional double tl = 8;
+	optional double nl = 9;
     }
 }
 
