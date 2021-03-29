@@ -125,6 +125,7 @@ oneof cntct
         optional double mpp = 7;
 	optional double tl = 8;
 	optional double nl = 9;
+        optional double mae = 10;
     }
 }
 
