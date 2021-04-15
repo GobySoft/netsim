@@ -185,13 +185,13 @@ void netsim::LiaisonNetsim::handle_new_log(const netsim::protobuf::LoggerEvent& 
 	timeseries_out_path << event.log_dir() << "/netsim_" << event.start_time() << "_" << std::setw(3) << std::setfill('0') << event.packet_id() << "_timeseries.png";
 
 	{
-	    spect_panel_->setTitle("Audio Spectrogram (Packet #" + std::to_string(event.packet_id())+ ")");
+	    spect_panel_->setTitle("Audio Spectrogram (Transmitter modem " + std::to_string(event.tx_modem_id()) + " packet #" + std::to_string(event.packet_id())+ ")");
 	    spect_image_resource_.reset(new WFileResource(spect_out_path.str().c_str()));
 	    Wt::WLink link(spect_image_resource_.get());
 	    spect_image_->setImageLink(link);
 	}
 	{
-	    timeseries_panel_->setTitle("Audio Timeseries (Packet #" + std::to_string(event.packet_id()) + ")");
+	    timeseries_panel_->setTitle("Audio Timeseries (Transmitter modem " + std::to_string(event.tx_modem_id()) + " packet #" + std::to_string(event.packet_id())+ ")");
 	    timeseries_image_resource_.reset(new WFileResource(timeseries_out_path.str().c_str()));
 	    Wt::WLink link(timeseries_image_resource_.get());
 	    timeseries_image_->setImageLink(link);

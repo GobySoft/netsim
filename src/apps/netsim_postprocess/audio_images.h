@@ -48,7 +48,8 @@ AudioImagesThread(const NetSimPostprocessConfig& config)
 		    if(event.event() == netsim::protobuf::LoggerEvent::ALL_LOGS_CLOSED_FOR_PACKET)
 		    {
                         std::stringstream octave_cmd, convert_cmd;
-			octave_cmd << "flatpak run org.octave.Octave /opt/netsim/src/octave/liaison_plot_signal.m " << event.log_dir() << " " << event.start_time() << " " << event.packet_id();
+			octave_cmd << "flatpak run org.octave.Octave /opt/netsim/src/octave/liaison_plot_signal.m " << event.log_dir() << " " << event.start_time() << " " << event.packet_id() << " " << event.tx_modem_id();
+			
 			glog.is_debug1() && glog << "Running: " << octave_cmd.str() << std::endl;
 			system(octave_cmd.str().c_str());
 

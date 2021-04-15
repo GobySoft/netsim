@@ -106,10 +106,16 @@ class LoggerThread : public ThreadBase
         if (buffer->marker == netsim::TaggedAudioBuffer::Marker::START)
         {
             std::stringstream file_name;
+	    
             file_name << cfg().logger().log_directory() << "/netsim_" << start_time << "_"
                       << ((dir == Direction::IN) ? "in_" : "out_") << std::setw(3)
-                      << std::setfill('0') << buffer->packet_id << "_modem"
-                      << std::to_string(modem_index) << ".bin";
+                      << std::setfill('0') << buffer->packet_id << "_tx"
+                      << std::to_string(from_modem_index);
+
+	    if(dir == Direction::OUT)
+		file_name << "_rx" << to_modem_index;
+
+	    file_name << ".bin";
 
             files_[dir][buffer->packet_id][modem_index].reset(
                 new std::ofstream(file_name.str().c_str(), std::ios::out | std::ios::binary));
@@ -150,6 +156,8 @@ class LoggerThread : public ThreadBase
                 ss_time << start_time;
                 event.set_start_time(ss_time.str());
                 event.set_packet_id(buffer->packet_id);
+		event.set_tx_modem_id(from_modem_index);
+
                 interprocess().publish<netsim::groups::logger_event>(event);
             }
         }

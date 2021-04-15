@@ -2,7 +2,7 @@
 Description=Goby3 Interprocess Daemon
 
 [Service]
-ExecStart=/opt/goby3/bin/gobyd --app 'glog_config { tty_verbosity: VERBOSE }' --interprocess 'platform: "netsim" transport: TCP'
+ExecStart=/usr/bin/gobyd --app 'glog_config { tty_verbosity: VERBOSE }' --interprocess 'platform: "netsim" transport: TCP'
 
 [Install]
 WantedBy=multi-user.target

@@ -5,7 +5,7 @@ BindsTo=gobyd.service
 
 [Service]
 Environment="GOBY_LIAISON_PLUGINS=/opt/netsim/build/lib/libnetsim_liaison.so"
-ExecStart=/opt/goby3/build/bin/goby_liaison /opt/netsim/missions/netsim-liaison.pb.cfg
+ExecStart=/usr/bin/goby_liaison /opt/netsim/missions/netsim-liaison.pb.cfg
 Restart=always
 
 [Install]

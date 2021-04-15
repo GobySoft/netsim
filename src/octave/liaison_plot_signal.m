@@ -6,12 +6,14 @@ close all;
 dir=argv(){1};
 run_start=argv(){2};
 packet_id=str2num(argv(){3});
+tx_modem_id=str2num(argv(){4});
+
 %dir='/home/toby/Desktop/netsim_logs/audio'
 %run_start='20180814T183836'
 %packet_id=5
     
-in_files=glob([dir '/netsim_' run_start '_in_' sprintf('%03d', packet_id) '*.bin']);
-out_files=glob([dir '/netsim_' run_start '_out_' sprintf('%03d', packet_id) '*.bin']);
+in_files=glob([dir '/netsim_' run_start '_in_' sprintf('%03d', packet_id) '_tx' sprintf('%d', tx_modem_id) '.bin']);
+out_files=glob([dir '/netsim_' run_start '_out_' sprintf('%03d', packet_id) '_tx' sprintf('%d', tx_modem_id) '*.bin']);
 num_files=length(in_files)+length(out_files);
 
 fs = 96000;
@@ -50,9 +52,13 @@ if fi == 1
     dt(fi) = out_packet_time(fi-1) - in_packet_time;
   end
 
-  [re_s, re_e, re_te, re_m, re_t, re_nm, re_sp]= regexp(file, "_modem([0-9]+)\.bin");
-  port=str2num(re_t{1}{1})+62000;
-
+  if fi == 1
+      [re_s, re_e, re_te, re_m, re_t, re_nm, re_sp]= regexp(file, "_tx([0-9]+)\.bin");
+      port=str2num(re_t{1}{1})+62000;
+  else
+      [re_s, re_e, re_te, re_m, re_t, re_nm, re_sp]= regexp(file, "_rx([0-9]+)\.bin");
+      port=str2num(re_t{1}{1})+62000;
+  end
   
   figure(1, "visible", "off")
   subplot(num_files, 1, port-62000+1);
