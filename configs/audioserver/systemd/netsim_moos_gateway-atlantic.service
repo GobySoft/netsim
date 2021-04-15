@@ -5,7 +5,7 @@ BindsTo=gobyd.service
 
 [Service]
 Environment="GOBY_MOOS_GATEWAY_PLUGINS=/opt/netsim/build/lib/libnetsim_moos_plugin.so"
-ExecStart=/opt/goby3/build/bin/goby_moos_gateway /opt/netsim/missions/goby_moos_gateway-atlantic.pb.cfg 
+ExecStart=/usr/bin/goby_moos_gateway /opt/netsim/missions/goby_moos_gateway-atlantic.pb.cfg 
 
 [Install]
 WantedBy=gobyd.service
