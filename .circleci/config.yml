@@ -76,7 +76,7 @@ job-template-amd64: &job-template-amd64
   working_directory: /root/netsim
   steps:
     - checkout
-    - run:
+    - run: &run-add-packages-key
         name: Install packages.gobysoft.org key
         command: |
           apt-key adv --recv-key --keyserver keyserver.ubuntu.com 19478082E2F8D3FE
@@ -103,6 +103,7 @@ job-template-amd64: &job-template-amd64
 job-template-deb-amd64: &job-template-deb-amd64
   <<: *job-template-amd64
   steps:
+    - run: *run-add-packages-key
     - run: *run-add-continuous-packages
     - run: *run-update-apt
     - run: &run-import-gpg
