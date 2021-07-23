@@ -5,10 +5,11 @@ BindsTo=gobyd.service
 
 [Service]
 
-# For system loopback testing"
-Environment="NETSIM_PROCESSOR_LIBRARY=/opt/netsim/build/lib/libnetsim_processor_echo_plugin.so"
+# For system loopback testing
+#Environment="NETSIM_PROCESSOR_LIBRARY=/opt/netsim/build/lib/libnetsim_processor_echo_plugin.so"
+#ExecStart=/opt/netsim/build/bin/netsim_core /opt/netsim/missions/netsim-core-echo.pb.cfg
 
-# For LAMSS Virtual Ocean"
+# For LAMSS Virtual Ocean
 Environment="NETSIM_PROCESSOR_LIBRARY=/opt/lamss/lib/liblamss_netsim_processor_plugin.so"
 ExecStart=/opt/netsim/build/bin/netsim_core /opt/netsim/missions/netsim-core.pb.cfg
 
