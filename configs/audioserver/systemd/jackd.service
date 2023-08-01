@@ -3,8 +3,9 @@ Description=Modemsim Jack Audio server
 After=sound.target
 
 [Service]
+Environment=LD_LIBRARY_PATH=/opt/usr/lib
 ExecStartPre=/opt/netsim/scripts/fix_fast_track_levels.sh
-ExecStart=/bin/bash -c "export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -R -dalsa -dmerge -r96000 -p1024 -n2 -H -M"
+ExecStart=/bin/bash -c "export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -n netsim1 -R -dalsa -dhw:F8R_A -r96000 -p1024 -n2 -H -M" 
 
 [Install]
 WantedBy=multi-user.target

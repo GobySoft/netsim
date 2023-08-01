@@ -11,6 +11,8 @@ message JackConfig
     optional int32 port_name_starting_index = 3 [default = 1, (goby.field).description="Starting value for the port index to be appended to 'capture_port_prefix' and 'playback_port_prefix'"];
     optional int32 max_buffer_size = 4 [default = 100, (goby.field).description="Maximum size of the buffer for captured data (before being published via Goby)"];
     optional int32 min_playback_buffer_size = 5 [default = 10, (goby.field).description="Minimum size of the playback buffer, i.e. minimum number of frames required to have received from the ProcessorThreads before commencing playback. Increase this value to avoid buffer underruns, decreasing this value will decrease the minimum end-to-end latency of the system (useful for accurately simulating short range propagations)"];
+    optional string server_name = 6 [(goby.field).description="Jack server name (or default if not set"];
+    
 
     // end to end delay, subtracted from playback start for discrete mode
     optional double calibration_seconds = 10 [default = 0, (goby.field).description="Value to subtract from playback start to compensate for the end-to-end latency of the netsim system. This is highly hardware and configuration dependent, so you will need to measure this for your own system to get accurate time-of-flights. The easiest way to do this is to use set your processor to return packets with zero artificial latency (buffer_start_time == captured buffer time) and measure the two way time of flight using the modem hardware ($CCMPC for the WHOI Micro-Modem)"];

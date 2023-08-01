@@ -1,0 +1,11 @@
+[Unit]
+Description=Modemsim Jack Audio server (card 2)
+After=jackd.service
+
+[Service]
+Environment=LD_LIBRARY_PATH=/opt/usr/lib
+# ExecStartPre=/opt/netsim/scripts/fix_fast_track_levels.sh
+ExecStart=/bin/bash -c "export `dbus-launch | egrep 'ADDRESS|PID'` && exec /usr/bin/jackd -n netsim2 -R -dalsa -dhw:F8R_B -r96000 -p1024 -n2 -H -M" 
+
+[Install]
+WantedBy=jackd.service

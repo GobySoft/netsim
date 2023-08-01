@@ -92,8 +92,8 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         }
 
         std::string client_name = "netsim_core_thread_" + std::to_string(jack_modem_index);
-        const char* server_name = nullptr;
-        jack_options_t options = JackNullOption;
+        const char* server_name = cfg().jack().has_server_name() ? cfg().jack().server_name().c_str() :  nullptr;
+        jack_options_t options = cfg().jack().has_server_name() ? JackServerName : JackNullOption;
         jack_status_t status;
 
         /* open a client connection to the JACK server */
