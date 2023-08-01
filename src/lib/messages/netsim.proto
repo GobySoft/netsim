@@ -68,6 +68,15 @@ message ImpulseRequest
 
     optional int32 request_id = 10;
     optional double request_time = 11;
+
+    message ArrayElement
+      {
+        optional double x_offset = 1 [default = 0];
+        optional double y_offset = 2 [default = 0];
+        optional double z_offset = 3 [default = 0];
+      }
+    repeated ArrayElement  array_element = 40;
+
  }
 
 message ObjFuncRequest
