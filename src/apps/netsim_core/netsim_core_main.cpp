@@ -62,9 +62,6 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
             exit(EXIT_FAILURE);
         }
 
-        if (cfg().node_name_size() != cfg().number_of_modems())
-            glog.is(DIE) && glog << "The node_name field must be specified number_of_modem times"
-                                 << std::endl;
 
         int first_modem_index = 0;
         int local_number_of_modems = cfg().number_of_modems();

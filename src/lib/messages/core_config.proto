@@ -47,9 +47,6 @@ message NetSimCoreConfig
     
     optional int32 sampling_freq = 11 [default = 96000, (goby.field).description="Hertz"];
 
-    // list of node names in order of audio port numbers
-    // must correspond to number_of_modems
-    repeated string node_name = 12 [(goby.field).description="name for mapping JACK index to string names used by netsim_manager. Must be one entry per modem, and the order listed corresponds to index 0, 1, 2, etc."];
 
     optional JackConfig jack = 20;
     optional DetectorConfig detector = 30;
