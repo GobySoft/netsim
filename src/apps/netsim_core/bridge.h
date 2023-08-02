@@ -63,16 +63,19 @@ class BridgeThread : public ThreadBase
 #define BRIDGE_SUBSCRIBE_BRIDGE(z, n, _)                                              \
     case n:                                                                           \
         if (n >= first_modem_index && n < first_modem_index + local_number_of_modems) \
-            interthread()                                                             \
-                .template subscribe<netsim::groups::DetectorAudio<n>::group,          \
-                                    netsim::TaggedAudioBuffer>(bridge_out_callback);  \
-        else                                                                          \
-            interprocess()                                                            \
-                .template subscribe<netsim::groups::BridgeAudio<n>::group,            \
-                                    netsim::TaggedAudioBuffer,                        \
-                                    goby::middleware::BOOST_SERIALIZATION_SCHEME>(    \
-                    bridge_in_callback);
-                break;
+        {  glog.is(VERBOSE) && glog << "Bridge: Interthread Subscribing to DetectorAudio " << n << std::endl; \
+		interthread()						\
+		    .template subscribe<netsim::groups::DetectorAudio<n>::group, \
+                                    netsim::TaggedAudioBuffer>(bridge_out_callback);} \
+        else								\
+	{ glog.is(VERBOSE) && glog << "Bridge: Interprocess Subscribing to BridgeAudio " << n << std::endl; \
+	    interprocess()						\
+                .template subscribe<netsim::groups::BridgeAudio<n>::group, \
+                                    netsim::TaggedAudioBuffer,		\
+                                    goby::middleware::BOOST_SERIALIZATION_SCHEME>( \
+					bridge_in_callback); }		\
+	break;
+
                 BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, BRIDGE_SUBSCRIBE_BRIDGE, nil)
             }
         }
@@ -86,18 +89,26 @@ class BridgeThread : public ThreadBase
     {
         using goby::glog;
         using namespace goby::util::logger;
-        glog.is(DEBUG2) && glog << "Bridge Thread: Received (local) buffer from index: "
-                                << from_index << std::endl;
 
         // publish to appropriate Bridge group (for remote)
+	if(buffer->marker == netsim::TaggedAudioBuffer::Marker::START)
+	{
+	    glog.is_verbose() && glog << "Bridge: Sending START buffer from " << from_index << ", id: " << buffer->packet_id << std::endl;
+	}
+	else if( buffer->marker == netsim::TaggedAudioBuffer::Marker::END)
+	{	
+	    glog.is_verbose() && glog << "Bridge: Sending END buffer from " << from_index << ", id: " << buffer->packet_id << std::endl;
+	}
+	
+	
         switch (from_index)
         {
 #define BRIDGE_PUBLISH_BRIDGE_OUT(z, n, _)                                                      \
     case n:                                                                                     \
-                                                                                                \
-        interprocess()                                                                          \
-            .template publish<netsim::groups::BridgeAudio<n>::group, netsim::TaggedAudioBuffer, \
-                              goby::middleware::BOOST_SERIALIZATION_SCHEME>(buffer);
+                                                                                                 \
+         interprocess()                                                                          \
+             .template publish<netsim::groups::BridgeAudio<n>::group, netsim::TaggedAudioBuffer, \
+                               goby::middleware::BOOST_SERIALIZATION_SCHEME>(buffer); \
             break;
             BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, BRIDGE_PUBLISH_BRIDGE_OUT, nil)
         }
@@ -107,11 +118,19 @@ class BridgeThread : public ThreadBase
     {
         using goby::glog;
         using namespace goby::util::logger;
-        glog.is(DEBUG2) && glog << "Bridge Thread: Received (remote) buffer from index: "
-                                << from_index << std::endl;
-
         // publish to appropriate Detector group (for local)
-        switch (from_index)
+
+	if(buffer->marker == netsim::TaggedAudioBuffer::Marker::START)
+	{
+	    glog.is_verbose() && glog << "Bridge: Received START buffer from " << from_index << ", id: " << buffer->packet_id << std::endl;
+	}
+	else if( buffer->marker == netsim::TaggedAudioBuffer::Marker::END)
+	{	
+	    glog.is_verbose() && glog << "Bridge: Received END buffer from " << from_index << ", id: " << buffer->packet_id << std::endl;
+	}
+
+
+	switch (from_index)
         {
 #define BRIDGE_PUBLISH_DETECTOR_IN(z, n, _) \
     case n: interthread().template publish<netsim::groups::DetectorAudio<n>::group>(buffer); break;

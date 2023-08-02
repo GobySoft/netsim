@@ -95,12 +95,12 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
 
         while (detector_ready < local_number_of_modems) usleep(10000);
 
-        switch (local_number_of_modems + first_modem_index)
+	// we always launch the number of jack threads as we need always need one to handle playback from all modems
+        switch (cfg().number_of_modems())
         {
 #define LAUNCH_JACK_THREAD(z, n, _)                         \
     case NETSIM_MAX_MODEMS - n:                             \
-        if (NETSIM_MAX_MODEMS - 1 - n >= first_modem_index) \
-            launch_thread<JackThread<NETSIM_MAX_MODEMS - 1 - n>>();
+	launch_thread<JackThread<NETSIM_MAX_MODEMS - 1 - n>>();
             BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, LAUNCH_JACK_THREAD, nil)
             break;
         }

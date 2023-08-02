@@ -86,7 +86,14 @@ template <int from_index> class DetectorThread : public ThreadBase
                     // send subbuffer from start of packet to end of buffer
                     in_packet_ = true;
                     in_packet_id = global_packet_id++;
-
+		    in_packet_start_time_ = buffer->buffer_start_time;
+		    
+                    // assume a packet spans at least one buffer, so no need to check the rest of the buffer
+                    glog.is(DEBUG1) && glog
+                                           << "Detector Thread (" << from_index
+                                           << "): Detected START (id: " << in_packet_id << ", time: " << std::setprecision(15)
+                                           << buffer->buffer_start_time << ")" << std::endl;
+		    
                     if (cfg().continuous())
                     {
                         std::shared_ptr<netsim::TaggedAudioBuffer> tagged_buffer(
@@ -132,12 +139,6 @@ template <int from_index> class DetectorThread : public ThreadBase
                             prebuffer_.pop_front();
                         }
                     }
-
-                    // assume a packet spans at least one buffer, so no need to check the rest of the buffer
-                    glog.is(DEBUG1) && glog
-                                           << "Detector Thread (" << from_index
-                                           << "): Detected START at time: " << std::setprecision(15)
-                                           << buffer->buffer_start_time << std::endl;
 
                     break;
                 }
@@ -185,10 +186,11 @@ template <int from_index> class DetectorThread : public ThreadBase
                             tagged_subbuffer);
                     glog.is(DEBUG1) &&
                         glog << "Detector Thread (" << from_index
-                             << "): Detected END at time: " << std::setprecision(15)
+			     << "): Detected END (id: " << in_packet_id << ", time: " << std::setprecision(15)
                              << subbuffer->buffer_start_time +
-                                    static_cast<double>(it - buffer->samples.begin()) /
-                                        static_cast<double>(cfg().sampling_freq())
+		                static_cast<double>(it - buffer->samples.begin()) /
+			static_cast<double>(cfg().sampling_freq()) << ", duration: " << subbuffer->buffer_start_time + static_cast<double>(it - buffer->samples.begin()) /
+			static_cast<double>(cfg().sampling_freq()) - in_packet_start_time_ << ")"
                              << std::endl;
                     // assume no new packet starts within the same buffer
                     break;
@@ -212,6 +214,8 @@ template <int from_index> class DetectorThread : public ThreadBase
   private:
     bool in_packet_{false};
     int in_packet_id{-1};
+    double in_packet_start_time_{0};
+    
     jack_nframes_t frames_since_silence{0};
 
     boost::circular_buffer<std::shared_ptr<const netsim::AudioBuffer>> prebuffer_{1};

@@ -61,8 +61,11 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
   public:
     JackThread(const netsim::protobuf::NetSimCoreConfig& config)
         : ThreadBase(config, ThreadBase::loop_max_frequency()),
+	  first_modem_index_(config.has_bridge() ? config.bridge().first_modem_index() : 0),
+	  local_number_of_modems_(config.has_bridge() ? config.bridge().local_number_of_modems() : config.number_of_modems()),
+	  do_capture_(jack_modem_index >= first_modem_index_ &&  jack_modem_index < (first_modem_index_ + local_number_of_modems_)),
           input_port_(nullptr),
-          output_port_(config.number_of_modems(), nullptr),
+          output_port_(local_number_of_modems_, nullptr),
           fs_(config.sampling_freq()),
           audio_in_group_(std::string("audio_in_") + std::to_string(jack_modem_index))
     {
@@ -136,55 +139,59 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         if (jack_activate(client_))
             glog.is(DIE) && glog << "cannot activate client" << std::endl;
 
-        const char** capture_port_names =
-            jack_get_ports(client_, nullptr, nullptr, JackPortIsOutput);
-        if (capture_port_names == nullptr)
-            glog.is(DIE) && glog << "no capture ports" << std::endl;
 
-        int j = 0;
-        while (capture_port_names[j])
-        {
-            glog.is(DEBUG2) && glog << "Capture port: " << capture_port_names[j] << std::endl;
-            ++j;
-        }
-
-        std::string capture_port_name =
-            cfg().jack().capture_port_prefix() +
-            std::to_string(jack_modem_index + cfg().jack().port_name_starting_index() -
-                           cfg().bridge().first_modem_index());
-
-        std::string input_port_name = std::string("input_") + std::to_string(jack_modem_index);
-        input_port_ = jack_port_register(client_, input_port_name.c_str(), port_type_.c_str(),
-                                         JackPortIsInput, 0);
-        if (!input_port_)
-            glog.is(DIE) && glog << "no more JACK ports available" << std::endl;
-
-        if (jack_connect(client_, capture_port_name.c_str(), jack_port_name(input_port_)))
-            glog.is(DIE) && glog << "cannot connect input port: " << input_port_name
-                                 << " to capture port: " << capture_port_name << std::endl;
-
-        free(capture_port_names);
-
+	if(do_capture_)
+	{
+	    glog.is(VERBOSE) && glog << "Jack (index: " << jack_modem_index << ") is capturing" << std::endl;
+	    const char** capture_port_names =
+		jack_get_ports(client_, nullptr, nullptr, JackPortIsOutput);
+	    if (capture_port_names == nullptr)
+		    glog.is(DIE) && glog << "no capture ports" << std::endl;
+		
+		int j = 0;
+		while (capture_port_names[j])
+		{
+		    glog.is(DEBUG2) && glog << "Capture port: " << capture_port_names[j] << std::endl;
+		    ++j;
+		}
+		
+		std::string capture_port_name =
+		    cfg().jack().capture_port_prefix() +
+		    std::to_string(jack_modem_index + cfg().jack().port_name_starting_index() -
+				   cfg().bridge().first_modem_index());
+		
+		std::string input_port_name = std::string("input_") + std::to_string(jack_modem_index);
+		input_port_ = jack_port_register(client_, input_port_name.c_str(), port_type_.c_str(),
+						 JackPortIsInput, 0);
+		if (!input_port_)
+		    glog.is(DIE) && glog << "no more JACK ports available" << std::endl;
+		
+		if (jack_connect(client_, capture_port_name.c_str(), jack_port_name(input_port_)))
+		    glog.is(DIE) && glog << "cannot connect input port: " << input_port_name
+					 << " to capture port: " << capture_port_name << std::endl;
+		
+		free(capture_port_names);
+	}
+	
         const char** playback_port_names =
             jack_get_ports(client_, nullptr, nullptr, JackPortIsPhysical | JackPortIsInput);
         if (playback_port_names == nullptr)
             glog.is(DIE) && glog << "no physical playback ports" << std::endl;
 
-        j = 0;
+        int j = 0;
         while (playback_port_names[j])
         {
             glog.is(DEBUG2) && glog << "Playback port: " << playback_port_names[j] << std::endl;
             ++j;
         }
 
-        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+        for (int i = 0, n = local_number_of_modems_; i < n; ++i)
         {
             std::string playback_port_name =
                 cfg().jack().playback_port_prefix() +
-                std::to_string(i + cfg().jack().port_name_starting_index() -
-                               cfg().bridge().first_modem_index());
+                std::to_string(i + cfg().jack().port_name_starting_index());
 
-            std::string output_port_name = std::string("output_") + std::to_string(i);
+            std::string output_port_name = std::string("output_") + std::to_string(i + first_modem_index_);
             output_port_[i] = jack_port_register(client_, output_port_name.c_str(),
                                                  port_type_.c_str(), JackPortIsOutput, 0);
             if (!output_port_[i])
@@ -196,6 +203,9 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
                                      << ", ensure playback port exists?" << std::endl;
         }
         free(playback_port_names);
+
+	glog.is(VERBOSE) && glog << "Starting JACK thread: " << jack_modem_index << std::endl;
+
     }
 
     ~JackThread() { jack_client_close(client_); }
@@ -212,7 +222,7 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         rx_buffer->jack_frame_time = jack_last_frame_time(client_);
         rx_buffer->buffer_start_time = buffer_start_time;
 
-        if (input_port_ != nullptr) // could be briefly empty while we initialize all the threads
+        if (input_port_ != nullptr) // could be briefly empty while we initialize all the threads or if this is a playback-only jack thread (when using Bridge)
         {
             netsim::sample_t* in = (netsim::sample_t*)jack_port_get_buffer(input_port_, nframes);
             netsim::sample_t* sample = in;
@@ -233,13 +243,14 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         if (cfg().continuous())
         {
             std::unique_lock<std::mutex> lock(audio_out_mutex_);
-            for (int output_port_i = 0, n = cfg().number_of_modems(); output_port_i < n;
+            for (int output_port_i = 0, n = local_number_of_modems_; output_port_i < n;
                  ++output_port_i)
             {
+		int modem_index = output_port_i + first_modem_index_;
                 if (output_port_[output_port_i] != nullptr &&
-                    !audio_out_buffer_[output_port_i].empty())
+                    !audio_out_buffer_[modem_index].empty())
                 {
-                    auto tx_buffer = audio_out_buffer_[output_port_i].front();
+                    auto tx_buffer = audio_out_buffer_[modem_index].front();
                     auto expected_jack_frame_time = jack_last_frame_time(client_);
                     auto actual_jack_frame_time = tx_buffer->buffer->jack_frame_time;
                     if (actual_jack_frame_time != expected_jack_frame_time)
@@ -263,18 +274,19 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         else
         {
             std::unique_lock<std::mutex> lock(audio_out_mutex_);
-            for (int output_port_i = 0, n = cfg().number_of_modems(); output_port_i < n;
+            for (int output_port_i = 0, n = local_number_of_modems_; output_port_i < n;
                  ++output_port_i)
             {
+		int modem_index = output_port_i + first_modem_index_;
                 if (output_port_[output_port_i] != nullptr &&
-                    !audio_out_buffer_[output_port_i].empty())
+                    !audio_out_buffer_[modem_index].empty())
                 {
                     // does the front buffer start within this frame?
-                    auto tx_buffer = audio_out_buffer_[output_port_i].front();
+                    auto tx_buffer = audio_out_buffer_[modem_index].front();
                     jack_nframes_t frame_start = 0; // when we begin playback in this frame
-                    if (new_packet_[output_port_i])
+                    if (new_packet_[modem_index])
                     {
-                        audio_out_index_[output_port_i] = 0;
+                        audio_out_index_[modem_index] = 0;
 
                         if (tx_buffer->buffer->buffer_start_time >
                             buffer_start_time) // playback is in the future, otherwise start asap (0)
@@ -287,22 +299,22 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
                         if (frame_start > nframes) // this buffer doesn't start yet
                             continue;
 
-                        if (audio_out_buffer_[output_port_i].size() <
+                        if (audio_out_buffer_[modem_index].size() <
                             cfg().jack().min_playback_buffer_size())
                         {
                             glog.is(DEBUG1) &&
                                 glog << "Waiting for "
                                      << cfg().jack().min_playback_buffer_size() -
-                                            audio_out_buffer_[output_port_i].size()
+                                            audio_out_buffer_[modem_index].size()
                                      << " more frames before beginning playback for modem: "
-                                     << output_port_i << std::endl;
+                                     << modem_index << std::endl;
                             continue;
                         }
 
                         glog.is(DEBUG1) && glog << "Jack START playback for port: " << output_port_i
                                                 << ": size: " << tx_buffer->buffer->samples.size()
                                                 << ", frame_start: " << frame_start << std::endl;
-                        new_packet_[output_port_i] = false;
+                        new_packet_[modem_index] = false;
                     }
 
                     netsim::sample_t* out = (netsim::sample_t*)jack_port_get_buffer(
@@ -310,7 +322,7 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
                     netsim::sample_t* sample = out;
                     for (jack_nframes_t frame = 0; frame < nframes; ++frame)
                     {
-                        auto& audio_out_index = audio_out_index_[output_port_i];
+                        auto& audio_out_index = audio_out_index_[modem_index];
 
                         if (frame < frame_start)
                         {
@@ -322,19 +334,19 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
                             while (audio_out_index >= tx_buffer->buffer->samples.size())
                             {
                                 audio_out_index = 0;
-                                audio_out_buffer_[output_port_i].pop_front();
-                                if (audio_out_buffer_[output_port_i].empty())
+                                audio_out_buffer_[modem_index].pop_front();
+                                if (audio_out_buffer_[modem_index].empty())
                                 {
                                     // hopefully we only run out when we're at the end of the packet
                                     if (tx_buffer->marker != netsim::TaggedAudioBuffer::Marker::END)
                                         glog.is(WARN) &&
                                             glog << "Missing playback buffer for modem: "
-                                                 << output_port_i << std::endl;
+                                                 << modem_index << std::endl;
                                     tx_buffer = empty_buffer_;
                                 }
                                 else
                                 {
-                                    tx_buffer = audio_out_buffer_[output_port_i].front();
+                                    tx_buffer = audio_out_buffer_[modem_index].front();
                                 }
                             }
 
@@ -404,6 +416,7 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
             {
                 audio_out_buffer_[modem_index].clear();
                 new_packet_[modem_index] = true;
+		goby::glog.is_debug1() && goby::glog << "Jack (index: " << jack_modem_index << ") received start of packet (id: "<< buffer->packet_id << ") from modem: " << modem_index << std::endl;
             }
             audio_out_buffer_[modem_index].push_back(buffer);
         }
@@ -411,39 +424,54 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
 
     void loop() override
     {
-        using goby::glog;
+       	
+	using goby::glog;
         using namespace goby::util::logger;
 
-        std::shared_ptr<netsim::AudioBuffer> temp_buffer;
-        // grab a element to publish while locked
-        {
-            std::unique_lock<std::mutex> lock(audio_in_mutex_);
-            if (audio_in_buffer_.empty()) // if empty, wait until it's not
-                audio_in_cv_.wait(lock, [this] { return !audio_in_buffer_.empty(); });
-
-            if (audio_in_buffer_.size() >= cfg().jack().max_buffer_size())
-            {
-                glog.is(WARN) && glog << "Jack buffer exceeds maximum: " << audio_in_buffer_.size()
-                                      << std::endl;
-                audio_in_buffer_.clear();
-                return;
-            }
-            temp_buffer = audio_in_buffer_.front();
-        }
-
-        // actually publish it while unlocked
-        interthread().template publish<netsim::groups::AudioIn<jack_modem_index>::group>(
-            temp_buffer);
-
-        // lock again and pop the front of the buffer
-        {
-            std::unique_lock<std::mutex> lock(audio_in_mutex_);
-            audio_in_buffer_.pop_front();
-        }
+	if(do_capture_)
+	{
+	
+	    std::shared_ptr<netsim::AudioBuffer> temp_buffer;
+	    // grab a element to publish while locked
+	    {
+		std::unique_lock<std::mutex> lock(audio_in_mutex_);
+		if (audio_in_buffer_.empty()) // if empty, wait until it's not
+		    audio_in_cv_.wait(lock, [this] { return !audio_in_buffer_.empty(); });
+		
+		if (audio_in_buffer_.size() >= cfg().jack().max_buffer_size())
+		{
+		    glog.is(WARN) && glog << "Jack buffer exceeds maximum: " << audio_in_buffer_.size()
+					  << std::endl;
+		    audio_in_buffer_.clear();
+		    return;
+		}
+		temp_buffer = audio_in_buffer_.front();
+	    }
+	    
+	    // actually publish it while unlocked
+	    interthread().template publish<netsim::groups::AudioIn<jack_modem_index>::group>(
+		temp_buffer);
+	    
+	    // lock again and pop the front of the buffer
+	    {
+		std::unique_lock<std::mutex> lock(audio_in_mutex_);
+		audio_in_buffer_.pop_front();
+	    }
+	}
+	else
+	{
+	    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
     }
 
   private:
+    int first_modem_index_;
+    int local_number_of_modems_;
+    bool do_capture_;
+    
     jack_port_t* input_port_;
+
+    // 0->N = first_modem_index_->local_number_of_modems_+first_modem_index_
     std::vector<jack_port_t*> output_port_;
     const jack_nframes_t fs_;
 
@@ -460,6 +488,8 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
     std::deque<std::shared_ptr<netsim::AudioBuffer>> audio_in_buffer_;
 
     std::mutex audio_out_mutex_;
+
+    // maps modem index to output buffer
     std::map<int, std::deque<std::shared_ptr<const netsim::TaggedAudioBuffer>>> audio_out_buffer_;
 
     // maps modem index to the current sample within the latest netsim::AudioBuffer
