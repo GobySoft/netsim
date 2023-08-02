@@ -75,24 +75,24 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
             // audio_out_groups_.push_back(goby::middleware::DynamicGroup(
             //     std::string("audio_out_from_") + std::to_string(jack_modem_index) + "_to_" +
             //     std::to_string(i)));
-            auto audio_out_callback = [this,
-                                       i](std::shared_ptr<const netsim::TaggedAudioBuffer> buffer) {
-                this->audio_out(buffer, i);
-            };
+            auto audio_out_callback =
+                [this, i](std::shared_ptr<const netsim::TaggedAudioBuffer> buffer)
+            { this->audio_out(buffer, i); };
             switch (i)
             {
-#define NETSIM_JACK_THREAD_SUBSCRIBE_AUDIO_OUT(z, n, _)                         \
-    case n:                                                                     \
-        interthread()                                                           \
+#define NETSIM_JACK_THREAD_SUBSCRIBE_AUDIO_OUT(z, n, _)                               \
+    case n:                                                                           \
+        interthread()                                                                 \
             .template subscribe<netsim::groups::AudioOut<jack_modem_index, n>::group, \
-                                netsim::TaggedAudioBuffer>(audio_out_callback); \
+                                netsim::TaggedAudioBuffer>(audio_out_callback);       \
         break;
                 BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, NETSIM_JACK_THREAD_SUBSCRIBE_AUDIO_OUT, nil)
             }
         }
 
         std::string client_name = "netsim_core_thread_" + std::to_string(jack_modem_index);
-        const char* server_name = cfg().jack().has_server_name() ? cfg().jack().server_name().c_str() :  nullptr;
+        const char* server_name =
+            cfg().jack().has_server_name() ? cfg().jack().server_name().c_str() : nullptr;
         jack_options_t options = cfg().jack().has_server_name() ? JackServerName : JackNullOption;
         jack_status_t status;
 
@@ -150,7 +150,8 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
 
         std::string capture_port_name =
             cfg().jack().capture_port_prefix() +
-            std::to_string(jack_modem_index + cfg().jack().port_name_starting_index());
+            std::to_string(jack_modem_index + cfg().jack().port_name_starting_index() -
+                           cfg().bridge().first_modem_index());
 
         std::string input_port_name = std::string("input_") + std::to_string(jack_modem_index);
         input_port_ = jack_port_register(client_, input_port_name.c_str(), port_type_.c_str(),
@@ -180,7 +181,8 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         {
             std::string playback_port_name =
                 cfg().jack().playback_port_prefix() +
-                std::to_string(i + cfg().jack().port_name_starting_index());
+                std::to_string(i + cfg().jack().port_name_starting_index() -
+                               cfg().bridge().first_modem_index());
 
             std::string output_port_name = std::string("output_") + std::to_string(i);
             output_port_[i] = jack_port_register(client_, output_port_name.c_str(),
@@ -190,7 +192,8 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
 
             if (jack_connect(client_, jack_port_name(output_port_[i]), playback_port_name.c_str()))
                 glog.is(DIE) && glog << "cannot connect output port: " << output_port_name
-                                     << " to playback port: " << playback_port_name << ", ensure playback port exists?" << std::endl;
+                                     << " to playback port: " << playback_port_name
+                                     << ", ensure playback port exists?" << std::endl;
         }
         free(playback_port_names);
     }
@@ -429,7 +432,8 @@ template <int jack_modem_index> class JackThread : public ThreadBase, public Jac
         }
 
         // actually publish it while unlocked
-        interthread().template publish<netsim::groups::AudioIn<jack_modem_index>::group>(temp_buffer);
+        interthread().template publish<netsim::groups::AudioIn<jack_modem_index>::group>(
+            temp_buffer);
 
         // lock again and pop the front of the buffer
         {

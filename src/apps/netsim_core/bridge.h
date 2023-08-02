@@ -92,9 +92,12 @@ class BridgeThread : public ThreadBase
         // publish to appropriate Bridge group (for remote)
         switch (from_index)
         {
-#define BRIDGE_PUBLISH_BRIDGE_OUT(z, n, _) \
-    case n: /*interprocess()*/             \
-        interthread().template publish<netsim::groups::BridgeAudio<n>::group>(buffer);
+#define BRIDGE_PUBLISH_BRIDGE_OUT(z, n, _)                                                      \
+    case n:                                                                                     \
+                                                                                                \
+        interprocess()                                                                          \
+            .template publish<netsim::groups::BridgeAudio<n>::group, netsim::TaggedAudioBuffer, \
+                              goby::middleware::BOOST_SERIALIZATION_SCHEME>(buffer);
             break;
             BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, BRIDGE_PUBLISH_BRIDGE_OUT, nil)
         }
@@ -110,12 +113,8 @@ class BridgeThread : public ThreadBase
         // publish to appropriate Detector group (for local)
         switch (from_index)
         {
-#define BRIDGE_PUBLISH_DETECTOR_IN(z, n, _)                                                       \
-    case n:                                                                                       \
-        interprocess()                                                                            \
-            .template publish<netsim::groups::DetectorAudio<n>::group, netsim::TaggedAudioBuffer, \
-                              goby::middleware::BOOST_SERIALIZATION_SCHEME>(buffer);              \
-        break;
+#define BRIDGE_PUBLISH_DETECTOR_IN(z, n, _) \
+    case n: interthread().template publish<netsim::groups::DetectorAudio<n>::group>(buffer); break;
             BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, BRIDGE_PUBLISH_DETECTOR_IN, nil)
         }
     }

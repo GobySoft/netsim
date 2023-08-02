@@ -31,12 +31,20 @@ message LoggerConfig
     optional string log_directory = 2 [default = ".", (goby.field).description="Directory to write logged audio data"];
 }
 
+message BridgeConfig
+{
+    required int32 first_modem_index = 1 [default = 0, (goby.field).description="index of the first modem handled by this instance of netsim_core (use when running multiple instances of netsim_core)."]; 
+    required int32 local_number_of_modems = 2 [(goby.field).description="number of modems handled by this instance of netsim_core (use when running multiple instances of netsim_core)."]; 
+}
+
+
 message NetSimCoreConfig
 {
     optional goby.middleware.protobuf.AppConfig app = 1;
     optional goby.zeromq.protobuf.InterProcessPortalConfig interprocess = 2;
 
     required int32 number_of_modems = 10 [(goby.field).description="how many modems are connected, up to a compile-time maximum set in the CMake variable NETSIM_MAX_MODEMS (default 16)"];
+    
     optional int32 sampling_freq = 11 [default = 96000, (goby.field).description="Hertz"];
 
     // list of node names in order of audio port numbers
@@ -47,9 +55,14 @@ message NetSimCoreConfig
     optional DetectorConfig detector = 30;
 
     optional LoggerConfig logger = 40;
+
+    optional BridgeConfig bridge = 50;
+
     
     optional bool continuous = 60 [default = false, (goby.field).description="Process audio data continuously rather than on a packet basis. Not currently supported by the LAMSS virtual ocean processor plugin."];
 
+
+    
     // 1000 = LAMSS Virtual Ocean plugin
     // 1001 = ProcessorEcho plugin
     extensions 1000 to max;
