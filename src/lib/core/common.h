@@ -41,6 +41,7 @@ typedef float sample_t;
 
 struct AudioBuffer
 {
+    AudioBuffer() {}
     AudioBuffer(size_t size) : samples(size, 0) {}
 
     template <typename It> AudioBuffer(It begin, It end) : samples(begin, end) {}

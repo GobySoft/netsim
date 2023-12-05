@@ -11,7 +11,7 @@ BindsTo=gobyd.service
 
 # For LAMSS Virtual Ocean
 Environment="NETSIM_PROCESSOR_LIBRARY=/opt/lamss/lib/liblamss_netsim_processor_plugin.so"
-ExecStart=/opt/netsim/build/bin/netsim_core /opt/netsim/missions/netsim-core.pb.cfg  --jack 'server_name: "netsim1"' --bridge 'first_modem_index: 0 local_number_of_modems: 2'
+ExecStart=/opt/netsim/build/bin/netsim_core /opt/netsim/missions/netsim-core.pb.cfg --bridge 'first_modem_index: 2 local_number_of_modems: 1' --jack 'server_name: "netsim2"' --app 'glog_config { file_log { file_name: "/opt/logs/netsim_core_card2_%%1%%.txt" }}'
 
 [Install]
 WantedBy=gobyd.service

@@ -51,7 +51,7 @@ TLPlotThread(const NetSimPostprocessConfig& config)
 			{
 			    
 			    std::stringstream octave_cmd;
-			    octave_cmd << "flatpak run org.octave.Octave /opt/netsim/src/octave/liaison_create_shd.m " << resp.output_file();
+			    octave_cmd << "octave /opt/netsim/src/octave/liaison_create_shd.m " << resp.output_file();
 			    glog.is_debug1() && glog << "Running: " << octave_cmd.str() << std::endl;
 			    system(octave_cmd.str().c_str());
 			    glog.is_debug1() && glog << "Octave complete" << std::endl;

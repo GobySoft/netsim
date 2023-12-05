@@ -20,11 +20,11 @@
 // You should have received a copy of the GNU General Public License
 // along with NETSIM.  If not, see <http://www.gnu.org/licenses/>.
 
-
 #include "goby/middleware/marshalling/protobuf.h"
 
 #include "goby/zeromq/application/multi_thread.h"
 
+#include "bridge.h"
 #include "detector.h"
 #include "jack_thread.h"
 #include "logger.h"
@@ -35,6 +35,7 @@
 using namespace goby::util::logger;
 using goby::glog;
 
+std::atomic<int> bridge_ready{0};
 std::atomic<int> detector_ready{0};
 std::atomic<int> netsim::processor_ready{0};
 
@@ -61,34 +62,45 @@ class NetSimCore : public goby::zeromq::MultiThreadApplication<netsim::protobuf:
             exit(EXIT_FAILURE);
         }
 
-        if (cfg().node_name_size() != cfg().number_of_modems())
-            glog.is(DIE) && glog << "The node_name field must be specified number_of_modem times"
-                                 << std::endl;
 
-        for (int i = 0, n = cfg().number_of_modems(); i < n; ++i)
+        int first_modem_index = 0;
+        int local_number_of_modems = cfg().number_of_modems();
+        if (cfg().has_bridge())
+        {
+            first_modem_index = cfg().bridge().first_modem_index();
+            local_number_of_modems = cfg().bridge().local_number_of_modems();
+            launch_thread<BridgeThread>();
+            while (!bridge_ready) usleep(10000);
+        }
+
+        for (int i = first_modem_index, n = local_number_of_modems + first_modem_index; i < n; ++i)
         {
             // each thread processes the traffic to a given output modem
             (*processor_load_ptr)(this, i);
         }
 
-        while (netsim::processor_ready < cfg().number_of_modems()) usleep(10000);
+        while (netsim::processor_ready < local_number_of_modems) usleep(10000);
 
-        switch (cfg().number_of_modems())
+        switch (local_number_of_modems + first_modem_index)
         {
-#define LAUNCH_DETECTOR_THREAD(z, n, _) \
-    case NETSIM_MAX_MODEMS - n: launch_thread<DetectorThread<NETSIM_MAX_MODEMS - 1 - n>>();
+#define LAUNCH_DETECTOR_THREAD(z, n, _)                     \
+    case NETSIM_MAX_MODEMS - n:                             \
+        if (NETSIM_MAX_MODEMS - 1 - n >= first_modem_index) \
+            launch_thread<DetectorThread<NETSIM_MAX_MODEMS - 1 - n>>();
             BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, LAUNCH_DETECTOR_THREAD, nil)
             break;
 
             default: break;
         }
 
-        while (detector_ready < cfg().number_of_modems()) usleep(10000);
+        while (detector_ready < local_number_of_modems) usleep(10000);
 
+	// we always launch the number of jack threads as we need always need one to handle playback from all modems
         switch (cfg().number_of_modems())
         {
-#define LAUNCH_JACK_THREAD(z, n, _) \
-    case NETSIM_MAX_MODEMS - n: launch_thread<JackThread<NETSIM_MAX_MODEMS - 1 - n>>();
+#define LAUNCH_JACK_THREAD(z, n, _)                         \
+    case NETSIM_MAX_MODEMS - n:                             \
+	launch_thread<JackThread<NETSIM_MAX_MODEMS - 1 - n>>();
             BOOST_PP_REPEAT(NETSIM_MAX_MODEMS, LAUNCH_JACK_THREAD, nil)
             break;
         }

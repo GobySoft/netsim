@@ -20,6 +20,7 @@ fs = 96000;
 
 out_packet_time=NaN(size(out_files));
 max_time = 15;
+
 for fi = 1:num_files
   if fi == 1    
     file = strsplit(in_files{1}, '/'){end};
@@ -61,7 +62,7 @@ if fi == 1
   end
   
   figure(1, "visible", "off")
-  subplot(num_files, 1, port-62000+1);
+  subplot(8, 1, port-62000+1);
   
   downsample_factor=20;
   % downsample to reduce visual data to render
@@ -91,7 +92,7 @@ if fi == 1
   title(title_str);
 
   figure(2, "visible", "off")
-  subplot(num_files, 1, port-62000+1);
+  subplot(8, 1, port-62000+1);
   [S, f, t] = specgram(data{fi}, 2048, 96000);
   S = 20*log10(abs(S));
   imagesc(t + dt(fi), f, S);

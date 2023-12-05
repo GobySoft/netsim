@@ -1,5 +1,7 @@
 #!/bin/bash
-Ultra=$(/usr/bin/aplay -l | /bin/grep F8R | cut -d ":" -f 1 | cut -d " " -f 2)
+
+for Ultra in `sudo /usr/bin/aplay -l | /bin/grep F8R | cut -d ":" -f 1 | cut -d " " -f 2`;
+do
 
 i=0
 J=0
@@ -18,4 +20,6 @@ done
 i=0
 for i in $(seq 4); do
 amixer -c ${Ultra} set "Effect Return $i" 0% > /dev/null
+done
+
 done
