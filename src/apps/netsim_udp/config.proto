@@ -1,4 +1,4 @@
-syntax="proto2";
+syntax = "proto2";
 
 import "goby/middleware/protobuf/app_config.proto";
 import "goby/zeromq/protobuf/interprocess_config.proto";
@@ -25,6 +25,16 @@ message NetSimUDPConfig
     repeated ModemEndPoint modem = 30;
 
     optional bool send_all_as_broadcast = 40 [default = true];
+
+    enum PacketSuccessMethod
+    {
+        ALL_PACKETS_SUCCEED = 0;  // 100% packet success
+        RANGE_TABLE = 1;  // linear interpolate between probabilities defined in
+                          // range_to_packet_success
+        MPP = 2;  // use netsim::protobuf::ObjFuncRequest performance request
+                  // MPP values
+    }
+    required PacketSuccessMethod packet_success_method = 45;
 
     message RangeToBernoulliProbability
     {

@@ -44,13 +44,13 @@ using goby::acomms::protobuf::ModemTransmission;
 
 class ModemPairPerformance
 {
-public:
-  int src_id;
-  int dest_id;
-  double mpp;
-  double mpp_probab();
+  public:
+    int src_id;
+    int dest_id;
+    double mpp;
+    double mpp_probab();
 };
-  
+
 class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
 {
   public:
@@ -72,36 +72,37 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
             range_to_packet_success_prob_.insert(
                 std::make_pair(range_prob.range(), range_prob.success_probability()));
 
-        if (range_to_packet_success_prob_.size() < 2)
+        if (cfg().packet_success_method() == NetSimUDPConfig::RANGE_TABLE &&
+            range_to_packet_success_prob_.size() < 2)
         {
-            glog.is_verbose() && glog << "Use 100% packet success. To define range based success "
-                                         "rate, use at least 'range_to_packet_success' values"
-                                      << std::endl;
-            range_to_packet_success_prob_.clear();
+            glog.is_die() && glog << "To use RANGE_TABLE packet success method, you must use at "
+                                     "least two 'range_to_packet_success' values"
+                                  << std::endl;
         }
 
-	// Create Performance table for modem combinations
-	perf_count = 0;
-	perf_table.clear();
-        last_performance_request = 0;
-        performance_request_interval = 5;
-	ModemPairPerformance new_perf;
-	for (int i=0; i< cfg().modem_size(); i++)
-	  {
-	    new_perf.src_id = cfg().modem(i).modem_id(); 
-	    for (int j = 0; j < i; j++)
-	      {
-		new_perf.dest_id = cfg().modem(j).modem_id();
-		new_perf.mpp = 80.0; // prob = 1.
-		perf_table.push_back(new_perf);
-	      }
-	  }
-	
-	
+        if (cfg().packet_success_method() == NetSimUDPConfig::MPP)
+        {
+            // Create Performance table for modem combinations
+            perf_count_ = 0;
+            perf_table_.clear();
+            ModemPairPerformance new_perf;
+            for (int i = 0; i < cfg().modem_size(); i++)
+            {
+                new_perf.src_id = cfg().modem(i).modem_id();
+                for (int j = 0; j < i; j++)
+                {
+                    new_perf.dest_id = cfg().modem(j).modem_id();
+                    new_perf.mpp = 80.0; // prob = 1.
+                    perf_table_.push_back(new_perf);
+                }
+            }
+        }
+
         launch_thread<goby::middleware::io::UDPOneToManyThread<udp_in, udp_out>>(cfg().udp());
 
         interthread().subscribe<udp_in, goby::middleware::protobuf::IOData>(
-            [this](std::shared_ptr<const goby::middleware::protobuf::IOData> io_msg) {
+            [this](std::shared_ptr<const goby::middleware::protobuf::IOData> io_msg)
+            {
                 ModemTransmission msg;
                 msg.ParseFromString(io_msg->data());
                 glog.is_debug1() && glog << msg.ShortDebugString() << std::endl;
@@ -137,13 +138,19 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
                 }
             });
 
-	interprocess().subscribe<netsim::groups::performance_response, netsim::protobuf::ObjFuncResponse>(
-	    [this](const netsim::protobuf::ObjFuncResponse& r)
-	    { process_performance_response(r); });
+        if (cfg().packet_success_method() == NetSimUDPConfig::MPP)
+        {
+            interprocess()
+                .subscribe<netsim::groups::performance_response, netsim::protobuf::ObjFuncResponse>(
+                    [this](const netsim::protobuf::ObjFuncResponse& r)
+                    { process_performance_response(r); });
+        }
 
-        interprocess().subscribe<netsim::groups::impulse_response, netsim::protobuf::ImpulseResponse>(
-            [this](const netsim::protobuf::ImpulseResponse& r) { process_impulse_response(r); });
-}
+        interprocess()
+            .subscribe<netsim::groups::impulse_response, netsim::protobuf::ImpulseResponse>(
+                [this](const netsim::protobuf::ImpulseResponse& r)
+                { process_impulse_response(r); });
+    }
 
   private:
     void forward_packet(int src_id, int dest_id, const ModemTransmission& msg);
@@ -151,7 +158,7 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
 
     void process_impulse_response(const netsim::protobuf::ImpulseResponse& r);
     void process_performance_response(const netsim::protobuf::ObjFuncResponse& r);
-    double transmit_probability(int src_id, int dest_id);
+    double mpp_transmit_probability(int src_id, int dest_id);
 
     void loop() override;
     double travel_time(netsim::protobuf::ImpulseResponse impulse_response);
@@ -161,10 +168,8 @@ class NetSimUDP : public goby::zeromq::MultiThreadApplication<NetSimUDPConfig>
     std::map<std::string, int> endpoint_to_id_;
     std::map<std::string, int> tcp_port_to_id_;
 
-    std::vector<ModemPairPerformance> perf_table;
-    int perf_count ;
-    double last_performance_request;
-    double performance_request_interval;
+    std::vector<ModemPairPerformance> perf_table_;
+    int perf_count_;
     // messages waiting for an netsim::protobuf::ImpulseResponse
     // src id -> dest id -> message
     std::map<int, std::multimap<int, ModemTransmission>> forward_buffer_;
@@ -189,9 +194,13 @@ int main(int argc, char* argv[]) { return goby::run<NetSimUDP>(argc, argv); }
 
 void NetSimUDP::forward_packet(int src_id, int dest_id, const ModemTransmission& msg)
 {
-  // performance_request
-  performance_request(src_id,dest_id);
-  static int imp_req_id(0);
+    if (cfg().packet_success_method() == NetSimUDPConfig::MPP)
+    {
+        // performance_request
+        performance_request(src_id, dest_id);
+    }
+
+    static int imp_req_id(0);
     netsim::protobuf::ImpulseRequest imp_req;
     imp_req.set_request_time(goby::time::SystemClock::now<goby::time::SITime>().value());
     imp_req.set_request_id(imp_req_id++);
@@ -214,12 +223,10 @@ void NetSimUDP::performance_request(int src_id, int dest_id)
     perf_req.set_contact(std::to_string(modems_.at(src_id).modem_tcp_port()));
     netsim::protobuf::ObjFuncRequest::Receiver* receiver = 0;
     receiver = perf_req.add_receiver();
-    receiver -> set_node(std::to_string(modems_.at(dest_id).modem_tcp_port()));
+    receiver->set_node(std::to_string(modems_.at(dest_id).modem_tcp_port()));
     interprocess().publish<netsim::groups::performance_request>(perf_req);
-    goby::glog.is_debug1() && goby::glog << "Sent performance request: "
-					 << perf_req.ShortDebugString()
-                                         << std::endl;
-
+    goby::glog.is_debug1() &&
+        goby::glog << "Sent performance request: " << perf_req.ShortDebugString() << std::endl;
 }
 
 void NetSimUDP::loop()
@@ -233,68 +240,62 @@ void NetSimUDP::loop()
     delay_buffer_.erase(delay_buffer_.begin(), upper_it);
 }
 
-
 void NetSimUDP::process_performance_response(const netsim::protobuf::ObjFuncResponse& r)
 {
-   
-  //  if (r.requestor() != "netsim_udp" )
-  //    return;
-    
-  goby::glog.is_debug1() && goby::glog << "Received performance response: "
-				       << r.ShortDebugString()
-				       << std::endl;
+    //  if (r.requestor() != "netsim_udp" )
+    //    return;
 
-  if(!tcp_port_to_id_.count(r.contact()))
-  {
-      glog.is_debug1() && glog << "Ignoring process_performance_response for unknown contact" << std::endl;
-      return;
-  }
-    
-  
-  int src_id = tcp_port_to_id_.at(r.contact());
- 
-  for (int i = 0; i < r.receiver_size(); i++) 
+    goby::glog.is_debug1() &&
+        goby::glog << "Received performance response: " << r.ShortDebugString() << std::endl;
+
+    if (!tcp_port_to_id_.count(r.contact()))
     {
-      int dest_id = tcp_port_to_id_.at(r.receiver(i).node());
-      // insert mpp in table
-      for (int j=0; j < perf_table.size() ; j++)
-	{
-	  if ((src_id == perf_table[j].src_id && dest_id == perf_table[j].dest_id) ||
-	      ( dest_id == perf_table[j].src_id && src_id == perf_table[j].dest_id))
-	    {
-	      perf_table[j].mpp = r.receiver(i).mpp();
-	      glog.is_debug1() && glog << "MPP performance received for src_id="
-				       << src_id
-				       << ", dest_id="
-				       << dest_id
-				       << ", mpp=" << perf_table[j].mpp
-				       << ", mpp_probab=" << perf_table[j].mpp_probab()
-				       << std::endl;
-	    }
-	}
+        glog.is_debug1() && glog << "Ignoring process_performance_response for unknown contact"
+                                 << std::endl;
+        return;
+    }
+
+    int src_id = tcp_port_to_id_.at(r.contact());
+
+    for (int i = 0; i < r.receiver_size(); i++)
+    {
+        int dest_id = tcp_port_to_id_.at(r.receiver(i).node());
+        // insert mpp in table
+        for (int j = 0; j < perf_table_.size(); j++)
+        {
+            if ((src_id == perf_table_[j].src_id && dest_id == perf_table_[j].dest_id) ||
+                (dest_id == perf_table_[j].src_id && src_id == perf_table_[j].dest_id))
+            {
+                perf_table_[j].mpp = r.receiver(i).mpp();
+                glog.is_debug1() &&
+                    glog << "MPP performance received for src_id=" << src_id
+                         << ", dest_id=" << dest_id << ", mpp=" << perf_table_[j].mpp
+                         << ", mpp_probab=" << perf_table_[j].mpp_probab() << std::endl;
+            }
+        }
     }
 }
 
-double NetSimUDP::transmit_probability(int src_id, int dest_id)
+double NetSimUDP::mpp_transmit_probability(int src_id, int dest_id)
 {
-  for (int j=0; j < perf_table.size() ; j++)
-    if ((src_id == perf_table[j].src_id && dest_id == perf_table[j].dest_id) ||
-	( dest_id == perf_table[j].src_id && src_id == perf_table[j].dest_id) )
-	  {
-	    return(perf_table[j].mpp_probab());
-	  }
-  return 0;
-  
+    for (int j = 0; j < perf_table_.size(); j++)
+        if ((src_id == perf_table_[j].src_id && dest_id == perf_table_[j].dest_id) ||
+            (dest_id == perf_table_[j].src_id && src_id == perf_table_[j].dest_id))
+        {
+            return (perf_table_[j].mpp_probab());
+        }
+    return 0;
 }
 
 void NetSimUDP::process_impulse_response(const netsim::protobuf::ImpulseResponse& r)
 {
-    if(!tcp_port_to_id_.count(r.source())|| !tcp_port_to_id_.at(r.receiver()))
+    if (!tcp_port_to_id_.count(r.source()) || !tcp_port_to_id_.at(r.receiver()))
     {
-        glog.is_debug1() && glog << "Ignoring impulse response for unknown source/receiver pair" << std::endl;
+        glog.is_debug1() && glog << "Ignoring impulse response for unknown source/receiver pair"
+                                 << std::endl;
         return;
     }
-    
+
     int src_id = tcp_port_to_id_.at(r.source());
     int dest_id = tcp_port_to_id_.at(r.receiver());
 
@@ -322,12 +323,18 @@ void NetSimUDP::process_impulse_response(const netsim::protobuf::ImpulseResponse
 
             bool packet_success = true;
 
-            if (!range_to_packet_success_prob_.empty())
-	      {
-		//                double p = goby::util::linear_interpolate<double, double>(
-		//    approx_range / boost::units::si::meters, range_to_packet_success_prob_);
-		// replaced by mpp probability, HS 05142020. 
-		double p = transmit_probability(src_id,dest_id);
+            if (cfg().packet_success_method() != NetSimUDPConfig::ALL_PACKETS_SUCCEED)
+            {
+                double p = 0;
+                if (cfg().packet_success_method() == NetSimUDPConfig::RANGE_TABLE)
+                {
+                    p = goby::util::linear_interpolate<double, double>(
+                        approx_range / boost::units::si::meters, range_to_packet_success_prob_);
+                }
+                else if (cfg().packet_success_method() == NetSimUDPConfig::MPP)
+                {
+                    p = mpp_transmit_probability(src_id, dest_id);
+                }
 
                 glog.is_debug1() && glog << "Probability of success: " << p << std::endl;
                 std::bernoulli_distribution d(p);
@@ -378,8 +385,8 @@ double NetSimUDP::travel_time(netsim::protobuf::ImpulseResponse impulse_response
         double amp = std::fabs(impulse_response.raytrace(i).amplitude());
         int bounces = impulse_response.raytrace(i).surface_bounces() +
                       impulse_response.raytrace(i).bottom_bounces();
-	//        if (amp > max_amp && bounces == 0)
-	        if (amp > max_amp )
+        //        if (amp > max_amp && bounces == 0)
+        if (amp > max_amp)
         {
             max_amp = amp;
             max_indx = i;
@@ -392,5 +399,5 @@ double NetSimUDP::travel_time(netsim::protobuf::ImpulseResponse impulse_response
 
 double ModemPairPerformance::mpp_probab()
 {
-  return(std::max(0.0,std::min(1.0, ((mpp-30)*80./50.+20)/100.0)));
+    return (std::max(0.0, std::min(1.0, ((mpp - 30) * 80. / 50. + 20) / 100.0)));
 }
