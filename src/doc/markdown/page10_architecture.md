@@ -35,7 +35,7 @@ While not necessary (except for the processor plugin to `netsim_core`), this cod
 
 ### Vehicle Simulation Computer(s)
 
-The vehicle simulation can be run anywhere in the world, connected to the *audioserver* via an OpenVPN link through a cloud computing server (netsim.gobysoft.org).
+The vehicle simulation can be run anywhere in the world, connected to the *audioserver* via an Wireguard link through a cloud computing server (gobysoft.org).
 
 Very little is required out of the vehicle simulation: it must provide basic position data for the simulated vehicles/nodes, and connect to the data interface of the modems via TCP.
 
