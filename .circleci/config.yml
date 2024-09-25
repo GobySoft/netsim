@@ -7,9 +7,7 @@ environment-template-common: &environment-template-common
   DEBEMAIL: "toby@gobysoft.org"
   QUILT_PATCHES: debian/patches
   QUILT_REFRESH_ARGS: "-p ab --no-timestamps --no-index --strip-trailing-whitespace"
-  CC: /usr/bin/clang
-  CXX: /usr/bin/clang++
-  
+
 environment-template-amd64: &environment-template-amd64
   TARGET_ARCH: "amd64"
   DEB_BUILD_OPTIONS: "parallel=2"
