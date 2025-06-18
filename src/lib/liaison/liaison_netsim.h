@@ -23,18 +23,18 @@
 #ifndef LIAISONNETSIM20180820H
 #define LIAISONNETSIM20180820H
 
-#include <Wt/WBorder>
-#include <Wt/WColor>
-#include <Wt/WCssDecorationStyle>
-#include <Wt/WDoubleSpinBox>
-#include <Wt/WGroupBox>
-#include <Wt/WImage>
-#include <Wt/WPaintDevice>
-#include <Wt/WPaintedWidget>
-#include <Wt/WPainter>
-#include <Wt/WPushButton>
-#include <Wt/WText>
-#include <Wt/WVBoxLayout>
+#include <Wt/WBorder.h>
+#include <Wt/WColor.h>
+#include <Wt/WCssDecorationStyle.h>
+#include <Wt/WDoubleSpinBox.h>
+#include <Wt/WGroupBox.h>
+#include <Wt/WImage.h>
+#include <Wt/WPaintDevice.h>
+#include <Wt/WPaintedWidget.h>
+#include <Wt/WPainter.h>
+#include <Wt/WPushButton.h>
+#include <Wt/WText.h>
+#include <Wt/WVBoxLayout.h>
 
 #include "goby/middleware/marshalling/protobuf.h"
 
@@ -58,11 +58,7 @@ class LiaisonNetsim;
 class TLPaintedWidget : public Wt::WPaintedWidget
 {
   public:
-    TLPaintedWidget(LiaisonNetsim* netsim, Wt::WContainerWidget* parent)
-        : Wt::WPaintedWidget(parent), netsim_(netsim)
-    {
-        resize(10, 10);
-    }
+    TLPaintedWidget(LiaisonNetsim* netsim) : netsim_(netsim) { resize(10, 10); }
 
   protected:
     void paintEvent(Wt::WPaintDevice* paintDevice);
@@ -100,37 +96,22 @@ class LiaisonNetsim
     const netsim::protobuf::LiaisonNetsimConfig& netsim_cfg_;
 
     Wt::WPanel* timeseries_panel_;
-    Wt::WContainerWidget* timeseries_box_;
     Wt::WImage* timeseries_image_;
-    std::unique_ptr<Wt::WResource> timeseries_image_resource_;
+    std::shared_ptr<Wt::WResource> timeseries_image_resource_;
     Wt::WPanel* spect_panel_;
-    Wt::WContainerWidget* spect_box_;
     Wt::WImage* spect_image_;
-    std::unique_ptr<Wt::WResource> spect_image_resource_;
+    std::shared_ptr<Wt::WResource> spect_image_resource_;
 
     Wt::WPanel* tl_panel_;
-    Wt::WContainerWidget* tl_box_;
     TLPaintedWidget* tl_plot_;
-    std::unique_ptr<Wt::WResource> tl_plot_resource_;
+    std::shared_ptr<Wt::WResource> tl_plot_resource_;
 
     Wt::WTable* tl_table_;
 
-    Wt::WText* tl_tx_txt_;
     Wt::WComboBox* tl_tx_;
-
-    Wt::WText* tl_rx_txt_;
-    Wt::WComboBox* tl_rx_;
-
-    Wt::WText* tl_r_txt_;
     Wt::WSpinBox* tl_r_;
-
-    Wt::WText* tl_dr_txt_;
     Wt::WSpinBox* tl_dr_;
-
-    Wt::WText* tl_z_txt_;
     Wt::WSpinBox* tl_z_;
-
-    Wt::WText* tl_dz_txt_;
     Wt::WSpinBox* tl_dz_;
 
     Wt::WPushButton* tl_request_;
@@ -142,8 +123,8 @@ class LiaisonNetsim
 
     netsim::protobuf::iBellhopResponse tl_bellhop_resp_;
 
-    std::vector<Wt::WPen> rx_pens_{Wt::WPen(Wt::white),  Wt::WPen(Wt::white), Wt::WPen(Wt::yellow),
-                                   Wt::WPen(Wt::yellow), Wt::WPen(Wt::gray),  Wt::WPen(Wt::gray)};
+    std::vector<Wt::WPen> rx_pens_{Wt::WPen(Wt::StandardColor::White),  Wt::WPen(Wt::StandardColor::White), Wt::WPen(Wt::StandardColor::Yellow),
+                                   Wt::WPen(Wt::StandardColor::Yellow), Wt::WPen(Wt::StandardColor::Gray),  Wt::WPen(Wt::StandardColor::Gray)};
 
     // int = modem_tcp_port
     std::map<int, netsim::protobuf::NavUpdate> last_nav_;
@@ -168,31 +149,27 @@ class NetsimCommsThread : public goby::zeromq::LiaisonCommsThread<LiaisonNetsim>
         : goby::zeromq::LiaisonCommsThread<LiaisonNetsim>(wt_app, config, index), wt_app_(wt_app)
     {
         interprocess().subscribe<netsim::groups::post_process_event, netsim::protobuf::LoggerEvent>(
-            [this](const netsim::protobuf::LoggerEvent& event) {
-                wt_app_->post_to_wt([=]() { wt_app_->handle_new_log(event); });
-            });
+            [this](const netsim::protobuf::LoggerEvent& event)
+            { wt_app_->post_to_wt([=]() { wt_app_->handle_new_log(event); }); });
 
-        interprocess().subscribe<netsim::groups::post_process_event, netsim::protobuf::iBellhopResponse>(
-            [this](const netsim::protobuf::iBellhopResponse& resp) {
-                wt_app_->post_to_wt([=]() { wt_app_->handle_bellhop_resp(resp); });
-            });
+        interprocess()
+            .subscribe<netsim::groups::post_process_event, netsim::protobuf::iBellhopResponse>(
+                [this](const netsim::protobuf::iBellhopResponse& resp)
+                { wt_app_->post_to_wt([=]() { wt_app_->handle_bellhop_resp(resp); }); });
 
         interprocess()
             .subscribe<netsim::groups::configuration, netsim::protobuf::NetSimManagerConfig>(
-                [this](const netsim::protobuf::NetSimManagerConfig& manager_cfg) {
-                    wt_app_->post_to_wt([=]() { wt_app_->handle_manager_cfg(manager_cfg); });
-                });
+                [this](const netsim::protobuf::NetSimManagerConfig& manager_cfg)
+                { wt_app_->post_to_wt([=]() { wt_app_->handle_manager_cfg(manager_cfg); }); });
 
         interprocess()
             .subscribe<netsim::groups::env_nav_update, netsim::protobuf::EnvironmentNavUpdate>(
-                [this](const netsim::protobuf::EnvironmentNavUpdate& update) {
-                    wt_app_->post_to_wt([=]() { wt_app_->handle_updated_nav(update); });
-                });
+                [this](const netsim::protobuf::EnvironmentNavUpdate& update)
+                { wt_app_->post_to_wt([=]() { wt_app_->handle_updated_nav(update); }); });
 
         interprocess().subscribe<netsim::groups::receive_stats, netsim::protobuf::ReceiveStats>(
-            [this](const netsim::protobuf::ReceiveStats& stats) {
-                wt_app_->post_to_wt([=]() { wt_app_->handle_receive_stats(stats); });
-            });
+            [this](const netsim::protobuf::ReceiveStats& stats)
+            { wt_app_->post_to_wt([=]() { wt_app_->handle_receive_stats(stats); }); });
 
         netsim::protobuf::ConfigRequest req;
         req.set_subsystem(netsim::protobuf::ConfigRequest::MANAGER);
