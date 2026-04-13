@@ -4,9 +4,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 
-# require C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# require C++17 (Goby 3.x headers use C++17 features such as if constexpr)
+if(NOT CMAKE_CXX_STANDARD OR CMAKE_CXX_STANDARD LESS 17)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  message(STATUS "Setting CMAKE_CXX_STANDARD to 17 as required by Goby 3.x")
+endif()
 
 # versions
 set(PROJECT_VERSION_MAJOR "1")
