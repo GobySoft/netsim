@@ -16,6 +16,9 @@ set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT
 
 set(PROJECT_SOVERSION "1")
 
+find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+
 include(GobyTarget)
 
 find_package(DCCL REQUIRED)
