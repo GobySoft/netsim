@@ -109,8 +109,6 @@ function(add_goby_executable)
   endif()
 
   target_link_libraries(${args_TARGET} goby ${args_LINK_LIBRARIES})
-
-  install(TARGETS ${args_TARGET} RUNTIME DESTINATION bin)
 endfunction()
 
 # add_goby_library - build a Goby library target (SHARED by default)
