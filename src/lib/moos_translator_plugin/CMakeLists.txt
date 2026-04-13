@@ -1,6 +1,7 @@
-
-add_library(netsim_moos_plugin SHARED moos_plugin.cpp)
-target_link_libraries(netsim_moos_plugin goby goby_moos goby_zeromq ${LAMSS_PROTOBUF_LIBRARY} netsim_messages)
+add_goby_library(TARGET netsim_moos_plugin
+  SOURCES moos_plugin.cpp
+  LINK_LIBRARIES goby goby_moos goby_zeromq ${LAMSS_PROTOBUF_LIBRARY} netsim_messages
+)
 
 configure_file(netsim_goby_moos_gateway.in ${project_BIN_DIR}/netsim_goby_moos_gateway @ONLY)
 

@@ -1,6 +1,5 @@
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_CURRENT_BINARY_DIR} config.proto)
-
-add_executable(impulse_rpc_test test.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_link_libraries(impulse_rpc_test goby goby_zeromq netsim_messages)
-
+add_goby_executable(TARGET impulse_rpc_test
+  SOURCES test.cpp
+  PROTOS config.proto
+  LINK_LIBRARIES goby_zeromq netsim_messages
+)
