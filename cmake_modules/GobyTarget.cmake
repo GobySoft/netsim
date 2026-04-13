@@ -153,7 +153,8 @@ function(add_goby_library)
   add_library(${args_TARGET} ${_lib_type} ${_sources})
 
   if(args_PROTOS)
-    target_include_directories(${args_TARGET} PUBLIC "${_protoc_out_dir}")
+    target_include_directories(${args_TARGET} PUBLIC
+      $<BUILD_INTERFACE:${_protoc_out_dir}>)
   endif()
 
   if(args_LINK_LIBRARIES)
