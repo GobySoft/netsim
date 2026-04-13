@@ -23,13 +23,23 @@
 # Internal helper: compile .proto files with --cpp_out + --dccl_out.
 # Sets OUT_VAR in the caller's scope to the list of generated source files.
 function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
-  # Build deduplicated list of -I flags
+  # Build deduplicated list of -I flags.
+  # We intentionally omit CMAKE_CURRENT_SOURCE_DIR and PROTOC_OUT_DIR here:
+  # each .proto is first copied into PROTOC_OUT_DIR so that protoc sees it at
+  # the path <PROTOC_OUT_DIR>/<name>.proto.  protoc then derives the canonical
+  # proto name by matching the file path against the -I import dirs; because
+  # PROTOC_OUT_DIR is a subdirectory of one of the IMPORT_DIRS (e.g.
+  # build/include/netsim/acousticstoolbox is under build/include), the
+  # canonical name becomes the correct full path such as
+  # "netsim/acousticstoolbox/environment.proto" rather than just
+  # "environment.proto" from CMAKE_CURRENT_SOURCE_DIR.  This ensures the
+  # descriptor table names in all generated .pb.cc files are consistent when
+  # one proto imports another (e.g. svp_request_response.proto imports
+  # environment.proto), preventing "has not been declared" link/compile errors.
   set(_import_flags)
   set(_seen_dirs)
   foreach(_dir
-      ${CMAKE_CURRENT_SOURCE_DIR}
       ${CMAKE_CURRENT_BINARY_DIR}
-      ${PROTOC_OUT_DIR}
       ${IMPORT_DIRS}
       ${GOBY_PROTOBUF_IMPORT_DIRS})
     if(_dir)
@@ -46,6 +56,9 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
     get_filename_component(_abs_proto "${_proto}" ABSOLUTE)
     get_filename_component(_proto_we  "${_abs_proto}" NAME_WE)
 
+    # Copy the source .proto into PROTOC_OUT_DIR so that protoc's canonical
+    # name resolution works correctly (see comment above).
+    set(_proto_dest "${PROTOC_OUT_DIR}/${_proto_we}.proto")
     set(_pb_h  "${PROTOC_OUT_DIR}/${_proto_we}.pb.h")
     set(_pb_cc "${PROTOC_OUT_DIR}/${_proto_we}.pb.cc")
 
@@ -54,9 +67,10 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
     # that the DCCL plugin can insert into the cpp-generated files.
     add_custom_command(
       OUTPUT "${_pb_h}" "${_pb_cc}"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_abs_proto}" "${_proto_dest}"
       COMMAND protobuf::protoc
       ARGS --cpp_out "${PROTOC_OUT_DIR}"
-           "${_abs_proto}"
+           "${_proto_dest}"
            ${_import_flags}
            --dccl_out "${PROTOC_OUT_DIR}"
       DEPENDS "${_abs_proto}" protobuf::protoc
