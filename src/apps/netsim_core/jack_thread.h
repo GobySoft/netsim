@@ -38,7 +38,7 @@
 #include "netsim/messages/core_config.pb.h"
 #include "netsim/messages/groups.h"
 
-using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
+using ThreadBase = goby::zeromq::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 int jack_process(jack_nframes_t nframes, void* arg);
 void jack_shutdown(void* arg);

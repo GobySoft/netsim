@@ -32,7 +32,7 @@
 #include "netsim/messages/groups.h"
 #include <jack/types.h>
 
-using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
+using ThreadBase = goby::zeromq::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 namespace netsim
 {
