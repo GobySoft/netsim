@@ -78,7 +78,8 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
     endif()
   endforeach()
 
-  # Compute output path prefix (relative path from _cpp_out_root to _protoc_out_abs).
+  # Compute the relative path from _cpp_out_root to _protoc_out_abs once;
+  # it is the same for all protos in this PROTOC_OUT_DIR invocation.
   file(RELATIVE_PATH _rel_subdir "${_cpp_out_root}" "${_protoc_out_abs}")
 
   # Phase 1 (configure time): copy every .proto into PROTOC_OUT_DIR NOW.
@@ -101,7 +102,7 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
 
     set(_proto_dest "${_protoc_out_abs}/${_proto_we}.proto")
 
-    # Output files: protoc places them at <cpp_out_root>/<rel_subdir>/<name>.pb.*
+    # Output files: protoc writes them at <cpp_out_root>/<rel_path_to_protoc_out>/<name>.pb.*
     if(_rel_subdir)
       set(_pb_h  "${_cpp_out_root}/${_rel_subdir}/${_proto_we}.pb.h")
       set(_pb_cc "${_cpp_out_root}/${_rel_subdir}/${_proto_we}.pb.cc")
