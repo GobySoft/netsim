@@ -23,21 +23,34 @@
 # Internal helper: compile .proto files with --cpp_out + --dccl_out.
 # Sets OUT_VAR in the caller's scope to the list of generated source files.
 function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
-  # Build deduplicated list of -I flags.
-  # We intentionally omit CMAKE_CURRENT_SOURCE_DIR and PROTOC_OUT_DIR here:
-  # each .proto is first copied into PROTOC_OUT_DIR so that protoc sees it at
-  # the path <PROTOC_OUT_DIR>/<name>.proto.  protoc then derives the canonical
-  # proto name by matching the file path against the -I import dirs; because
-  # PROTOC_OUT_DIR is a subdirectory of one of the IMPORT_DIRS (e.g.
-  # build/include/netsim/acousticstoolbox is under build/include), the
-  # canonical name becomes the correct full path such as
-  # "netsim/acousticstoolbox/environment.proto" rather than just
-  # "environment.proto" from CMAKE_CURRENT_SOURCE_DIR.  This ensures the
-  # descriptor table names in all generated .pb.cc files are consistent when
-  # one proto imports another (e.g. svp_request_response.proto imports
-  # environment.proto), preventing "has not been declared" link/compile errors.
+  # Strategy (mirrors the original FindProtobufLocal.cmake behaviour):
+  #
+  # 1. Each .proto is first copied into PROTOC_OUT_DIR so that protoc can
+  #    resolve cross-proto imports using a stable on-disk path (e.g.
+  #    build/include/netsim/acousticstoolbox/environment.proto).
+  #
+  # 2. The --cpp_out (and --dccl_out) root must be the import-base directory
+  #    that is a parent of PROTOC_OUT_DIR, NOT PROTOC_OUT_DIR itself.
+  #    Reason: protoc appends the canonical proto name (relative to the -I
+  #    base) to the --cpp_out dir when writing output files.  If
+  #    PROTOC_OUT_DIR = build/include/netsim/acousticstoolbox and the canonical
+  #    name is netsim/acousticstoolbox/environment.proto, passing --cpp_out
+  #    build/include/netsim/acousticstoolbox would write the output to
+  #    build/include/netsim/acousticstoolbox/netsim/acousticstoolbox/environment.pb.cc
+  #    (wrong).  Passing --cpp_out build/include writes it to
+  #    build/include/netsim/acousticstoolbox/environment.pb.cc (correct).
+  #
+  # 3. CMAKE_CURRENT_SOURCE_DIR is intentionally excluded from -I flags so
+  #    that the canonical name is derived from the import-base dir (producing
+  #    e.g. "netsim/acousticstoolbox/environment.proto") rather than just the
+  #    basename ("environment.proto").  Consistent canonical names are required
+  #    so that descriptor_table symbols match across all generated .pb.cc files
+  #    when one proto imports another.
+
+  # Collect deduplicated import dirs and their absolute paths.
   set(_import_flags)
   set(_seen_dirs)
+  set(_all_import_abs)
   foreach(_dir
       ${CMAKE_CURRENT_BINARY_DIR}
       ${IMPORT_DIRS}
@@ -47,7 +60,21 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
       if(NOT "${_abs_dir}" IN_LIST _seen_dirs)
         list(APPEND _seen_dirs "${_abs_dir}")
         list(APPEND _import_flags -I "${_abs_dir}")
+        list(APPEND _all_import_abs "${_abs_dir}")
       endif()
+    endif()
+  endforeach()
+
+  # Determine the --cpp_out root: the import dir that is a strict parent of
+  # PROTOC_OUT_DIR (or PROTOC_OUT_DIR itself when no parent import dir exists).
+  get_filename_component(_protoc_out_abs "${PROTOC_OUT_DIR}" ABSOLUTE)
+  set(_cpp_out_root "${_protoc_out_abs}")
+  foreach(_idir ${_all_import_abs})
+    # Check if _protoc_out_abs starts with _idir/ (i.e. _idir is a parent)
+    string(FIND "${_protoc_out_abs}" "${_idir}/" _pos)
+    if(_pos EQUAL 0)
+      set(_cpp_out_root "${_idir}")
+      break()
     endif()
   endforeach()
 
@@ -56,11 +83,20 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
     get_filename_component(_abs_proto "${_proto}" ABSOLUTE)
     get_filename_component(_proto_we  "${_abs_proto}" NAME_WE)
 
-    # Copy the source .proto into PROTOC_OUT_DIR so that protoc's canonical
-    # name resolution works correctly (see comment above).
-    set(_proto_dest "${PROTOC_OUT_DIR}/${_proto_we}.proto")
-    set(_pb_h  "${PROTOC_OUT_DIR}/${_proto_we}.pb.h")
-    set(_pb_cc "${PROTOC_OUT_DIR}/${_proto_we}.pb.cc")
+    # Copy the source .proto into PROTOC_OUT_DIR so protoc finds it at the
+    # correct path when resolving cross-file imports.
+    set(_proto_dest "${_protoc_out_abs}/${_proto_we}.proto")
+
+    # Output files: protoc places them at <cpp_out_root>/<rel_path>/<name>.pb.*
+    # where <rel_path> is PROTOC_OUT_DIR relative to _cpp_out_root.
+    file(RELATIVE_PATH _rel_subdir "${_cpp_out_root}" "${_protoc_out_abs}")
+    if(_rel_subdir)
+      set(_pb_h  "${_cpp_out_root}/${_rel_subdir}/${_proto_we}.pb.h")
+      set(_pb_cc "${_cpp_out_root}/${_rel_subdir}/${_proto_we}.pb.cc")
+    else()
+      set(_pb_h  "${_cpp_out_root}/${_proto_we}.pb.h")
+      set(_pb_cc "${_cpp_out_root}/${_proto_we}.pb.cc")
+    endif()
 
     # Run protoc with --cpp_out first, then --dccl_out last.
     # This ordering matches the original protobuf_generate_cpp_dccl and ensures
@@ -69,10 +105,10 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
       OUTPUT "${_pb_h}" "${_pb_cc}"
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_abs_proto}" "${_proto_dest}"
       COMMAND protobuf::protoc
-      ARGS --cpp_out "${PROTOC_OUT_DIR}"
+      ARGS --cpp_out "${_cpp_out_root}"
            "${_proto_dest}"
            ${_import_flags}
-           --dccl_out "${PROTOC_OUT_DIR}"
+           --dccl_out "${_cpp_out_root}"
       DEPENDS "${_abs_proto}" protobuf::protoc
       COMMENT "Running dccl protocol buffer compiler on ${_proto}"
       VERBATIM)
