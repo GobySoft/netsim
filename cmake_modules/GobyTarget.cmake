@@ -78,18 +78,30 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
     endif()
   endforeach()
 
+  # Compute output path prefix (relative path from _cpp_out_root to _protoc_out_abs).
+  file(RELATIVE_PATH _rel_subdir "${_cpp_out_root}" "${_protoc_out_abs}")
+
+  # Phase 1 (configure time): copy every .proto into PROTOC_OUT_DIR NOW.
+  # This mirrors the original FindProtobufLocal.cmake which used configure_file()
+  # to pre-populate the proto copies before any build commands run.  Without this,
+  # parallel builds can invoke protoc for an importing proto (e.g.
+  # svp_request_response.proto) before the build-time copy of the imported proto
+  # (e.g. environment.proto) has executed, causing protoc to fail with
+  # "File not found in import path".
+  foreach(_proto ${PROTOS})
+    get_filename_component(_abs_proto "${_proto}" ABSOLUTE)
+    get_filename_component(_proto_we  "${_abs_proto}" NAME_WE)
+    configure_file("${_abs_proto}" "${_protoc_out_abs}/${_proto_we}.proto" COPYONLY)
+  endforeach()
+
   set(_all_generated)
   foreach(_proto ${PROTOS})
     get_filename_component(_abs_proto "${_proto}" ABSOLUTE)
     get_filename_component(_proto_we  "${_abs_proto}" NAME_WE)
 
-    # Copy the source .proto into PROTOC_OUT_DIR so protoc finds it at the
-    # correct path when resolving cross-file imports.
     set(_proto_dest "${_protoc_out_abs}/${_proto_we}.proto")
 
-    # Output files: protoc places them at <cpp_out_root>/<rel_path>/<name>.pb.*
-    # where <rel_path> is PROTOC_OUT_DIR relative to _cpp_out_root.
-    file(RELATIVE_PATH _rel_subdir "${_cpp_out_root}" "${_protoc_out_abs}")
+    # Output files: protoc places them at <cpp_out_root>/<rel_subdir>/<name>.pb.*
     if(_rel_subdir)
       set(_pb_h  "${_cpp_out_root}/${_rel_subdir}/${_proto_we}.pb.h")
       set(_pb_cc "${_cpp_out_root}/${_rel_subdir}/${_proto_we}.pb.cc")
@@ -98,9 +110,9 @@ function(_goby_generate_protos OUT_VAR PROTOC_OUT_DIR PROTOS IMPORT_DIRS)
       set(_pb_cc "${_cpp_out_root}/${_proto_we}.pb.cc")
     endif()
 
-    # Run protoc with --cpp_out first, then --dccl_out last.
-    # This ordering matches the original protobuf_generate_cpp_dccl and ensures
-    # that the DCCL plugin can insert into the cpp-generated files.
+    # Phase 2 (build time): re-copy the .proto if the source has changed since
+    # the last configure run, then invoke protoc.  The DEPENDS on _abs_proto
+    # ensures the copy + compile steps re-run whenever the source proto changes.
     add_custom_command(
       OUTPUT "${_pb_h}" "${_pb_cc}"
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_abs_proto}" "${_proto_dest}"
