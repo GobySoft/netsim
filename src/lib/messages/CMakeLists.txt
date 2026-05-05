@@ -1,15 +1,16 @@
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${project_INC_DIR}
-  netsim/messages/netsim.proto
-  netsim/messages/tool.proto
-  netsim/messages/liaison.proto
-  netsim/messages/logger.proto
-  netsim/messages/core_config.proto
-  netsim/messages/config_request.proto
-  netsim/messages/manager_config.proto
-  netsim/messages/env_bellhop_req.proto
-  )
-
-add_library(netsim_messages SHARED ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(netsim_messages ${PROTOBUF_LIBRARIES} dccl netsim_acousticstoolbox)
+add_goby_library(TARGET netsim_messages
+  PROTOS
+    netsim.proto
+    tool.proto
+    liaison.proto
+    logger.proto
+    core_config.proto
+    config_request.proto
+    manager_config.proto
+    env_bellhop_req.proto
+  LINK_LIBRARIES dccl netsim_acousticstoolbox
+  PROTO_IMPORT_DIRS ${project_INC_DIR}
+  PROTOC_OUT_DIR ${project_INC_DIR}/netsim/messages
+)
 
 project_install_lib(netsim_messages)

@@ -30,7 +30,7 @@
 #include "config.pb.h"
 #include "netsim/messages/logger.pb.h"
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimPostprocessConfig>;
+using ThreadBase = goby::zeromq::SimpleThread<NetSimPostprocessConfig>;
 
 class AudioImagesThread : public ThreadBase
 {

@@ -4,9 +4,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 
-# require C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# require C++17 (Goby 3.x headers use C++17 features such as if constexpr)
+if(NOT CMAKE_CXX_STANDARD OR CMAKE_CXX_STANDARD LESS 17)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  message(STATUS "Setting CMAKE_CXX_STANDARD to 17 as required by Goby 3.x")
+endif()
 
 # versions
 set(PROJECT_VERSION_MAJOR "1")
@@ -16,20 +19,20 @@ set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT
 
 set(PROJECT_SOVERSION "1")
 
-find_package(ProtobufLocal REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
+find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+
+include(GobyTarget)
 
 find_package(DCCL REQUIRED)
 get_target_property(DCCL_INCLUDE_DIR dccl INTERFACE_INCLUDE_DIRECTORIES)
 
 message("Using DCCL in ${DCCL_INCLUDE_DIR}")
 include_directories("${DCCL_INCLUDE_DIR}")
-protobuf_include_dirs("${DCCL_INCLUDE_DIR}")
 
 find_package(GOBY 3 REQUIRED zeromq moos)
 message("Using Goby in ${GOBY_INCLUDE_DIR}")
 include_directories("${GOBY_INCLUDE_DIR}")
-protobuf_include_dirs("${GOBY_INCLUDE_DIR}")
 
 find_package(MOOS 10 REQUIRED)
 
@@ -73,7 +76,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${project_LIB_DIR} CACHE PATH
   "Output directory for the static libraries (archives)" )
 
 include_directories(${project_INC_DIR})
-protobuf_include_dirs(${project_INC_DIR})
+
+# Set import dirs for protoc used by GobyTarget functions
+list(APPEND GOBY_PROTOBUF_IMPORT_DIRS
+  "${DCCL_INCLUDE_DIR}"
+  "${GOBY_INCLUDE_DIR}"
+  "${project_INC_DIR}")
 
 
 ## set instructions for `make install`
@@ -129,6 +137,7 @@ file(GLOB_RECURSE INCLUDE_FILES RELATIVE ${project_SRC_DIR}/lib
   src/lib/messages/*.proto
   src/lib/messages/*.h
   src/lib/tcp/*.h
+  src/lib/acousticstoolbox/*.proto
   src/lib/acousticstoolbox/*.h
   src/lib/core/*.h
   )

@@ -1,10 +1,9 @@
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_CURRENT_BINARY_DIR}
-  processor_config.proto
-  )
-
-add_library(netsim_processor_echo_plugin SHARED processor.cpp ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_link_libraries(netsim_processor_echo_plugin netsim_messages)
+add_goby_library(TARGET netsim_processor_echo_plugin
+  SOURCES processor.cpp
+  PROTOS processor_config.proto
+  LINK_LIBRARIES netsim_messages
+  PROTO_IMPORT_DIRS ${project_INC_DIR}
+)
 
 if(export_goby_interfaces)
   generate_interfaces_params(netsim_processor_echo_plugin "-extra-arg=-DNETSIM_MAX_MODEMS=${NETSIM_VISUALIZE_MAX_MODEMS}")
