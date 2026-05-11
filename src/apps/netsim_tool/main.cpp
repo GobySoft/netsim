@@ -41,11 +41,11 @@ namespace micromodem = goby::acomms::micromodem;
 
 std::mutex driver_mutex;
 
-class ModemThread : public goby::middleware::SimpleThread<goby::acomms::protobuf::DriverConfig>
+class ModemThread : public goby::zeromq::SimpleThread<goby::acomms::protobuf::DriverConfig>
 {
   public:
     ModemThread(const goby::acomms::protobuf::DriverConfig& cfg, int index)
-        : goby::middleware::SimpleThread<goby::acomms::protobuf::DriverConfig>(
+        : goby::zeromq::SimpleThread<goby::acomms::protobuf::DriverConfig>(
               cfg, 10 * boost::units::si::hertz, index)
     {
         {

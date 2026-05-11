@@ -30,7 +30,7 @@
 #include "config.pb.h"
 #include "netsim/acousticstoolbox/iBellhop_messages.pb.h"
 
-using ThreadBase = goby::middleware::SimpleThread<NetSimPostprocessConfig>;
+using ThreadBase = goby::zeromq::SimpleThread<NetSimPostprocessConfig>;
 
 class TLPlotThread : public ThreadBase
 {

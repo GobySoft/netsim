@@ -32,7 +32,7 @@
 #include "netsim/messages/core_config.pb.h"
 #include "netsim/messages/groups.h"
 
-using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
+using ThreadBase = goby::zeromq::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 extern std::atomic<int> bridge_ready;
 
