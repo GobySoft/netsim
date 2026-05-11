@@ -1,4 +1,4 @@
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${project_INC_DIR}
+protobuf_generate_cpp_dccl(PROTO_SRCS PROTO_HDRS ${project_INC_DIR}
   netsim/acousticstoolbox/environment.proto
   netsim/acousticstoolbox/svp_request_response.proto
   netsim/acousticstoolbox/iBellhop_messages.proto

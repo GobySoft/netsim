@@ -4,8 +4,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 
-# require C++14
-set(CMAKE_CXX_STANDARD 14)
+# require C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # versions
