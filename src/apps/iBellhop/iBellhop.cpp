@@ -158,9 +158,9 @@ void CiBellhop::handle_request(const CMOOSMsg& msg)
 
     {
         calculate_env(env, msg.GetSource(), response.mutable_output_file());
-        boost::filesystem::path output_file_abs(response.output_file());
-        if(boost::filesystem::exists(output_file_abs))
-            response.set_output_file(boost::filesystem::canonical(output_file_abs).native());
+        std::filesystem::path output_file_abs(response.output_file());
+        if(std::filesystem::exists(output_file_abs))
+            response.set_output_file(std::filesystem::canonical(output_file_abs).native());
         
         if(env.adaptive_info().read_shd())
             read_shd(env, &response, env.adaptive_info().full_shd_matrix());
