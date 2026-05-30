@@ -33,7 +33,7 @@
 #include "netsim/messages/groups.h"
 #include "netsim/messages/logger.pb.h"
 
-using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
+using ThreadBase = goby::zeromq::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 class LoggerThread : public ThreadBase
 {

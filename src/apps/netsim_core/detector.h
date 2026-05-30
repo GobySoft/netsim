@@ -32,7 +32,7 @@
 #include "jack_thread.h"
 #include "netsim/messages/core_config.pb.h"
 
-using ThreadBase = goby::middleware::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
+using ThreadBase = goby::zeromq::SimpleThread<netsim::protobuf::NetSimCoreConfig>;
 
 extern std::atomic<int> detector_ready;
 
