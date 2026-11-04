@@ -34,6 +34,10 @@ environment-template-noble: &environment-template-noble
   DISTRO_RELEASE_CODENAME: "noble"
   DISTRO_RELEASE_VERSION: "ubuntu24.04"
 
+environment-template-resolute: &environment-template-resolute
+  DISTRO_RELEASE_CODENAME: "resolute"
+  DISTRO_RELEASE_VERSION: "ubuntu26.04"
+
   
   
 ## Pre-declare Docker containers   
@@ -60,6 +64,13 @@ docker-arm64-noble: &docker-arm64-noble
 docker-armhf-noble: &docker-armhf-noble
   - image: gobysoft/goby3-ubuntu-build-armhf:24.04.2
 
+docker-base-resolute: &docker-base-resolute
+  - image: gobysoft/goby3-ubuntu-build-base:26.04.1
+docker-arm64-resolute: &docker-arm64-resolute
+  - image: gobysoft/goby3-ubuntu-build-arm64:26.04.1
+docker-armhf-resolute: &docker-armhf-resolute
+  - image: gobysoft/goby3-ubuntu-build-armhf:26.04.1
+
     
     
     
@@ -71,13 +82,19 @@ job-template-amd64: &job-template-amd64
     - checkout
     - run: &run-add-packages-key
         name: Install packages.gobysoft.org key
+        # resolute and newer images carry the key in /etc/apt/keyrings and have no apt-key
         command: |
+          [ -f /etc/apt/keyrings/gobysoft.gpg ] ||
           apt-key adv --recv-key --keyserver keyserver.ubuntu.com 19478082E2F8D3FE
     - run: &run-add-continuous-packages
         name: Add continuous build package sources.list (if not a tagged release)
         command: |
           [ -z "${CIRCLE_TAG}" ] &&
-          echo "deb http://packages.gobysoft.org/ubuntu/continuous/ ${DISTRO_RELEASE_CODENAME}/" >> /etc/apt/sources.list.d/gobysoft_continuous.list ||
+          (if [ -f /etc/apt/keyrings/gobysoft.gpg ]; then
+          echo "deb [signed-by=/etc/apt/keyrings/gobysoft.gpg] http://packages.gobysoft.org/ubuntu/continuous/ ${DISTRO_RELEASE_CODENAME}/"
+          else
+          echo "deb http://packages.gobysoft.org/ubuntu/continuous/ ${DISTRO_RELEASE_CODENAME}/"
+          fi >> /etc/apt/sources.list.d/gobysoft_continuous.list) ||
           true
     - run: &run-update-apt
         name: Update apt packages
@@ -102,7 +119,7 @@ job-template-deb-amd64: &job-template-deb-amd64
     - run: &run-import-gpg
         name: Import GPG key
         command: echo -e "$GPG_KEY" | gpg --import
-    - attach-workspace: &attach-src-workspace
+    - attach_workspace: &attach-src-workspace
         at: /root/src
     - run: &run-extract-src
         name: Extract the original source tarball
@@ -191,9 +208,8 @@ filter-template-non-master: &filter-template-non-master
         - "master"
         
 ## Begin actual config
-version: 2
+version: 2.1
 workflows:
-  version: 2
   commit:
     jobs:
       - amd64-bookworm-build:
@@ -201,6 +217,8 @@ workflows:
       - amd64-jammy-build:
           <<: *filter-template-non-master
       - amd64-noble-build:
+          <<: *filter-template-non-master
+      - amd64-resolute-build:
           <<: *filter-template-non-master
       
       - get-orig-source:
@@ -245,6 +263,18 @@ workflows:
           <<: *filter-template-master-only
           requires:
             - get-orig-source
+      - amd64-resolute-deb-build:
+          <<: *filter-template-master-only
+          requires:
+            - get-orig-source
+      - arm64-resolute-deb-build:
+          <<: *filter-template-master-only
+          requires:
+            - get-orig-source
+      - armhf-resolute-deb-build:
+          <<: *filter-template-master-only
+          requires:
+            - get-orig-source
 
             
       # always do the continuous upload if we did the deb builds
@@ -259,6 +289,9 @@ workflows:
             - amd64-noble-deb-build
             - armhf-noble-deb-build
             - arm64-noble-deb-build
+            - amd64-resolute-deb-build
+            - armhf-resolute-deb-build
+            - arm64-resolute-deb-build
 
       # only do the release upload on tagged builds
       - release-upload:
@@ -277,6 +310,9 @@ workflows:
             - arm64-noble-deb-build
             - armhf-noble-deb-build
             - amd64-noble-deb-build
+            - arm64-resolute-deb-build
+            - armhf-resolute-deb-build
+            - amd64-resolute-deb-build
           
 jobs:
 
@@ -337,6 +373,13 @@ jobs:
     environment:
       <<: *environment-template-common
       <<: *environment-template-noble
+
+  amd64-resolute-build:
+    <<: *job-template-amd64
+    docker: *docker-base-resolute
+    environment:
+      <<: *environment-template-common
+      <<: *environment-template-resolute
 
       
   amd64-bookworm-deb-build:
@@ -402,6 +445,27 @@ jobs:
       <<: *environment-template-common
       <<: *environment-template-noble
       <<: *environment-template-armhf
+  amd64-resolute-deb-build:
+    <<: *job-template-deb-amd64
+    docker: *docker-base-resolute
+    environment:
+      <<: *environment-template-common
+      <<: *environment-template-resolute
+      <<: *environment-template-amd64
+  arm64-resolute-deb-build:
+    <<: *job-template-deb-cross
+    docker: *docker-arm64-resolute
+    environment:
+      <<: *environment-template-common
+      <<: *environment-template-resolute
+      <<: *environment-template-arm64
+  armhf-resolute-deb-build:
+    <<: *job-template-deb-cross
+    docker: *docker-armhf-resolute
+    environment:
+      <<: *environment-template-common
+      <<: *environment-template-resolute
+      <<: *environment-template-armhf
   continuous-upload:
     <<: *job-template-upload
     environment:
@@ -415,9 +479,9 @@ jobs:
           fingerprints:
             - "cd:15:c9:43:48:20:c9:56:58:9e:91:01:74:0d:fe:d2"
       - run: *run-import-gpg
-      - attach-workspace:
+      - attach_workspace:
           at: /root/deb
-      - attach-workspace: *attach-src-workspace
+      - attach_workspace: *attach-src-workspace
       - run:
           name: Move original source into output directory
           command: mv /root/src/* /root/deb

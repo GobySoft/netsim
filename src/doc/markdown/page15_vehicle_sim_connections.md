@@ -36,7 +36,7 @@ The easiest way to implement the client side of the protocol (for the vehicle si
 
 ...
 
-boost::asio::io_service io;
+boost::asio::io_context io;
 std::shared_ptr<netsim::tcp_client> client(netsim::tcp_client::create(io));
 
 std::string netsim_manager_ip = "172.19.21.10";

@@ -292,7 +292,7 @@ class NetSimTool : public goby::zeromq::MultiThreadApplication<NetSimToolConfig>
     int drivers_ready_{0};
     bool run_complete_{false};
 
-    boost::asio::io_service io_;
+    boost::asio::io_context io_;
     std::shared_ptr<netsim::tcp_client> client_{netsim::tcp_client::create(io_)};
     int request_id_{0};
 

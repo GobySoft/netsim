@@ -22,6 +22,7 @@
 
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 

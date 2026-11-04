@@ -22,35 +22,30 @@
 
 #include "tcp_client.h"
 
-std::shared_ptr<netsim::tcp_client> netsim::tcp_client::create(boost::asio::io_service& io_service)
+std::shared_ptr<netsim::tcp_client> netsim::tcp_client::create(boost::asio::io_context& io_context)
 {
-    return std::shared_ptr<tcp_client>(new tcp_client(io_service));
+    return std::shared_ptr<tcp_client>(new tcp_client(io_context));
 }
 
-netsim::tcp_client::tcp_client(boost::asio::io_service& io_service)
+netsim::tcp_client::tcp_client(boost::asio::io_context& io_context)
     : tcp_session(std::unique_ptr<boost::asio::ip::tcp::socket>(
-          new boost::asio::ip::tcp::socket(io_service))),
-      io_service_(io_service)
+          new boost::asio::ip::tcp::socket(io_context))),
+      io_context_(io_context)
 {
 }
 
 void netsim::tcp_client::connect(const std::string& server, unsigned short port)
 {
-    socket().reset(new boost::asio::ip::tcp::socket(io_service_));
-    if (io_service_.stopped())
-        io_service_.reset();
+    socket().reset(new boost::asio::ip::tcp::socket(io_context_));
+    if (io_context_.stopped())
+        io_context_.restart();
 
-    boost::asio::ip::tcp::resolver resolver(io_service_);
-    boost::asio::ip::tcp::resolver::query query(server, std::to_string(port));
-    auto endpoints = resolver.resolve(query);
+    boost::asio::ip::tcp::resolver resolver(io_context_);
+    auto endpoints = resolver.resolve(server, std::to_string(port));
 
     boost::asio::async_connect(
         *socket(), endpoints,
-#if BOOST_VERSION < 106600
-        [this](const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator i)
-#else
-        [this](const boost::system::error_code& error, boost::asio::ip::tcp::endpoint i)
-#endif
+        [this](const boost::system::error_code& error, boost::asio::ip::tcp::endpoint)
         {
             if (!error)
                 start();

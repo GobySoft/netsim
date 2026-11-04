@@ -60,7 +60,7 @@ private:
     // maps environment ID to bounds
     std::map<int, netsim::protobuf::NetSimManagerConfig::EnvironmentBounds> env_bounds_;
 
-    boost::asio::io_service io_;
+    boost::asio::io_context io_;
     netsim::tcp_server server_;
 
 };
