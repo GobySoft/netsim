@@ -30,15 +30,15 @@ namespace netsim
 class tcp_client : public tcp_session
 {
   public:
-    static std::shared_ptr<tcp_client> create(boost::asio::io_service& io_service);
+    static std::shared_ptr<tcp_client> create(boost::asio::io_context& io_context);
 
     void connect(const std::string& server, unsigned short port);
 
   private:
-    tcp_client(boost::asio::io_service& io_service);
+    tcp_client(boost::asio::io_context& io_context);
 
   private:
-    boost::asio::io_service& io_service_;
+    boost::asio::io_context& io_context_;
 };
 
 } // namespace netsim

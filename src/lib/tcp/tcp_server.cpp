@@ -23,9 +23,9 @@
 #include "tcp_server.h"
 
 // server
-netsim::tcp_server::tcp_server(boost::asio::io_service& io_service, short port)
-    : acceptor_(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
-      socket_(io_service)
+netsim::tcp_server::tcp_server(boost::asio::io_context& io_context, short port)
+    : acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
+      socket_(io_context)
 {
     accept();
 }

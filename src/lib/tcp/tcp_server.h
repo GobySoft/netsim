@@ -32,7 +32,7 @@ namespace netsim
 class tcp_server
 {
   public:
-    tcp_server(boost::asio::io_service& io_service, short port);
+    tcp_server(boost::asio::io_context& io_context, short port);
     void write(const google::protobuf::Message& message, const boost::asio::ip::tcp::endpoint& ep);
 
     template <typename ProtobufMessage>
